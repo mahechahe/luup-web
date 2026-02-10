@@ -4,30 +4,31 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-
     if (token) {
       setIsAuthenticated(true);
     }
-
-    setLoading(false);
+    setLoading(false); 
   }, []);
 
-  const login = () => {
-    localStorage.setItem("token", "fake-jwt-token");
+  const login = (token, userData) => {
+    localStorage.setItem("token", token);
+    setUser(userData);
     setIsAuthenticated(true);
   };
 
   const logout = () => {
     localStorage.removeItem("token");
     setIsAuthenticated(false);
+    setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, user, login, logout }}>
       {!loading && children}
     </AuthContext.Provider>
   );
