@@ -8,17 +8,20 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-
-    if (token) {
+    // Validamos que el token exista de verdad
+    if (token && token !== "undefined" && token !== "null") {
       setIsAuthenticated(true);
+    } else {
+      setIsAuthenticated(false);
     }
-
     setLoading(false);
   }, []);
 
-  const login = () => {
-    localStorage.setItem("token", "fake-jwt-token");
-    setIsAuthenticated(true);
+  const login = (token) => {
+    if (token) {
+      localStorage.setItem("token", token);
+      setIsAuthenticated(true);
+    }
   };
 
   const logout = () => {
@@ -27,7 +30,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, login, logout, loading }}>
       {!loading && children}
     </AuthContext.Provider>
   );
