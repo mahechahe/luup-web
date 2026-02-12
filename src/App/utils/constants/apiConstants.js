@@ -1,0 +1,21 @@
+export const constants = {
+  BASE_URL: import.meta.env.VITE_APP_BACK_API,
+  KEY_PUBLIC_WOMPI: import.meta.env.VITE_KEY_PUBLIC_WOMPI,
+  ENDPOINTS: {
+    COMPANY: 'company',
+    SHARED: 'shared',
+    AUTH: 'auth',
+    PROFESSIONAL: 'professional',
+    PROFESSIONAL_COMPANY: 'professional-company',
+    CUSTOMER: 'customer',
+    USER: 'user',
+    COLLABORATOR: 'collaborator',
+    EVENTS: 'events',
+    ADMIN: 'admin',
+    SERVICE: 'service',
+    APPOINTMENTS: 'appointments',
+    APPOINTMENT_REVIEWS: 'appointment-reviews',
+    PROFESSIONAL_SHOWCASES: 'professional-showcases',
+    SUSCRIPTIONS: 'suscriptions',
+  },
+};

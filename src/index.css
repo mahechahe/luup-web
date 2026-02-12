@@ -1,0 +1,205 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+
+@custom-variant dark (&:is(.dark *));
+
+/* 1. Box-sizing global */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* 2. Reset de márgenes */
+body,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+figure,
+blockquote {
+  margin: 0;
+}
+
+/* 3. Body */
+body {
+  font-family: 'Inter Variable', sans-serif;
+  min-height: 100vh;
+}
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* ── Brand tokens LUUP ──────────────────────────────────── */
+  /* bg-brand      → Naranja #DD7419 (CTAs, logo, nav activo) */
+  /* bg-brand/10   → naranja con opacidad (fondos suaves)     */
+  /* bg-brand-dark → naranja oscuro (hover states)            */
+  --color-brand: var(--primary);
+  --color-brand-foreground: var(--primary-foreground);
+  --color-brand-muted: var(--chart-1);
+  --color-brand-dark: var(--chart-4);
+
+  /* Tokens directos de la paleta LUUP */
+  --color-luup-blue-dark: #234465;
+  --color-luup-blue-light: #7493b2;
+  --color-luup-orange: #dd7419;
+  --color-luup-cream: #e9e2cf;
+
+  /* Alias bg-error / text-error */
+  --color-error: var(--destructive);
+
+  /* Fuente */
+  --font-sans: 'Roboto Variable', sans-serif;
+}
+
+/* ── Light theme ────────────────────────────────────────── */
+:root {
+  --radius: 0.65rem;
+
+  --background: #f5f5f5;
+  --foreground: #234465;
+
+  --card: #ffffff;
+  --card-foreground: #234465;
+
+  --popover: #ffffff;
+  --popover-foreground: #234465;
+
+  /* Primario: Naranja Acento LUUP — botones, highlights */
+  --primary: #dd7419;
+  --primary-foreground: #ffffff;
+
+  /* Secundario: azul muy suave — fondos de elementos secundarios */
+  --secondary: #eef2f6;
+  --secondary-foreground: #234465;
+
+  /* Muted: gris azulado suave */
+  --muted: #e8edf2;
+  --muted-foreground: #7493b2;
+
+  /* Accent: igual que secondary (shadcn convention) */
+  --accent: #eef2f6;
+  --accent-foreground: #234465;
+
+  --destructive: oklch(0.577 0.245 27.325);
+
+  --border: #dde4ea;
+  --input: #dde4ea;
+  --ring: #dd7419;
+
+  /* Charts — degradado naranja › azul LUUP */
+  --chart-1: #f0a04a;
+  --chart-2: #dd7419;
+  --chart-3: #7493b2;
+  --chart-4: #b55e0e;
+  --chart-5: #234465;
+
+  /* Sidebar: Azul Oscuro LUUP */
+  --sidebar: #234465;
+  --sidebar-foreground: #f5f5f5;
+  --sidebar-primary: #dd7419;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #2d5a87;
+  --sidebar-accent-foreground: #f5f5f5;
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: #dd7419;
+}
+
+/* ── Dark theme ─────────────────────────────────────────── */
+.dark {
+  --background: #1a2f47;
+  --foreground: #f0f4f8;
+
+  --card: #234465;
+  --card-foreground: #f0f4f8;
+
+  --popover: #234465;
+  --popover-foreground: #f0f4f8;
+
+  --primary: #dd7419;
+  --primary-foreground: #ffffff;
+
+  --secondary: #2d5a87;
+  --secondary-foreground: #f0f4f8;
+
+  --muted: #2d4a62;
+  --muted-foreground: #7493b2;
+
+  --accent: #2d5a87;
+  --accent-foreground: #f0f4f8;
+
+  --destructive: oklch(0.704 0.191 22.216);
+
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: #dd7419;
+
+  --chart-1: #f0a04a;
+  --chart-2: #dd7419;
+  --chart-3: #7493b2;
+  --chart-4: #b55e0e;
+  --chart-5: #e9e2cf;
+
+  --sidebar: #152637;
+  --sidebar-foreground: #f0f4f8;
+  --sidebar-primary: #dd7419;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #234465;
+  --sidebar-accent-foreground: #f0f4f8;
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: #dd7419;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  button:not(:disabled),
+  [role='button']:not(:disabled),
+  a[href],
+  label[for],
+  select:not(:disabled) {
+    cursor: pointer;
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm ls:*)",
+      "Bash(del:*)",
+      "Bash(npx eslint:*)",
+      "Bash(npx shadcn@latest add:*)",
+      "Bash(node -e \"require\\(''fs''\\).writeFileSync\\(''./src/App/routes/Colaboradores/ColaboradoresPage.jsx'', require\\(''fs''\\).readFileSync\\(''./src/App/routes/Colaboradores/ColaboradoresPage.jsx'', ''utf8''\\)\\)\")",
+      "Bash(\"C:\\\\Users\\\\mahec\\\\OneDrive\\\\Documentos\\\\Trabajos - Independientes\\\\Luup\\\\luup-web\\\\src\\\\App\\\\routes\\\\Colaboradores\\\\ColaboradoresPage.jsx\" << 'ENDOFFILE'\nplaceholder\nENDOFFILE)",
+      "Bash(npm install:*)"
+    ]
+  }
+}
