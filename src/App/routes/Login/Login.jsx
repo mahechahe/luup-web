@@ -1,5 +1,5 @@
 import { yupResolver } from '@hookform/resolvers/yup';
-import { Eye, EyeOff, Lock, LogIn, Mail } from 'lucide-react';
+import { Eye, EyeOff, Lock, LogIn, User } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
@@ -13,17 +13,16 @@ import { INIT_LOADER } from '@/App/utils/constants/utilsConstants';
 import { submitLoginService } from '@/App/auth/services/authService';
 
 const INIT_LOGIN = {
-  email: '',
+  username: '',
   password: '',
 };
 
 const schema = yup.object({
-  email: yup
+  username: yup
     .string()
-    .required('El correo es requerido')
-    .email('Correo no válido')
-    .min(2, 'Al menos dos caracteres')
-    .max(40, 'Menos de 40 caracteres'),
+    .required('El usuario es requerido')
+    .min(5, 'Mínimo 5 caracteres')
+    .max(40, 'Máximo 40 caracteres'),
 
   password: yup
     .string()
@@ -62,7 +61,7 @@ function LoginPage() {
     });
 
     const body = {
-      email: data.email,
+      username: data.username,
       password: data.password,
     };
 
@@ -72,7 +71,7 @@ function LoginPage() {
       window.ReactNativeWebView.postMessage(JSON.stringify(res));
       navigate('/dashboard');
     } else {
-      setError('email', {
+      setError('username', {
         type: 'manual',
         message: res.errors,
       });
@@ -148,20 +147,21 @@ function LoginPage() {
 
           <form onSubmit={handleLogin} className="space-y-8">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-foreground font-medium">
-                Correo electrónico
+              <Label htmlFor="username" className="text-foreground font-medium">
+                Usuario
               </Label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
+                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
                 <Input
-                  type="email"
-                  placeholder="tu@email.com"
+                  id="username"
+                  type="text"
+                  placeholder="Nombre de usuario"
                   className="pl-10 h-12 border-border focus:border-brand focus:ring-brand"
-                  {...register('email')}
+                  {...register('username')}
                 />
-                {errors.email && (
+                {errors.username && (
                   <p className="text-sm text-error absolute -bottom-5">
-                    {errors.email.message}
+                    {errors.username.message}
                   </p>
                 )}
               </div>

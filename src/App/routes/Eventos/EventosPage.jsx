@@ -9,6 +9,7 @@ import {
   X,
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -24,7 +25,11 @@ const EMPTY_FILTERS = { name: '', location: '', dateFrom: '', dateTo: '' };
 /* ── Helpers ─────────────────────────────────────────────── */
 function formatDate(iso) {
   if (!iso) return '—';
-  return new Date(iso).toLocaleDateString('es-CO', {
+  // PostgreSQL puede devolver "YYYY-MM-DD HH:mm:ss+TZ" — normalizar a ISO
+  const normalized = iso.toString().replace(' ', 'T');
+  const d = new Date(normalized);
+  if (isNaN(d.getTime())) return '—';
+  return d.toLocaleDateString('es-CO', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
@@ -33,7 +38,7 @@ function formatDate(iso) {
 
 /* ── Skeleton row ─────────────────────────────────────────── */
 function SkeletonRow() {
-  const widths = ['w-40', 'w-24', 'w-44', 'w-20'];
+  const widths = ['w-40', 'w-20', 'w-32', 'w-44', 'w-20'];
   return (
     <tr className="border-b border-border animate-pulse">
       {widths.map((w, i) => (
@@ -55,7 +60,7 @@ function SkeletonRow() {
 function EmptyState({ hasFilter }) {
   return (
     <tr>
-      <td colSpan={5}>
+      <td colSpan={6}>
         <div className="flex flex-col items-center justify-center gap-3 py-16 text-center px-4">
           <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center">
             <Calendar className="w-7 h-7 text-muted-foreground" />
@@ -76,7 +81,25 @@ function EmptyState({ hasFilter }) {
   );
 }
 
-const COLUMNS = ['Nombre', 'Fecha', 'Ubicación', 'Creado', 'Acciones'];
+const COLUMNS = ['Nombre', 'Tipo', 'Fechas', 'Ubicación', 'Creado', 'Acciones'];
+
+const DATE_TYPE_LABEL = {
+  single_date: 'Fecha única',
+  stages: 'Etapas',
+};
+
+function EventDateCell({ ev }) {
+  if (ev.dateType === 'stages') {
+    return (
+      <span>
+        {formatDate(ev.startDate)}
+        {' — '}
+        {formatDate(ev.endDate)}
+      </span>
+    );
+  }
+  return <span>{formatDate(ev.date)}</span>;
+}
 
 /* ── Paginación ──────────────────────────────────────────── */
 function Pagination({ page, totalPages, total, limit, onPageChange }) {
@@ -91,7 +114,9 @@ function Pagination({ page, totalPages, total, limit, onPageChange }) {
     <div className="flex items-center justify-between px-5 py-3 border-t border-border flex-wrap gap-2">
       <p className="text-xs text-muted-foreground">
         Mostrando{' '}
-        <span className="font-semibold text-foreground">{from}–{to}</span>{' '}
+        <span className="font-semibold text-foreground">
+          {from}–{to}
+        </span>{' '}
         de <span className="font-semibold text-foreground">{total}</span>
       </p>
       <div className="flex items-center gap-1">
@@ -142,6 +167,7 @@ function Pagination({ page, totalPages, total, limit, onPageChange }) {
 
 /* ── Vista principal ─────────────────────────────────────── */
 function EventosPage() {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [events, setEvents] = useState([]);
   const [pagination, setPagination] = useState({
@@ -155,7 +181,6 @@ function EventosPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [activeFilters, setActiveFilters] = useState(EMPTY_FILTERS);
-
   const hasActiveFilter = Object.values(activeFilters).some((v) => v !== '');
 
   const fetchData = useCallback(async (page, filters) => {
@@ -163,9 +188,12 @@ function EventosPage() {
     const body = {
       page,
       limit: PAGE_LIMIT,
-      ...Object.fromEntries(Object.entries(filters).filter(([, v]) => v !== '')),
+      ...Object.fromEntries(
+        Object.entries(filters).filter(([, v]) => v !== '')
+      ),
     };
     const res = await getEventosService(body);
+
     if (res.status) {
       setEvents(res.events);
       setPagination(res.pagination);
@@ -197,7 +225,6 @@ function EventosPage() {
   return (
     <div className="min-h-screen bg-background px-4 py-6">
       <div className="max-w-7xl mx-auto space-y-6">
-
         {/* ── Header ──────────────────────────────────────── */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
@@ -282,7 +309,8 @@ function EventosPage() {
                   <span className="text-muted-foreground">Mostrando </span>
                   <span className="text-brand font-bold">{events.length}</span>
                   <span className="text-muted-foreground">
-                    {' '}de {pagination.total} eventos
+                    {' '}
+                    de {pagination.total} eventos
                   </span>
                 </>
               ) : (
@@ -317,7 +345,7 @@ function EventosPage() {
                   ) : (
                     events.map((ev) => (
                       <tr
-                        key={ev.id}
+                        key={ev.eventId}
                         className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors"
                       >
                         <td className="px-4 py-3.5 whitespace-nowrap">
@@ -325,8 +353,20 @@ function EventosPage() {
                             {ev.name}
                           </span>
                         </td>
+                        <td className="px-4 py-3.5 whitespace-nowrap">
+                          <Badge
+                            variant="secondary"
+                            className={`text-xs font-medium ${
+                              ev.dateType === 'stages'
+                                ? 'bg-brand/10 text-brand border-0'
+                                : 'bg-muted text-muted-foreground'
+                            }`}
+                          >
+                            {DATE_TYPE_LABEL[ev.dateType] ?? '—'}
+                          </Badge>
+                        </td>
                         <td className="px-4 py-3.5 whitespace-nowrap text-muted-foreground">
-                          {formatDate(ev.date)}
+                          <EventDateCell ev={ev} />
                         </td>
                         <td className="px-4 py-3.5 text-muted-foreground">
                           {ev.location ?? '—'}
@@ -352,7 +392,7 @@ function EventosPage() {
                               variant="outline"
                               size="sm"
                               className="h-8 gap-1.5 text-xs border-sky-300 text-sky-600 hover:bg-sky-50 hover:border-sky-500"
-                              disabled
+                              onClick={() => navigate(`/eventos/${ev.eventId}`)}
                             >
                               <Eye className="w-3.5 h-3.5" />
                               Ver detalle

@@ -1,12 +1,19 @@
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Pencil } from 'lucide-react';
 import { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import * as yup from 'yup';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Sheet,
   SheetContent,
@@ -17,15 +24,35 @@ import {
 } from '@/components/ui/sheet';
 import { updateEventoService } from '../services/eventServices';
 
+const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+
 const schema = yup.object({
   name: yup
     .string()
     .required('El nombre es requerido.')
     .max(255, 'Máximo 255 caracteres.'),
-  date: yup
+  dateType: yup
     .string()
-    .required('La fecha es requerida.')
-    .matches(/^\d{4}-\d{2}-\d{2}$/, 'La fecha debe tener el formato YYYY-MM-DD.'),
+    .required('El tipo de fecha es requerido.')
+    .oneOf(['single_date', 'stages']),
+  date: yup.string().when('dateType', {
+    is: 'single_date',
+    then: (s) =>
+      s.required('La fecha es requerida.').matches(DATE_REGEX, 'Formato YYYY-MM-DD.'),
+    otherwise: (s) => s.optional(),
+  }),
+  startDate: yup.string().when('dateType', {
+    is: 'stages',
+    then: (s) =>
+      s.required('La fecha de inicio es requerida.').matches(DATE_REGEX, 'Formato YYYY-MM-DD.'),
+    otherwise: (s) => s.optional(),
+  }),
+  endDate: yup.string().when('dateType', {
+    is: 'stages',
+    then: (s) =>
+      s.required('La fecha de fin es requerida.').matches(DATE_REGEX, 'Formato YYYY-MM-DD.'),
+    otherwise: (s) => s.optional(),
+  }),
   location: yup
     .string()
     .required('La ubicación es requerida.')
@@ -47,17 +74,31 @@ export function EditEventDrawer({ open, onClose, onSuccess, event }) {
     register,
     handleSubmit,
     reset,
+    control,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: yupResolver(schema),
-    defaultValues: { name: '', date: '', location: '' },
+    defaultValues: {
+      name: '',
+      dateType: 'single_date',
+      date: '',
+      startDate: '',
+      endDate: '',
+      location: '',
+    },
   });
+
+  const dateType = watch('dateType');
 
   useEffect(() => {
     if (open && event) {
       reset({
         name: event.name ?? '',
+        dateType: event.dateType ?? 'single_date',
         date: event.date ?? '',
+        startDate: event.startDate ?? '',
+        endDate: event.endDate ?? '',
         location: event.location ?? '',
       });
     }
@@ -71,7 +112,17 @@ export function EditEventDrawer({ open, onClose, onSuccess, event }) {
   }
 
   const onSubmit = handleSubmit(async (values) => {
-    const res = await updateEventoService({ eventId: event.id, ...values });
+    const body = {
+      eventId: event.eventId,
+      name: values.name,
+      dateType: values.dateType,
+      location: values.location,
+      ...(values.dateType === 'single_date'
+        ? { date: values.date }
+        : { startDate: values.startDate, endDate: values.endDate }),
+    };
+
+    const res = await updateEventoService(body);
     if (res.status) {
       toast.success('Evento actualizado exitosamente.');
       reset();
@@ -108,9 +159,40 @@ export function EditEventDrawer({ open, onClose, onSuccess, event }) {
             <Input placeholder="ej. Festival LUUP 2026" {...register('name')} />
           </Field>
 
-          <Field label="Fecha" error={errors.date?.message}>
-            <Input type="date" {...register('date')} />
+          <Field label="Tipo de fecha" error={errors.dateType?.message}>
+            <Controller
+              name="dateType"
+              control={control}
+              render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Selecciona el tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="single_date">Fecha única</SelectItem>
+                    <SelectItem value="stages">Etapas (rango de fechas)</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            />
           </Field>
+
+          {dateType === 'single_date' && (
+            <Field label="Fecha" error={errors.date?.message}>
+              <Input type="date" {...register('date')} />
+            </Field>
+          )}
+
+          {dateType === 'stages' && (
+            <>
+              <Field label="Fecha de inicio" error={errors.startDate?.message}>
+                <Input type="date" {...register('startDate')} />
+              </Field>
+              <Field label="Fecha de fin" error={errors.endDate?.message}>
+                <Input type="date" {...register('endDate')} />
+              </Field>
+            </>
+          )}
 
           <Field label="Ubicación" error={errors.location?.message}>
             <Input placeholder="ej. Parque Simón Bolívar, Bogotá" {...register('location')} />

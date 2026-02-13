@@ -28,6 +28,19 @@ export const getEventosService = async (body) => {
   }
 };
 
+export const getEventoDetailService = async (eventId) => {
+  try {
+    const { data } = await axios.get(`${EVENTS_URL}/${eventId}`);
+    return { status: true, event: data?.data, errors: null };
+  } catch (error) {
+    return {
+      status: false,
+      event: null,
+      errors: error?.response?.data?.message || 'Error al obtener el evento.',
+    };
+  }
+};
+
 export const createEventoService = async (body) => {
   try {
     const { data } = await axios.post(`${EVENTS_URL}`, body);
@@ -49,7 +62,8 @@ export const updateEventoService = async (body) => {
     return {
       status: false,
       data: null,
-      errors: error?.response?.data?.message || 'Error al actualizar el evento.',
+      errors:
+        error?.response?.data?.message || 'Error al actualizar el evento.',
     };
   }
 };
