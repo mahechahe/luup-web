@@ -111,6 +111,47 @@ export const updateColaboradorService = async (body) => {
   }
 };
 
+/**
+ * Obtiene la URL firmada del template de carga masiva.
+ */
+export const getCollaboratorTemplateService = async () => {
+  try {
+    const { data } = await axios.get(`${COLLABORATOR_URL}/template`);
+    return { status: true, url: data?.data?.url ?? null, errors: null };
+  } catch (error) {
+    return {
+      status: false,
+      url: null,
+      errors: error?.response?.data?.message || 'Error al obtener el template.',
+    };
+  }
+};
+
+/**
+ * Carga masiva de colaboradores mediante un archivo Excel.
+ *
+ * @param {File} file - Archivo .xlsx / .xls a subir
+ */
+export const uploadExcelCollaboratorsService = async (file) => {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    const { data } = await axios.post(
+      `${COLLABORATOR_URL}/upload-excel`,
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data' } }
+    );
+    return { status: true, result: data.data, errors: null };
+  } catch (error) {
+    return {
+      status: false,
+      result: null,
+      errors:
+        error?.response?.data?.message || 'Error al cargar el archivo Excel.',
+    };
+  }
+};
+
 export const getCollaboratorDetailService = async (collaboratorId) => {
   try {
     const { data } = await axios.get(`${COLLABORATOR_URL}/${collaboratorId}`);

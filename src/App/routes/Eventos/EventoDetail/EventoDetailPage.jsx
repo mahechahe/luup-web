@@ -1,122 +1,60 @@
-import {
-  AlertTriangle,
-  ArrowLeft,
-  Calendar,
-  CalendarRange,
-  MapPin,
-  User,
-} from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { getEventoDetailService } from '../services/eventServices';
+import {
+  getEventoDetailService,
+  uploadEventMapService,
+} from '../services/eventServices';
+import { generateId, IS_ADMIN } from './components/constants';
+import { DeleteZoneModal } from './components/DeleteZoneModal';
+import { ErrorState } from './components/ErrorState';
+import { EventoHeader } from './components/EventoHeader';
+import { ZonesCanvas } from './components/ZonesCanvas';
+import { ZonesSidebar } from './components/ZonesSidebar';
 
-/* ── Helpers ─────────────────────────────────────────────── */
-function formatDate(iso) {
-  if (!iso) return '—';
-  const normalized = iso.toString().replace(' ', 'T');
-  const d = new Date(normalized);
-  if (isNaN(d.getTime())) return '—';
-  return d.toLocaleDateString('es-CO', {
-    day: '2-digit',
-    month: 'long',
-    year: 'numeric',
-  });
-}
-
-const DATE_TYPE_LABEL = {
-  single_date: 'Fecha única',
-  stages: 'Etapas',
-};
-
-/* ── Skeleton ────────────────────────────────────────────── */
-function Skeleton({ className }) {
-  return (
-    <div className={`animate-pulse bg-muted rounded-md ${className ?? ''}`} />
-  );
-}
-
-function DetailSkeleton() {
-  return (
-    <div className="space-y-4">
-      <Card className="border-border shadow-sm">
-        <CardHeader className="pb-3 pt-4 px-5">
-          <Skeleton className="h-5 w-40" />
-        </CardHeader>
-        <CardContent className="px-5 pb-5">
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="space-y-2">
-                <Skeleton className="h-3 w-20" />
-                <Skeleton className="h-5 w-36" />
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-      <Card className="border-border shadow-sm">
-        <CardHeader className="pb-3 pt-4 px-5">
-          <Skeleton className="h-5 w-32" />
-        </CardHeader>
-        <CardContent className="px-5 pb-5">
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="space-y-2">
-                <Skeleton className="h-3 w-20" />
-                <Skeleton className="h-5 w-36" />
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-/* ── Campo de detalle ────────────────────────────────────── */
-function DetailField({ label, value }) {
-  return (
-    <div className="space-y-1">
-      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-        {label}
-      </p>
-      <p className="text-sm text-foreground font-medium">{value ?? '—'}</p>
-    </div>
-  );
-}
-
-/* ── Sección ─────────────────────────────────────────────── */
-function Section({ icon: Icon, title, children }) {
-  return (
-    <Card className="border-border shadow-sm">
-      <CardHeader className="pb-3 pt-4 px-5">
-        <CardTitle className="text-sm font-semibold flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-brand/10 flex items-center justify-center">
-            <Icon className="w-3.5 h-3.5 text-brand" />
-          </div>
-          {title}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="px-5 pb-5">{children}</CardContent>
-    </Card>
-  );
-}
-
-/* ── Página ──────────────────────────────────────────────── */
 function EventoDetailPage() {
   const { eventId } = useParams();
   const navigate = useNavigate();
+  const fileInputRef = useRef(null);
+
+  /* Datos del evento */
   const [loading, setLoading] = useState(true);
   const [event, setEvent] = useState(null);
   const [error, setError] = useState(null);
 
+  /* UI */
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  /* Zonas */
+  const [zones, setZones] = useState(() => {
+    const saved = localStorage.getItem(`zones_${eventId}`);
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  /* Plano */
+  const [planImage, setPlanImage] = useState(null); // URL del servidor (presignedUrl)
+  const [pendingFile, setPendingFile] = useState(null); // File seleccionado sin subir
+  const [pendingPreview, setPendingPreview] = useState(null); // data URL para preview local
+  const [uploadingPlan, setUploadingPlan] = useState(false);
+  const [uploadError, setUploadError] = useState(null);
+
+  /* Canvas */
+  const [tool, setTool] = useState('select');
+  const [selectedId, setSelectedId] = useState(null);
+  const [deleteId, setDeleteId] = useState(null);
+  const [polyPoints, setPolyPoints] = useState([]);
+
+  /* Persistir zonas */
+  useEffect(() => {
+    localStorage.setItem(`zones_${eventId}`, JSON.stringify(zones));
+  }, [zones, eventId]);
+
+  /* Cargar evento */
   useEffect(() => {
     setLoading(true);
     getEventoDetailService(eventId).then((res) => {
       if (res.status) {
         setEvent(res.event);
+        if (res.event?.mapImageUrl) setPlanImage(res.event.mapImageUrl);
       } else {
         setError(res.errors ?? 'No se pudo cargar el evento.');
       }
@@ -124,140 +62,180 @@ function EventoDetailPage() {
     });
   }, [eventId]);
 
-  /* ── Error / Not found state ─────────────────────────── */
+  /* ── Handlers de zonas ───────────────────────────────── */
+  const updateZone = (id, updates) =>
+    setZones((prev) =>
+      prev.map((z) => (z.id === id ? { ...z, ...updates } : z))
+    );
+
+  const addZone = (zone) => setZones((prev) => [...prev, zone]);
+
+  const addPeople = (zoneId, collaborators, role) => {
+    const zone = zones.find((z) => z.id === zoneId);
+    if (!zone) return;
+    const newPeople = collaborators.map((c) => ({
+      id: c.userId,
+      name: `${c.firstName} ${c.lastName}`.trim(),
+      cedula: c.cedula,
+      role,
+      status: 'confirmed',
+    }));
+    updateZone(zoneId, { people: [...zone.people, ...newPeople] });
+  };
+
+  const removePerson = (zoneId, personId) => {
+    const zone = zones.find((z) => z.id === zoneId);
+    updateZone(zoneId, {
+      people: zone.people.filter((p) => p.id !== personId),
+    });
+  };
+
+  const confirmDeleteZone = (id) => {
+    setZones((prev) => prev.filter((z) => z.id !== id));
+    setDeleteId(null);
+    setSelectedId(null);
+  };
+
+  /* ── Handlers polígono ───────────────────────────────── */
+  const handleAddPolyPoint = (point) =>
+    setPolyPoints((prev) => [...prev, point]);
+
+  const finishPolygon = () => {
+    if (polyPoints.length < 3) return;
+    const newZone = {
+      id: generateId(),
+      name: `Zona ${zones.length + 1}`,
+      type: 'polygon',
+      points: polyPoints,
+      color: '#3b82f6',
+      people: [],
+      maxCapacity: 10,
+      category: 'general',
+      notes: '',
+    };
+    addZone(newZone);
+    setSelectedId(newZone.id);
+    setPolyPoints([]);
+    setTool('select');
+  };
+
+  const handleToolChange = (newTool) => {
+    setTool(newTool);
+    if (newTool !== 'poly') setPolyPoints([]);
+  };
+
+  /* ── Selección de archivo (sin subir todavía) ────────── */
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploadError(null);
+    setPendingFile(file);
+    const reader = new FileReader();
+    reader.onload = (ev) => setPendingPreview(ev.target.result);
+    reader.readAsDataURL(file);
+    // Resetear el input para permitir volver a seleccionar el mismo archivo
+    e.target.value = '';
+  };
+
+  const handleCancelPending = () => {
+    setPendingFile(null);
+    setPendingPreview(null);
+    setUploadError(null);
+  };
+
+  /* ── Subida efectiva al servidor ─────────────────────── */
+  const handleUploadPlan = async () => {
+    if (!pendingFile) return;
+    setUploadingPlan(true);
+    setUploadError(null);
+    const res = await uploadEventMapService(eventId, pendingFile);
+    setUploadingPlan(false);
+    if (res.status) {
+      setPlanImage(res.data.presignedUrl);
+      setPendingFile(null);
+      setPendingPreview(null);
+    } else {
+      setUploadError(res.errors);
+    }
+  };
+
+  /* Imagen que se muestra en el canvas (preview local o URL del servidor) */
+  const displayedPlan = pendingPreview || planImage;
+
+  /* ── Error / not found ───────────────────────────────── */
   if (!loading && (error || !event)) {
     return (
-      <div className="min-h-screen bg-background px-4 py-6 flex items-center justify-center">
-        <div className="text-center space-y-4 max-w-sm">
-          <div className="w-14 h-14 rounded-2xl bg-destructive/10 flex items-center justify-center mx-auto">
-            <AlertTriangle className="w-7 h-7 text-destructive" />
-          </div>
-          <div>
-            <p className="font-semibold text-foreground">
-              {error ? 'Error al cargar el evento' : 'Evento no encontrado'}
-            </p>
-            <p className="text-sm text-muted-foreground mt-1">
-              {error ?? 'El evento que buscas no existe o fue eliminado.'}
-            </p>
-          </div>
-          <Button
-            variant="outline"
-            className="gap-2"
-            onClick={() => navigate('/eventos')}
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Ir a todos los eventos
-          </Button>
-        </div>
-      </div>
+      <ErrorState error={error} onNavigateBack={() => navigate('/eventos')} />
     );
   }
 
-  /* ── Fechas según tipo ───────────────────────────────── */
-  function renderDateFields() {
-    if (!event) return null;
-    if (event.dateType === 'stages') {
-      return (
-        <>
-          <DetailField label="Fecha de inicio" value={formatDate(event.startDate)} />
-          <DetailField label="Fecha de fin" value={formatDate(event.endDate)} />
-        </>
-      );
-    }
-    return <DetailField label="Fecha" value={formatDate(event.date)} />;
-  }
-
+  /* ── Render ──────────────────────────────────────────── */
   return (
-    <div className="min-h-screen bg-background px-4 py-6">
-      <div className="max-w-4xl mx-auto space-y-6">
+    <div className="h-screen flex flex-col bg-background overflow-hidden">
+      {/* Input oculto para seleccionar archivo */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileSelect}
+        accept="image/*"
+        className="hidden"
+      />
 
-        {/* ── Encabezado ───────────────────────────────────── */}
-        <div className="flex items-start gap-4">
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-9 w-9 shrink-0"
-            onClick={() => navigate('/eventos')}
-          >
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
+      <EventoHeader
+        loading={loading}
+        event={event}
+        onBack={() => navigate('/eventos')}
+      />
 
-          <div className="flex-1 min-w-0">
-            {loading ? (
-              <div className="space-y-2">
-                <Skeleton className="h-7 w-64" />
-                <Skeleton className="h-5 w-28" />
-              </div>
-            ) : (
-              <>
-                <h1 className="text-2xl font-bold text-foreground tracking-tight truncate">
-                  {event.name}
-                </h1>
-                <div className="flex items-center gap-2 mt-1 flex-wrap">
-                  <Badge
-                    className={`text-xs border-0 ${
-                      event.isActive
-                        ? 'bg-emerald-100 text-emerald-700'
-                        : 'bg-muted text-muted-foreground'
-                    }`}
-                  >
-                    {event.isActive ? 'Activo' : 'Inactivo'}
-                  </Badge>
-                  {event.dateType && (
-                    <Badge
-                      className={`text-xs border-0 ${
-                        event.dateType === 'stages'
-                          ? 'bg-brand/10 text-brand'
-                          : 'bg-muted text-muted-foreground'
-                      }`}
-                    >
-                      {DATE_TYPE_LABEL[event.dateType] ?? event.dateType}
-                    </Badge>
-                  )}
-                </div>
-              </>
-            )}
-          </div>
-        </div>
+      <div className="flex flex-1 overflow-hidden relative">
+        <ZonesCanvas
+          zones={zones}
+          selectedId={selectedId}
+          tool={tool}
+          planImage={displayedPlan}
+          polyPoints={polyPoints}
+          isAdmin={IS_ADMIN}
+          sidebarOpen={sidebarOpen}
+          loading={loading}
+          onAddZone={addZone}
+          onUpdateZone={updateZone}
+          onSelectZone={setSelectedId}
+          onAddPolyPoint={handleAddPolyPoint}
+          onFinishPolygon={finishPolygon}
+          onChangeTool={setTool}
+          onToggleSidebar={() => setSidebarOpen((v) => !v)}
+          onSelectPlan={() => fileInputRef.current.click()}
+        />
 
-        {/* ── Skeleton completo ────────────────────────────── */}
-        {loading && <DetailSkeleton />}
-
-        {/* ── Contenido ────────────────────────────────────── */}
-        {!loading && event && (
-          <div className="space-y-4">
-
-            {/* Información del evento */}
-            <Section icon={Calendar} title="Información del evento">
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4">
-                <DetailField label="Nombre" value={event.name} />
-                {renderDateFields()}
-                <DetailField label="Ubicación" value={event.location} />
-                {event.mapImageUrl && (
-                  <DetailField label="Imagen del mapa" value={event.mapImageUrl} />
-                )}
-              </div>
-            </Section>
-
-            {/* Auditoría */}
-            <Section icon={User} title="Auditoría">
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4">
-                <DetailField
-                  label="Creado por"
-                  value={
-                    event.createdBy?.firstName
-                      ? `${event.createdBy.firstName} ${event.createdBy.lastName ?? ''}`.trim()
-                      : '—'
-                  }
-                />
-                <DetailField label="Fecha de creación" value={formatDate(event.createdAt)} />
-                <DetailField label="Última actualización" value={formatDate(event.updatedAt)} />
-              </div>
-            </Section>
-
-          </div>
-        )}
+        <ZonesSidebar
+          isOpen={sidebarOpen}
+          tool={tool}
+          zones={zones}
+          selectedId={selectedId}
+          isAdmin={IS_ADMIN}
+          polyPoints={polyPoints}
+          pendingFile={pendingFile}
+          uploadingPlan={uploadingPlan}
+          uploadError={uploadError}
+          hasPlan={!!planImage}
+          onToolChange={handleToolChange}
+          onFinishPolygon={finishPolygon}
+          onSelectPlan={() => fileInputRef.current.click()}
+          onUploadPlan={handleUploadPlan}
+          onCancelPending={handleCancelPending}
+          onSelectZone={setSelectedId}
+          onUpdateZone={updateZone}
+          onAddPeople={addPeople}
+          onRemovePerson={removePerson}
+          onDeleteRequest={setDeleteId}
+        />
       </div>
+
+      <DeleteZoneModal
+        deleteId={deleteId}
+        onConfirm={confirmDeleteZone}
+        onCancel={() => setDeleteId(null)}
+      />
     </div>
   );
 }
