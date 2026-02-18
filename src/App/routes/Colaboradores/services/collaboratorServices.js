@@ -56,17 +56,6 @@ export const getColaboradoresService = async (body) => {
 
 /**
  * Crea un nuevo colaborador.
- *
- * @param {{
- *   firstName: string,
- *   lastName: string,
- *   phone: string,
- *   cedula: string,
- *   typeDocument: number,
- *   email?: string,
- *   age?: number,
- *   gender?: 'male' | 'female' | 'other'
- * }} body
  */
 export const createColaboradorService = async (body) => {
   try {
@@ -84,18 +73,6 @@ export const createColaboradorService = async (body) => {
 
 /**
  * Actualiza un colaborador existente.
- *
- * @param {{
- *   collaboratorId: number,
- *   firstName: string,
- *   lastName: string,
- *   phone: string,
- *   cedula: string,
- *   typeDocument: number,
- *   email?: string,
- *   age?: number,
- *   gender?: 'male' | 'female' | 'other'
- * }} body
  */
 export const updateColaboradorService = async (body) => {
   try {
@@ -129,8 +106,6 @@ export const getCollaboratorTemplateService = async () => {
 
 /**
  * Carga masiva de colaboradores mediante un archivo Excel.
- *
- * @param {File} file - Archivo .xlsx / .xls a subir
  */
 export const uploadExcelCollaboratorsService = async (file) => {
   try {
@@ -162,6 +137,34 @@ export const getCollaboratorDetailService = async (collaboratorId) => {
       collaborator: null,
       errors:
         error?.response?.data?.message || 'Error al obtener el colaborador.',
+    };
+  }
+};
+
+// services/collaboratorServices.js
+
+// services/collaboratorServices.js
+
+// services/collaboratorServices.js
+
+export const deleteCollaboratorService = async (collaboratorId) => {
+  try {
+    // La URL es la que tienes en Postman (sin el ID al final)
+    const url = `${COLLABORATOR_URL}/delete`; 
+
+    // En DELETE con Axios, el body se envía dentro de una propiedad llamada 'data'
+    const { data } = await axios.delete(url, {
+      data: {
+        userId: collaboratorId // Esto envía { "userId": 11 }
+      }
+    });
+
+    return { status: true, data, errors: null };
+  } catch (error) {
+    console.error("Error en el service:", error.response);
+    return {
+      status: false,
+      errors: error?.response?.data?.message || 'Error al eliminar el colaborador.',
     };
   }
 };
