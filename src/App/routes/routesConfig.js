@@ -19,14 +19,27 @@ export const routesAuth = [
     component: lazy(() => import('./Dashboard/Dashboard')),
   },
 
+  // --- MÓDULO DE EVENTOS Y LOGÍSTICA ---
+  // IMPORTANTE: Las rutas más largas/específicas deben ir ARRIBA de las generales
   {
-    path: 'eventos',
+    path: 'eventos/listado', 
     component: lazy(() => import('./Eventos/EventosPage')),
+  },
+  {
+    path: 'eventos/zonas-acopios', 
+    component: lazy(() => import('./Zonas/ZonasGestionDetalle')), 
   },
   {
     path: 'eventos/:eventId',
     component: lazy(() => import('./Eventos/EventoDetail/EventoDetailPage')),
   },
+  {
+    path: 'eventos', 
+    // Esta es la raíz. Si ninguna de las de arriba coincide, entra aquí.
+    component: lazy(() => import('./Zonas/ZonasPage')),
+  },
+
+  // --- MÓDULO DE COLABORADORES ---
   {
     path: 'colaboradores',
     component: lazy(() => import('./Colaboradores/ColaboradoresPage')),

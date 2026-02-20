@@ -7,6 +7,7 @@ import {
   Pencil,
   Plus,
   X,
+  ArrowLeft, // Importado para el botón de volver
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -225,6 +226,18 @@ function EventosPage() {
   return (
     <div className="min-h-screen bg-background px-4 py-6">
       <div className="max-w-7xl mx-auto space-y-6">
+        
+        {/* ── Botón Volver (Nuevo cambio para navegación circular) ── */}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="group gap-2 text-muted-foreground hover:text-brand -ml-2"
+          onClick={() => navigate('/eventos')}
+        >
+          <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+          Volver a selección
+        </Button>
+
         {/* ── Header ──────────────────────────────────────── */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>

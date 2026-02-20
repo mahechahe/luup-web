@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom'; // <--- Único cambio: Agregado
 import { ArrowLeft, Calendar, MapPin, User } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -5,13 +6,15 @@ import { Skeleton } from './Skeleton';
 import { DATE_TYPE_LABEL, formatDate } from './constants';
 
 export function EventoHeader({ loading, event, onBack }) {
+  const navigate = useNavigate(); // <--- Único cambio: Agregado
+
   return (
     <header className="shrink-0 flex items-center gap-4 px-5 py-3 border-b border-border bg-white">
       <Button
         variant="outline"
         size="icon"
         className="h-8 w-8 shrink-0"
-        onClick={onBack}
+        onClick={() => navigate('/eventos/listado')} // <--- Único cambio: Ruta forzada
       >
         <ArrowLeft className="w-4 h-4" />
       </Button>
