@@ -215,6 +215,63 @@ export function ZoneDetailModal({
               </div>
             </div>
 
+            {/* Límites de Centro de Acopio */}
+            {(zone.category || 'general') === 'acopio' && (
+              <div className="rounded-lg border border-[#DD7419]/25 bg-[#DD7419]/5 p-3 space-y-3">
+                <p className="text-xs font-bold text-[#DD7419] uppercase">
+                  Límites del centro de acopio
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground block mb-1.5">
+                      Límite de basuras <span className="text-destructive">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      readOnly={!isAdmin}
+                      value={zone.wasteLimit ?? ''}
+                      onChange={(e) =>
+                        isAdmin &&
+                        onUpdate(zone.id, {
+                          wasteLimit: parseInt(e.target.value) || 0,
+                        })
+                      }
+                      placeholder="0"
+                      className={`w-full text-sm p-2 rounded-lg border border-border outline-none ${
+                        isAdmin
+                          ? 'focus:border-[#DD7419] focus:ring-2 focus:ring-[#DD7419]/20 bg-white'
+                          : 'bg-muted/30 cursor-default'
+                      }`}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground block mb-1.5">
+                      Límite de peso (kg) <span className="text-destructive">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      readOnly={!isAdmin}
+                      value={zone.weightLimit ?? ''}
+                      onChange={(e) =>
+                        isAdmin &&
+                        onUpdate(zone.id, {
+                          weightLimit: parseInt(e.target.value) || 0,
+                        })
+                      }
+                      placeholder="0"
+                      className={`w-full text-sm p-2 rounded-lg border border-border outline-none ${
+                        isAdmin
+                          ? 'focus:border-[#DD7419] focus:ring-2 focus:ring-[#DD7419]/20 bg-white'
+                          : 'bg-muted/30 cursor-default'
+                      }`}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Notas */}
             <div>
               <label className="text-xs font-bold text-muted-foreground uppercase block mb-2 flex items-center gap-1.5">

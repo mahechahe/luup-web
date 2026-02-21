@@ -118,6 +118,40 @@ export const uploadEventMapService = async (eventId, file) => {
   }
 };
 
+export const getEventZonesWithStaffService = async (eventId) => {
+  try {
+    const { data } = await axios.get(`${EVENTS_URL}/zones/${eventId}`);
+    return {
+      status: true,
+      zones: data?.data?.zones ?? [],
+      errors: null,
+    };
+  } catch (error) {
+    return {
+      status: false,
+      zones: [],
+      errors: error?.response?.data?.message || 'Error al obtener las zonas del evento.',
+    };
+  }
+};
+
+export const createIncidentService = async (body) => {
+  try {
+    const { data } = await axios.post(`${EVENTS_URL}/incidents`, body);
+    return {
+      status: true,
+      incident: data?.data?.incident ?? null,
+      errors: null,
+    };
+  } catch (error) {
+    return {
+      status: false,
+      incident: null,
+      errors: error?.response?.data?.message || 'Error al registrar la incidencia.',
+    };
+  }
+};
+
 export const getEventZonesService = async (eventId) => {
   try {
     const { data } = await axios.get(`${EVENTS_URL}/${eventId}/zones`);
@@ -158,6 +192,23 @@ export const deleteEventZoneService = async (zoneId) => {
       status: false,
       data: null,
       errors: error?.response?.data?.message || 'Error al eliminar la zona.',
+    };
+  }
+};
+
+export const createWasteEntryService = async (zoneId, body) => {
+  try {
+    const { data } = await axios.post(`${EVENTS_URL}/zones/${zoneId}/waste`, body);
+    return {
+      status: true,
+      entry: data?.data?.entry ?? null,
+      errors: null,
+    };
+  } catch (error) {
+    return {
+      status: false,
+      entry: null,
+      errors: error?.response?.data?.message || 'Error al registrar la basura.',
     };
   }
 };

@@ -10,8 +10,16 @@ export const COLORS = [
 ];
 
 export const CATEGORIES = [
-  { id: 'general', label: 'Zona General',     color: 'bg-slate-100 text-slate-700' },
-  { id: 'acopio',  label: 'Centro de Acopio', color: 'bg-amber-100 text-amber-800' },
+  {
+    id: 'general',
+    label: 'Zona General',
+    color: 'bg-slate-100 text-slate-700',
+  },
+  {
+    id: 'acopio',
+    label: 'Centros de Acopio',
+    color: 'bg-amber-100 text-amber-800',
+  },
 ];
 
 export const ZONE_ROLES = [

@@ -8,7 +8,8 @@
       "Bash(node -e \"require\\(''fs''\\).writeFileSync\\(''./src/App/routes/Colaboradores/ColaboradoresPage.jsx'', require\\(''fs''\\).readFileSync\\(''./src/App/routes/Colaboradores/ColaboradoresPage.jsx'', ''utf8''\\)\\)\")",
       "Bash(\"C:\\\\Users\\\\mahec\\\\OneDrive\\\\Documentos\\\\Trabajos - Independientes\\\\Luup\\\\luup-web\\\\src\\\\App\\\\routes\\\\Colaboradores\\\\ColaboradoresPage.jsx\" << 'ENDOFFILE'\nplaceholder\nENDOFFILE)",
       "Bash(npm install:*)",
-      "Bash(npm run dev:*)"
+      "Bash(npm run dev:*)",
+      "Bash(node -e:*)"
     ]
   }
 }

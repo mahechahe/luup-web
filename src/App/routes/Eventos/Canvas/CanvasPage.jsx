@@ -70,17 +70,17 @@ function CanvasPage() {
           });
         }
 
-        if (zone.coordinador) {
+        if (zone.coordinator) {
           people.push({
-            id: zone.coordinador.userId,
-            name: `${zone.coordinador.firstName} ${zone.coordinador.lastName}`.trim(),
-            cedula: zone.coordinador.cedula,
+            id: zone.coordinator.userId,
+            name: `${zone.coordinator.firstName} ${zone.coordinator.lastName}`.trim(),
+            cedula: zone.coordinator.cedula,
             role: 'coordinador',
             status: 'confirmed',
           });
         }
 
-        zone.colaboradores.forEach((c) => {
+        zone.collaborators.forEach((c) => {
           people.push({
             id: c.userId,
             name: `${c.firstName} ${c.lastName}`.trim(),
@@ -99,6 +99,8 @@ function CanvasPage() {
           color: zone.color,
           maxCapacity: zone.maxCapacity,
           notes: zone.notes || '',
+          wasteLimit: zone.wasteLimit ?? null,
+          weightLimit: zone.weightLimit ?? null,
           people,
           // Expandir geometría según el tipo
           ...(zone.type === 'rect'
@@ -273,6 +275,8 @@ function CanvasPage() {
         color: zone.color,
         maxCapacity: zone.maxCapacity,
         notes: zone.notes || '',
+        wasteLimit: zone.category === 'acopio' ? (zone.wasteLimit ?? null) : null,
+        weightLimit: zone.category === 'acopio' ? (zone.weightLimit ?? null) : null,
 
         // Geometría de la zona
         geometry:

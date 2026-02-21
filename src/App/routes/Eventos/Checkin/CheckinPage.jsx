@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, UserCheck, ChevronLeft, ChevronRight, Pencil, Check, Loader2, Search, X } from 'lucide-react';
+import { ArrowLeft, UserCheck, ChevronLeft, ChevronRight, Pencil, Check, Loader2, Search, X, RefreshCw } from 'lucide-react';
 import {
   getEventoDetailService,
   getEventAttendanceService,
@@ -8,6 +8,7 @@ import {
 } from '../services/eventServices';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Tooltip,
   TooltipContent,
@@ -54,7 +55,7 @@ function roleBadgeClass(role) {
 function SkeletonRow() {
   return (
     <tr className="border-b border-border animate-pulse">
-      {Array.from({ length: 8 }).map((_, i) => (
+      {Array.from({ length: 6 }).map((_, i) => (
         <td key={i} className="px-4 py-3.5">
           <div className="h-3.5 bg-muted rounded-full w-24" />
         </td>
@@ -65,13 +66,10 @@ function SkeletonRow() {
 
 const COLUMNS = [
   'Nombre',
-  'Documento',
-  'Celular',
   'Rol',
   'Zonas',
   'Asistió',
-  'Entrada',
-  'Salida',
+  'Horario',
   '',
 ];
 
@@ -91,6 +89,8 @@ export default function CheckinPage() {
   const [savingIds, setSavingIds] = useState(new Set());
   const [filters, setFilters] = useState({ name: '', cedula: '' });
   const [filterInput, setFilterInput] = useState({ name: '', cedula: '' });
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Carga inicial del evento (solo una vez)
   useEffect(() => {
@@ -106,7 +106,7 @@ export default function CheckinPage() {
     loadEvent();
   }, [eventId]);
 
-  // Refetch de colaboradores cuando cambian los filtros
+  // Refetch de colaboradores cuando cambian los filtros o se refresca
   useEffect(() => {
     const fetchAttendance = async () => {
       setLoading(true);
@@ -115,18 +115,32 @@ export default function CheckinPage() {
         setCollaborators(attendanceRes.data?.data?.collaborators ?? []);
       }
       setLoading(false);
+      setRefreshing(false);
     };
     fetchAttendance();
-  }, [eventId, filters]);
+  }, [eventId, filters, refreshKey]);
 
-  // Debounce de los inputs → actualiza filters con delay
-  useEffect(() => {
-    const t = setTimeout(() => {
-      setFilters(filterInput);
-      setCurrentPage(1);
-    }, 400);
-    return () => clearTimeout(t);
-  }, [filterInput]);
+  const handleRefresh = () => {
+    setRefreshing(true);
+    setRefreshKey((k) => k + 1);
+  };
+
+  const handleSearch = () => {
+    setFilters(filterInput);
+    setCurrentPage(1);
+  };
+
+  const handleClearFilters = () => {
+    setFilterInput({ name: '', cedula: '' });
+    setFilters({ name: '', cedula: '' });
+    setCurrentPage(1);
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') handleSearch();
+  };
+
+  const hasActiveFilters = filterInput.name !== '' || filterInput.cedula !== '';
 
   /* ── Paginación ────────────────────────────────────────── */
   const totalItems = collaborators.length;
@@ -242,13 +256,33 @@ export default function CheckinPage() {
       <div className="flex-1 overflow-auto p-6">
         <div className="max-w-7xl mx-auto space-y-3">
           {/* Título de sección */}
-          <div className="mb-1">
-            <h2 className="text-lg font-bold text-[#234465]">Asistencia</h2>
-            {!loading && event && formatEventDate(event.date) && (
-              <p className="text-xs text-muted-foreground mt-0.5 capitalize">
-                {formatEventDate(event.date)}
-              </p>
-            )}
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              {loading ? (
+                <>
+                  <Skeleton className="h-8 w-36 mb-1.5" />
+                  <Skeleton className="h-4 w-60" />
+                </>
+              ) : (
+                <>
+                  <h2 className="text-2xl font-bold text-[#234465]">Asistencia</h2>
+                  {event && formatEventDate(event.date) && (
+                    <p className="text-sm text-muted-foreground mt-1 capitalize">
+                      {formatEventDate(event.date)}
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
+            <Button
+              variant="outline"
+              onClick={handleRefresh}
+              disabled={loading || refreshing}
+              className="shrink-0 gap-2 h-9"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+              Actualizar
+            </Button>
           </div>
 
           {/* Filtros */}
@@ -263,18 +297,9 @@ export default function CheckinPage() {
                 onChange={(e) =>
                   setFilterInput((f) => ({ ...f, name: e.target.value }))
                 }
-                className="h-9 pl-8 pr-8 rounded-md border border-border bg-white text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#234465]/30 w-52"
+                onKeyDown={handleKeyDown}
+                className="h-9 pl-8 pr-3 rounded-md border border-border bg-white text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#234465]/30 w-52"
               />
-              {filterInput.name && (
-                <button
-                  onClick={() =>
-                    setFilterInput((f) => ({ ...f, name: '' }))
-                  }
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
             </div>
 
             {/* Cédula */}
@@ -287,19 +312,31 @@ export default function CheckinPage() {
                 onChange={(e) =>
                   setFilterInput((f) => ({ ...f, cedula: e.target.value }))
                 }
-                className="h-9 pl-8 pr-8 rounded-md border border-border bg-white text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#234465]/30 w-48"
+                onKeyDown={handleKeyDown}
+                className="h-9 pl-8 pr-3 rounded-md border border-border bg-white text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#234465]/30 w-48"
               />
-              {filterInput.cedula && (
-                <button
-                  onClick={() =>
-                    setFilterInput((f) => ({ ...f, cedula: '' }))
-                  }
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
             </div>
+
+            {/* Botón Buscar */}
+            <Button
+              onClick={handleSearch}
+              className="h-9 bg-[#234465] hover:bg-[#234465]/90 text-white gap-1.5"
+            >
+              <Search className="w-3.5 h-3.5" />
+              Buscar
+            </Button>
+
+            {/* Limpiar filtros */}
+            {hasActiveFilters && (
+              <Button
+                variant="outline"
+                onClick={handleClearFilters}
+                className="h-9 gap-1.5 text-muted-foreground"
+              >
+                <X className="w-3.5 h-3.5" />
+                Limpiar filtros
+              </Button>
+            )}
           </div>
 
           {/* Barra de controles */}
@@ -389,34 +426,26 @@ export default function CheckinPage() {
                       key={collab.userId}
                       className="hover:bg-muted/20 transition"
                     >
-                      {/* Nombre */}
+                      {/* Nombre + Documento */}
                       <td className="px-4 py-3.5">
-                        <span className="text-sm font-medium text-foreground">
+                        <span className="text-sm font-medium text-foreground block leading-snug">
                           {collab.firstName} {collab.lastName}
                         </span>
-                      </td>
-
-                      {/* Documento */}
-                      <td className="px-4 py-3.5">
-                        <span className="text-sm text-muted-foreground">
+                        <span className="text-xs text-muted-foreground">
                           {collab.cedula}
                         </span>
                       </td>
 
-                      {/* Celular */}
-                      <td className="px-4 py-3.5">
-                        <span className="text-sm text-muted-foreground">
-                          {collab.phone ?? '—'}
-                        </span>
-                      </td>
-
-                      {/* Rol */}
+                      {/* Rol + Celular */}
                       <td className="px-4 py-3.5">
                         <Badge
-                          className={`text-xs border-0 ${roleBadgeClass(collab.role)}`}
+                          className={`text-xs border-0 ${roleBadgeClass(collab.role)} mb-1`}
                         >
                           {roleLabel(collab.role)}
                         </Badge>
+                        <span className="text-xs text-muted-foreground block">
+                          {collab.phone ?? '—'}
+                        </span>
                       </td>
 
                       {/* Zonas */}
@@ -478,22 +507,22 @@ export default function CheckinPage() {
                         </div>
                       </td>
 
-                      {/* Entrada */}
+                      {/* Horario (Entrada + Salida) */}
                       <td className="px-4 py-3.5">
-                        <span className="text-xs text-muted-foreground">
-                          {collab.attendance?.entryTime
-                            ? formatTime(collab.attendance.entryTime)
-                            : '—'}
-                        </span>
-                      </td>
-
-                      {/* Salida */}
-                      <td className="px-4 py-3.5">
-                        <span className="text-xs text-muted-foreground">
-                          {collab.attendance?.exitTime
-                            ? formatTime(collab.attendance.exitTime)
-                            : '—'}
-                        </span>
+                        <div className="flex flex-col gap-1">
+                          <span className="text-sm text-foreground">
+                            <span className="text-xs font-semibold text-muted-foreground mr-1">E</span>
+                            {collab.attendance?.entryTime
+                              ? formatTime(collab.attendance.entryTime)
+                              : '—'}
+                          </span>
+                          <span className="text-sm text-foreground">
+                            <span className="text-xs font-semibold text-muted-foreground mr-1">S</span>
+                            {collab.attendance?.exitTime
+                              ? formatTime(collab.attendance.exitTime)
+                              : '—'}
+                          </span>
+                        </div>
                       </td>
 
                       {/* Editar */}
