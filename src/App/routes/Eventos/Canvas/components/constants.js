@@ -14,6 +14,12 @@ export const CATEGORIES = [
   { id: 'acopio',  label: 'Centro de Acopio', color: 'bg-amber-100 text-amber-800' },
 ];
 
+export const ZONE_ROLES = [
+  { id: 'supervisor', label: 'Supervisor de Zona', maxCount: 1 },
+  { id: 'coordinador', label: 'Coordinador', maxCount: 1 },
+  { id: 'colaborador', label: 'Colaborador', maxCount: null }, // null = sin límite
+];
+
 export const DATE_TYPE_LABEL = { single_date: 'Fecha única', stages: 'Etapas' };
 
 // TODO: reemplazar con el rol real del usuario autenticado

@@ -1,17 +1,21 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
+  deleteEventZoneService,
   getEventoDetailService,
+  getEventZonesService,
+  updateEventZonesService,
   uploadEventMapService,
 } from '../services/eventServices';
 import { generateId, IS_ADMIN } from './components/constants';
 import { DeleteZoneModal } from './components/DeleteZoneModal';
 import { ErrorState } from './components/ErrorState';
 import { EventoHeader } from './components/EventoHeader';
+import { LoadingModal } from './components/LoadingModal';
 import { ZonesCanvas } from './components/ZonesCanvas';
 import { ZonesSidebar } from './components/ZonesSidebar';
 
-function EventoDetailPage() {
+function CanvasPage() {
   const { eventId } = useParams();
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
@@ -23,12 +27,11 @@ function EventoDetailPage() {
 
   /* UI */
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeletingZone, setIsDeletingZone] = useState(false);
 
   /* Zonas */
-  const [zones, setZones] = useState(() => {
-    const saved = localStorage.getItem(`zones_${eventId}`);
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [zones, setZones] = useState([]);
 
   /* Plano */
   const [planImage, setPlanImage] = useState(null); // URL del servidor (presignedUrl)
@@ -43,23 +46,93 @@ function EventoDetailPage() {
   const [deleteId, setDeleteId] = useState(null);
   const [polyPoints, setPolyPoints] = useState([]);
 
-  /* Persistir zonas */
-  useEffect(() => {
-    localStorage.setItem(`zones_${eventId}`, JSON.stringify(zones));
-  }, [zones, eventId]);
-
-  /* Cargar evento */
-  useEffect(() => {
-    setLoading(true);
-    getEventoDetailService(eventId).then((res) => {
-      if (res.status) {
-        setEvent(res.event);
-        if (res.event?.mapImageUrl) setPlanImage(res.event.mapImageUrl);
-      } else {
-        setError(res.errors ?? 'No se pudo cargar el evento.');
+  /* ── Función para cargar zonas (reutilizable) ─────────── */
+  const loadZones = async () => {
+    const zonesRes = await getEventZonesService(eventId);
+    if (zonesRes.status && zonesRes.data) {
+      // Establecer imagen del plano
+      if (zonesRes.data.event?.mapImageUrl) {
+        setPlanImage(zonesRes.data.event.mapImageUrl);
       }
+
+      // Procesar y establecer zonas
+      const processedZones = zonesRes.data.zones.map((zone) => {
+        // Construir array de personas combinando supervisor, coordinador y colaboradores
+        const people = [];
+
+        if (zone.supervisor) {
+          people.push({
+            id: zone.supervisor.userId,
+            name: `${zone.supervisor.firstName} ${zone.supervisor.lastName}`.trim(),
+            cedula: zone.supervisor.cedula,
+            role: 'supervisor',
+            status: 'confirmed',
+          });
+        }
+
+        if (zone.coordinador) {
+          people.push({
+            id: zone.coordinador.userId,
+            name: `${zone.coordinador.firstName} ${zone.coordinador.lastName}`.trim(),
+            cedula: zone.coordinador.cedula,
+            role: 'coordinador',
+            status: 'confirmed',
+          });
+        }
+
+        zone.colaboradores.forEach((c) => {
+          people.push({
+            id: c.userId,
+            name: `${c.firstName} ${c.lastName}`.trim(),
+            cedula: c.cedula,
+            role: 'colaborador',
+            status: 'confirmed',
+          });
+        });
+
+        // Retornar zona en formato interno
+        return {
+          id: zone.id,
+          name: zone.name,
+          type: zone.type,
+          category: zone.category,
+          color: zone.color,
+          maxCapacity: zone.maxCapacity,
+          notes: zone.notes || '',
+          people,
+          // Expandir geometría según el tipo
+          ...(zone.type === 'rect'
+            ? zone.geometry
+            : { points: zone.geometry.points }),
+        };
+      });
+
+      setZones(processedZones);
+    }
+  };
+
+  /* Cargar evento y zonas */
+  useEffect(() => {
+    const loadEventData = async () => {
+      setLoading(true);
+
+      // Cargar información básica del evento
+      const eventRes = await getEventoDetailService(eventId);
+      if (!eventRes.status) {
+        setError(eventRes.errors ?? 'No se pudo cargar el evento.');
+        setLoading(false);
+        return;
+      }
+
+      setEvent(eventRes.event);
+
+      // Cargar zonas del evento
+      await loadZones();
+
       setLoading(false);
-    });
+    };
+
+    loadEventData();
   }, [eventId]);
 
   /* ── Handlers de zonas ───────────────────────────────── */
@@ -90,7 +163,20 @@ function EventoDetailPage() {
     });
   };
 
-  const confirmDeleteZone = (id) => {
+  const confirmDeleteZone = async (id) => {
+    // Si la zona tiene ID numérico (existe en la DB), eliminarla del servidor
+    if (typeof id === 'number' && id > 0) {
+      setIsDeletingZone(true);
+      const response = await deleteEventZoneService(id);
+      setIsDeletingZone(false);
+
+      if (!response.status) {
+        // Si falla la eliminación en el servidor, no eliminar del estado local
+        return;
+      }
+    }
+
+    // Eliminar del estado local (zonas nuevas o después de eliminar del servidor)
     setZones((prev) => prev.filter((z) => z.id !== id));
     setDeleteId(null);
     setSelectedId(null);
@@ -162,6 +248,68 @@ function EventoDetailPage() {
   /* Imagen que se muestra en el canvas (preview local o URL del servidor) */
   const displayedPlan = pendingPreview || planImage;
 
+  /* ── Guardar zonas ───────────────────────────────────── */
+  const handleSaveZones = async () => {
+    setIsSaving(true);
+
+    // Preparar JSON con toda la información
+    const zonesData = zones.map((zone) => {
+      // Extraer IDs por rol
+      const supervisor = zone.people.find((p) => p.role === 'supervisor');
+      const coordinador = zone.people.find((p) => p.role === 'coordinador');
+      const colaboradores = zone.people.filter((p) => p.role === 'colaborador');
+
+      return {
+        // Incluir zoneId solo si la zona ya existe en la DB (id numérico)
+        // Las zonas nuevas tienen ID temporal (string), no se envía zoneId
+        ...(typeof zone.id === 'number' && zone.id > 0
+          ? { zoneId: zone.id }
+          : {}),
+
+        // Información básica
+        name: zone.name,
+        type: zone.type, // 'rect' o 'polygon'
+        category: zone.category, // 'general' o 'acopio'
+        color: zone.color,
+        maxCapacity: zone.maxCapacity,
+        notes: zone.notes || '',
+
+        // Geometría de la zona
+        geometry:
+          zone.type === 'rect'
+            ? {
+                x: zone.x,
+                y: zone.y,
+                width: zone.width,
+                height: zone.height,
+              }
+            : {
+                points: zone.points, // Array de {x, y}
+              },
+
+        // Personas asignadas (solo IDs)
+        supervisorId: supervisor ? supervisor.id : null,
+        coordinadorId: coordinador ? coordinador.id : null,
+        colaboradorIds: colaboradores.map((c) => c.id),
+      };
+    });
+
+    const dataToSave = {
+      eventId: Number(eventId),
+      zones: zonesData,
+    };
+
+    // Llamar al servicio
+    const response = await updateEventZonesService(dataToSave);
+
+    if (response.status) {
+      // Recargar zonas actualizadas desde el servidor
+      await loadZones();
+    }
+
+    setIsSaving(false);
+  };
+
   /* ── Error / not found ───────────────────────────────── */
   if (!loading && (error || !event)) {
     return (
@@ -184,7 +332,8 @@ function EventoDetailPage() {
       <EventoHeader
         loading={loading}
         event={event}
-        onBack={() => navigate('/eventos')}
+        onBack={() => navigate(`/eventos/${eventId}`)}
+        onSave={handleSaveZones}
       />
 
       <div className="flex flex-1 overflow-hidden relative">
@@ -233,11 +382,15 @@ function EventoDetailPage() {
 
       <DeleteZoneModal
         deleteId={deleteId}
+        isDeleting={isDeletingZone}
         onConfirm={confirmDeleteZone}
         onCancel={() => setDeleteId(null)}
       />
+
+      {/* Modal de guardado */}
+      {isSaving && <LoadingModal />}
     </div>
   );
 }
 
-export default EventoDetailPage;
+export default CanvasPage;

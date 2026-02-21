@@ -1,12 +1,10 @@
-import { useNavigate } from 'react-router-dom'; // <--- Único cambio: Agregado
-import { ArrowLeft, Calendar, MapPin, User } from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, Save, User } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from './Skeleton';
-import { DATE_TYPE_LABEL, formatDate } from './constants';
+import { DATE_TYPE_LABEL, formatDate, IS_ADMIN } from './constants';
 
-export function EventoHeader({ loading, event, onBack }) {
-  const navigate = useNavigate(); // <--- Único cambio: Agregado
+export function EventoHeader({ loading, event, onBack, onSave }) {
 
   return (
     <header className="shrink-0 flex items-center gap-4 px-5 py-3 border-b border-border bg-white">
@@ -14,7 +12,7 @@ export function EventoHeader({ loading, event, onBack }) {
         variant="outline"
         size="icon"
         className="h-8 w-8 shrink-0"
-        onClick={() => navigate('/eventos/listado')} // <--- Único cambio: Ruta forzada
+        onClick={onBack}
       >
         <ArrowLeft className="w-4 h-4" />
       </Button>
@@ -66,6 +64,17 @@ export function EventoHeader({ loading, event, onBack }) {
             )}
           </div>
         </div>
+      )}
+
+      {/* Botón guardar cambios - solo admin */}
+      {!loading && IS_ADMIN && onSave && (
+        <Button
+          onClick={onSave}
+          className="shrink-0 bg-[#DD7419] hover:bg-[#DD7419]/90 text-white flex items-center gap-2"
+        >
+          <Save className="w-4 h-4" />
+          Guardar cambios
+        </Button>
       )}
     </header>
   );

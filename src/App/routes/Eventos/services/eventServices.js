@@ -1,4 +1,5 @@
 import { constants } from '@/app/utils/constants/apiConstants';
+import { paramShowMessageApi } from '@/App/utils/functions/paramShowMessageApi';
 import axios from 'axios';
 
 const { BASE_URL, ENDPOINTS } = constants;
@@ -113,6 +114,88 @@ export const uploadEventMapService = async (eventId, file) => {
       status: false,
       data: null,
       errors: error?.response?.data?.message || 'Error al subir el plano.',
+    };
+  }
+};
+
+export const getEventZonesService = async (eventId) => {
+  try {
+    const { data } = await axios.get(`${EVENTS_URL}/${eventId}/zones`);
+    return { status: true, data: data?.data, errors: null };
+  } catch (error) {
+    return {
+      status: false,
+      data: null,
+      errors: error?.response?.data?.message || 'Error al obtener las zonas.',
+    };
+  }
+};
+
+export const updateEventZonesService = async (body) => {
+  try {
+    const res = await axios.put(`${EVENTS_URL}/zones/update`, body);
+    paramShowMessageApi(res);
+    return { status: true, data: res?.data?.data, errors: null };
+  } catch (error) {
+    paramShowMessageApi(error?.response);
+    return {
+      status: false,
+      data: null,
+      errors:
+        error?.response?.data?.message || 'Error al actualizar las zonas.',
+    };
+  }
+};
+
+export const deleteEventZoneService = async (zoneId) => {
+  try {
+    const res = await axios.delete(`${EVENTS_URL}/zones/${zoneId}`);
+    paramShowMessageApi(res);
+    return { status: true, data: res?.data?.data, errors: null };
+  } catch (error) {
+    paramShowMessageApi(error?.response);
+    return {
+      status: false,
+      data: null,
+      errors: error?.response?.data?.message || 'Error al eliminar la zona.',
+    };
+  }
+};
+
+export const upsertAttendanceService = async (body) => {
+  try {
+    const { data } = await axios.put(`${EVENTS_URL}/attendance/upsert`, body);
+    return { status: true, data: data?.data, errors: null };
+  } catch (error) {
+    return {
+      status: false,
+      data: null,
+      errors:
+        error?.response?.data?.message ||
+        'Error al actualizar la asistencia.',
+    };
+  }
+};
+
+export const getEventAttendanceService = async (eventId, filters = {}) => {
+  try {
+    const body = { eventId: Number(eventId) };
+    if (filters.name) body.name = filters.name;
+    if (filters.cedula) body.cedula = filters.cedula;
+
+    const { data } = await axios.post(`${EVENTS_URL}/attendance/list`, body);
+    return {
+      status: true,
+      data: data?.data,
+      errors: null,
+    };
+  } catch (error) {
+    return {
+      status: false,
+      data: null,
+      errors:
+        error?.response?.data?.message ||
+        'Error al obtener la asistencia del evento.',
     };
   }
 };

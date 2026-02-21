@@ -12,7 +12,9 @@ import {
   Upload,
   X,
 } from 'lucide-react';
+import { useState } from 'react';
 import { ZoneAccordionItem } from './ZoneAccordionItem';
+import { ZoneDetailModal } from './ZoneDetailModal';
 
 export function ZonesSidebar({
   isOpen,
@@ -36,8 +38,19 @@ export function ZonesSidebar({
   onRemovePerson,
   onDeleteRequest,
 }) {
+  const [detailZoneId, setDetailZoneId] = useState(null);
   const generalZones = zones.filter((z) => z.category !== 'acopio');
   const acopioZones  = zones.filter((z) => z.category === 'acopio');
+  const detailZone = zones.find((z) => z.id === detailZoneId);
+
+  // Calcular todos los IDs de personas asignadas en TODAS las zonas del evento
+  // Para evitar que una persona esté en múltiples zonas
+  const allAssignedPeopleIds = new Set();
+  zones.forEach((zone) => {
+    zone.people.forEach((person) => {
+      allAssignedPeopleIds.add(person.id);
+    });
+  });
 
   const tools = [
     { id: 'select', icon: MousePointer2, label: 'Seleccionar', adminOnly: false },
@@ -47,12 +60,28 @@ export function ZonesSidebar({
   ].filter((t) => !t.adminOnly || isAdmin);
 
   return (
-    <aside
-      className={`shrink-0 flex flex-col border-l border-border bg-white transition-all duration-300 ease-in-out overflow-hidden ${
-        isOpen ? 'w-80' : 'w-0'
-      }`}
-    >
-      <div className="w-80 flex flex-col h-full overflow-y-auto">
+    <>
+      {/* Modal de detalles */}
+      {detailZone && (
+        <ZoneDetailModal
+          zone={detailZone}
+          zones={zones}
+          isAdmin={isAdmin}
+          allAssignedPeopleIds={allAssignedPeopleIds}
+          onUpdate={onUpdateZone}
+          onAddPeople={onAddPeople}
+          onRemovePerson={onRemovePerson}
+          onDeleteRequest={onDeleteRequest}
+          onClose={() => setDetailZoneId(null)}
+        />
+      )}
+
+      <aside
+        className={`shrink-0 flex flex-col border-l border-border bg-white transition-all duration-300 ease-in-out overflow-hidden ${
+          isOpen ? 'w-80' : 'w-0'
+        }`}
+      >
+        <div className="w-80 flex flex-col h-full overflow-y-auto">
         {/* Título */}
         <div className="px-5 py-4 border-b border-border shrink-0">
           <div className="flex items-center gap-2">
@@ -74,10 +103,13 @@ export function ZonesSidebar({
               <button
                 key={id}
                 onClick={() => {
-                  onToolChange(id);
+                  if (hasPlan) onToolChange(id);
                 }}
+                disabled={!hasPlan}
                 className={`flex flex-col items-center justify-center gap-2 rounded-xl border py-4 px-2 transition-colors group ${
-                  tool === id
+                  !hasPlan
+                    ? 'opacity-40 cursor-not-allowed border-border bg-muted/20 text-muted-foreground'
+                    : tool === id
                     ? 'bg-[#234465]/10 border-[#234465]/50 text-[#234465]'
                     : 'border-border bg-muted/40 hover:bg-[#234465]/5 hover:border-[#234465]/30 text-muted-foreground'
                 }`}
@@ -87,6 +119,15 @@ export function ZonesSidebar({
               </button>
             ))}
           </div>
+
+          {/* Mensaje cuando no hay plano */}
+          {!hasPlan && (
+            <div className="rounded-xl bg-muted/40 border border-border p-3">
+              <p className="text-[10px] text-center text-muted-foreground leading-relaxed">
+                Las herramientas están deshabilitadas. Carga un plano para poder crear zonas.
+              </p>
+            </div>
+          )}
 
           {/* Finalizar polígono */}
           {isAdmin && tool === 'poly' && polyPoints.length > 0 && (
@@ -130,12 +171,8 @@ export function ZonesSidebar({
                 key={zone.id}
                 zone={zone}
                 isSelected={selectedId === zone.id}
-                isAdmin={isAdmin}
                 onSelect={onSelectZone}
-                onUpdate={onUpdateZone}
-                onAddPeople={onAddPeople}
-                onRemovePerson={onRemovePerson}
-                onDeleteRequest={onDeleteRequest}
+                onViewDetails={setDetailZoneId}
               />
             ))}
           </ZoneSection>
@@ -153,18 +190,15 @@ export function ZonesSidebar({
                 key={zone.id}
                 zone={zone}
                 isSelected={selectedId === zone.id}
-                isAdmin={isAdmin}
                 onSelect={onSelectZone}
-                onUpdate={onUpdateZone}
-                onAddPeople={onAddPeople}
-                onRemovePerson={onRemovePerson}
-                onDeleteRequest={onDeleteRequest}
+                onViewDetails={setDetailZoneId}
               />
             ))}
           </ZoneSection>
         </div>
       </div>
     </aside>
+    </>
   );
 }
 

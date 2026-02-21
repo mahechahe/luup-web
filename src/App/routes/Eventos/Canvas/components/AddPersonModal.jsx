@@ -21,6 +21,14 @@ export function AddPersonModal({ zoneId, role, existingIds, onConfirm, onClose }
   /* Selección: Map<userId, collaborator> */
   const [selected, setSelected] = useState(new Map());
 
+  // Título del modal según el rol
+  const roleLabels = {
+    supervisor: 'Agregar Supervisor de Zona',
+    coordinador: 'Agregar Coordinador',
+    colaborador: 'Agregar Colaboradores',
+  };
+  const modalTitle = roleLabels[role] || 'Agregar personas';
+
   /* Inputs de búsqueda (escritura libre) */
   const [searchFirst, setSearchFirst] = useState('');
   const [searchCedula, setSearchCedula] = useState('');
@@ -73,8 +81,8 @@ export function AddPersonModal({ zoneId, role, existingIds, onConfirm, onClose }
       if (next.has(collaborator.userId)) {
         next.delete(collaborator.userId);
       } else {
-        if (role === 'jefe') {
-          // Solo un jefe: reemplaza cualquier selección previa
+        if (role === 'supervisor' || role === 'coordinador') {
+          // Solo uno: reemplaza cualquier selección previa
           next.clear();
         }
         next.set(collaborator.userId, collaborator);
@@ -89,7 +97,7 @@ export function AddPersonModal({ zoneId, role, existingIds, onConfirm, onClose }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-2xl w-[640px] max-h-[85vh] flex flex-col">
 
         {/* Header */}
@@ -99,7 +107,7 @@ export function AddPersonModal({ zoneId, role, existingIds, onConfirm, onClose }
               <Users className="w-4 h-4 text-[#234465]" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-foreground">Agregar colaboradores</h3>
+              <h3 className="text-sm font-bold text-foreground">{modalTitle}</h3>
               {selected.size > 0 && (
                 <p className="text-[11px] text-[#234465] font-medium">
                   {selected.size} seleccionado{selected.size !== 1 ? 's' : ''}
@@ -212,7 +220,7 @@ export function AddPersonModal({ zoneId, role, existingIds, onConfirm, onClose }
                         {`${c.firstName} ${c.lastName}`.trim()}
                         {alreadyAdded && (
                           <span className="ml-1.5 text-[9px] text-muted-foreground font-normal">
-                            (ya agregado)
+                            (ya asignado a otra zona)
                           </span>
                         )}
                       </td>
