@@ -1,7 +1,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Layers, PackageOpen, RefreshCw } from 'lucide-react';
-import { getEventoDetailService, getEventZonesWithStaffService } from '../services/eventServices';
+import { getEventoDetailService, getEventZonesWithStaffService, getWorkerZonesService } from '../services/eventServices';
+import { useUserStore } from '@/App/context/userStore';
 import { EventoHeader } from '../Canvas/components/EventoHeader';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -16,21 +17,21 @@ import { WasteFormModal } from './components/WasteFormModal';
 export default function ZonasPage() {
   const { eventId } = useParams();
   const navigate = useNavigate();
+  const { user } = useUserStore();
+  const isAdmin = user?.roleId === 1;
+
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [event, setEvent] = useState(null);
   const [zones, setZones] = useState([]);
 
-  // Incidencias: { [userId]: Incident[] }
   const [incidents, setIncidents] = useState({});
   const [incidentTarget, setIncidentTarget] = useState(null);
   const [historyTarget, setHistoryTarget] = useState(null);
 
-  // Basuras: { [zoneId]: WasteEntry[] }
   const [wasteEntries, setWasteEntries] = useState({});
-  const [wasteTarget, setWasteTarget] = useState(null); // zone object
+  const [wasteTarget, setWasteTarget] = useState(null);
 
-  // Extrae incidents de cada persona en las zonas y los indexa por userId
   const parseIncidents = (zones) => {
     const map = {};
     zones.forEach((z) => {
@@ -42,27 +43,39 @@ export default function ZonasPage() {
     return map;
   };
 
+  // Usa el endpoint correcto según el rol
   const fetchZones = useCallback(async () => {
-    const res = await getEventZonesWithStaffService(eventId);
+    const res = isAdmin
+      ? await getEventZonesWithStaffService(eventId)
+      : await getWorkerZonesService(eventId);
+
     if (res.status) {
       setZones(res.zones);
       setIncidents(parseIncidents(res.zones));
     }
-  }, [eventId]);
+  }, [eventId, isAdmin]);
 
   useEffect(() => {
-    Promise.all([
-      getEventoDetailService(eventId),
-      getEventZonesWithStaffService(eventId),
-    ]).then(([eventRes, zonesRes]) => {
+    const fetchAll = async () => {
+      const zonesPromise = isAdmin
+        ? getEventZonesWithStaffService(eventId)
+        : getWorkerZonesService(eventId);
+
+      const [eventRes, zonesRes] = await Promise.all([
+        getEventoDetailService(eventId),
+        zonesPromise,
+      ]);
+
       if (eventRes.status) setEvent(eventRes.event);
       if (zonesRes.status) {
         setZones(zonesRes.zones);
         setIncidents(parseIncidents(zonesRes.zones));
       }
       setLoading(false);
-    });
-  }, [eventId]);
+    };
+
+    fetchAll();
+  }, [eventId, isAdmin]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -87,16 +100,24 @@ export default function ZonasPage() {
   const generales = zones.filter((z) => z.category === 'general');
   const acopios = zones.filter((z) => z.category === 'acopio');
 
+  // El worker vuelve a su módulo, el admin vuelve al detalle del evento
+  const handleBack = () => {
+    if (isAdmin) {
+      navigate(`/eventos/${eventId}`);
+    } else {
+      navigate(`/eventos/${eventId}/worker`);
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <EventoHeader
         loading={loading}
         event={event}
-        onBack={() => navigate(`/eventos/${eventId}`)}
+        onBack={handleBack}
       />
 
       <div className="flex-1 max-w-7xl w-full mx-auto px-6 py-8 space-y-6">
-        {/* Título + botón refrescar */}
         <div className="flex items-start justify-between gap-4">
           <div>
             {loading ? (
@@ -106,7 +127,9 @@ export default function ZonasPage() {
               </>
             ) : (
               <>
-                <h2 className="text-2xl font-bold text-[#234465]">Zonas del evento</h2>
+                <h2 className="text-2xl font-bold text-[#234465]">
+                  {isAdmin ? 'Zonas del evento' : 'Mis Zonas'}
+                </h2>
                 <p className="text-sm text-muted-foreground mt-1">
                   {zones.length} zona{zones.length !== 1 ? 's' : ''} configurada{zones.length !== 1 ? 's' : ''}
                 </p>
@@ -203,7 +226,6 @@ export default function ZonasPage() {
         )}
       </div>
 
-      {/* Modal: nueva incidencia */}
       <IncidentFormModal
         open={incidentTarget !== null}
         onClose={() => setIncidentTarget(null)}
@@ -212,7 +234,6 @@ export default function ZonasPage() {
         onSave={handleSaveIncident}
       />
 
-      {/* Modal: historial */}
       <IncidentHistoryModal
         open={historyTarget !== null}
         onClose={() => setHistoryTarget(null)}
@@ -220,7 +241,6 @@ export default function ZonasPage() {
         incidents={historyTarget ? (incidents[historyTarget.userId] ?? []) : []}
       />
 
-      {/* Modal: registrar basura */}
       <WasteFormModal
         open={wasteTarget !== null}
         onClose={() => setWasteTarget(null)}

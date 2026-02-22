@@ -297,3 +297,20 @@ export const getEventAttendanceService = async (eventId, filters = {}) => {
     };
   }
 };
+
+export const getWorkerZonesService = async (eventId) => {
+  try {
+    const { data } = await axios.get(`${EVENTS_URL}/zones/${eventId}/my-zones`);
+    return {
+      status: true,
+      zones: data?.data?.zones ?? [],
+      errors: null,
+    };
+  } catch (error) {
+    return {
+      status: false,
+      zones: [],
+      errors: error?.response?.data?.message || 'Error al obtener tus zonas.',
+    };
+  }
+};

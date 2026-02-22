@@ -180,7 +180,7 @@ function Pagination({ page, totalPages, total, limit, onPageChange }) {
 }
 
 /* ── Card: Evento actual ─────────────────────────────────── */
-function CurrentEventCard({ currentEvent, loading }) {
+function CurrentEventCard({ currentEvent, loading, navigate }) {
   if (loading) {
     return (
       <Card className="border-border shadow-sm animate-pulse">
@@ -240,6 +240,14 @@ function CurrentEventCard({ currentEvent, loading }) {
           </div>
           <RoleBadge role={currentEvent.role} />
         </div>
+
+        {/* Botón entrar al evento */}
+        <Button
+          className="mt-4 bg-brand text-brand-foreground hover:bg-brand/90"
+          onClick={() => navigate(`/eventos/${currentEvent.eventId}/worker`)}
+        >
+          Entrar al evento
+        </Button>
       </CardContent>
     </Card>
   );
@@ -329,6 +337,7 @@ function WorkerEventosPage() {
         <CurrentEventCard
           currentEvent={currentEvent}
           loading={loadingCurrent}
+          navigate={navigate}
         />
 
         {/* Tabla historial */}
