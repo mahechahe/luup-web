@@ -68,24 +68,27 @@ function LoginPage() {
     const res = await submitLoginService(body);
 
     if (res.status) {
-      window.ReactNativeWebView.postMessage(JSON.stringify(res));
-      navigate('/dashboard');
-    } else {
-      setError('username', {
-        type: 'manual',
-        message: res.errors,
-      });
-      setError('password', {
-        type: 'manual',
-        message: res.errors,
-      });
-    }
+  if (window.ReactNativeWebView) {
+    window.ReactNativeWebView.postMessage(JSON.stringify(res));
+  }
+  navigate('/dashboard');
+} else {
+  setError('username', {
+    type: 'manual',
+    message: res.errors,
+  });
+  setError('password', {
+    type: 'manual',
+    message: res.errors,
+  });
+}
 
     setLoading(INIT_LOADER);
-  });
+  }
+  );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-brand/5 via-background to-brand/10 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-linear-to-br from-brand/5 via-background to-brand/10 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Login Card */}
         <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">

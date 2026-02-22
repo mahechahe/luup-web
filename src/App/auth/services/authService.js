@@ -8,6 +8,8 @@ export const submitLoginService = async (body) => {
     const data = await jwtService.signInWithEmailAndPassword(body);
     const datauser = data.data;
 
+    console.log('datauser', datauser);
+
     useUserStore.getState().setUser(datauser);
     useUserStore.getState().setUserIsLogin(true);
     return {

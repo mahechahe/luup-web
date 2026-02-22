@@ -1,12 +1,15 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Map as MapIcon, MapPin } from 'lucide-react';
+import { useUserStore } from '../../context/userStore';
 
 // Si MenuCard ya está en otro archivo, mantén la importación:
 // import { MenuCard } from './components/MenuCard';
 
 const ZonasPage = () => {
   const navigate = useNavigate();
+  const { user } = useUserStore();
+  const isAdmin = user?.roleId === 1;
 
   return (
     <div className="p-6 min-h-screen bg-[#F4F4F4] flex flex-col items-center pt-16 text-[#1A2238]">
@@ -23,7 +26,7 @@ const ZonasPage = () => {
           badge="VALIDAR EVENTOS Y CANVAS" 
           desc="Acceso a georreferenciación a estados de producción." 
           color="orange" 
-          onClick={() => navigate('/eventos/listado')} 
+          onClick={() => navigate(isAdmin ? '/eventos/listado' : '/eventos/mis-eventos')}
         />
 
         {/* BOTÓN 2: VA A LA GESTIÓN DE PERSONAL Y ACOPIOS */}

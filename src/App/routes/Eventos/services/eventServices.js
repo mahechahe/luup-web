@@ -228,6 +228,53 @@ export const upsertAttendanceService = async (body) => {
   }
 };
 
+export const getWorkerCurrentEventService = async () => {
+  try {
+    const { data } = await axios.get(`${EVENTS_URL}/worker/current`);
+    return {
+      status: true,
+      assigned: data?.data?.assigned ?? false,
+      currentEvent: data?.data?.currentEvent ?? null,
+      errors: null,
+    };
+  } catch (error) {
+    return {
+      status: false,
+      assigned: false,
+      currentEvent: null,
+      errors:
+        error?.response?.data?.message || 'Error al obtener el evento actual.',
+    };
+  }
+};
+
+export const getWorkerEventHistoryService = async ({ page = 1, limit = 10 }) => {
+  try {
+    const { data } = await axios.get(
+      `${EVENTS_URL}/worker/history?page=${page}&limit=${limit}`
+    );
+    return {
+      status: true,
+      history: data?.data?.history ?? [],
+      pagination: data?.data?.pagination ?? {
+        page,
+        limit,
+        total: 0,
+        totalPages: 1,
+      },
+      errors: null,
+    };
+  } catch (error) {
+    return {
+      status: false,
+      history: [],
+      pagination: { page, limit, total: 0, totalPages: 1 },
+      errors:
+        error?.response?.data?.message || 'Error al obtener el historial.',
+    };
+  }
+};
+
 export const getEventAttendanceService = async (eventId, filters = {}) => {
   try {
     const body = { eventId: Number(eventId) };

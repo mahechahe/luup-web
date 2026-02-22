@@ -64,7 +64,7 @@ export default function EventoModulesPage() {
 
       {/* Contenido */}
       <div className="max-w-7xl mx-auto px-6 py-12">
-        {/* Título */}
+        {/* Título con estado de carga */}
         <div className="text-center mb-12">
           {loading ? (
             <>
@@ -87,7 +87,8 @@ export default function EventoModulesPage() {
         {/* Grid de módulos */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
           {loading
-            ? Array.from({ length: 3 }).map((_, i) => (
+            ? // Skeletons durante la carga
+              Array.from({ length: 3 }).map((_, i) => (
                 <div
                   key={i}
                   className="bg-white rounded-2xl p-8 shadow-lg border-2 border-transparent"
@@ -99,7 +100,8 @@ export default function EventoModulesPage() {
                   <Skeleton className="h-4 w-4/6" />
                 </div>
               ))
-            : modules.map((module) => (
+            : // Renderizado de módulos reales
+              modules.map((module) => (
                 <button
                   key={module.id}
                   onClick={() => navigate(module.path)}
@@ -112,7 +114,7 @@ export default function EventoModulesPage() {
                     <module.icon className="w-8 h-8 text-white" />
                   </div>
 
-                  {/* Contenido */}
+                  {/* Texto */}
                   <h3 className="text-xl font-bold text-foreground mb-3 group-hover:text-[#234465] transition-colors">
                     {module.title}
                   </h3>
@@ -120,7 +122,7 @@ export default function EventoModulesPage() {
                     {module.description}
                   </p>
 
-                  {/* Indicador de hover */}
+                  {/* Indicador de hover (Flecha) */}
                   <div className="absolute top-6 right-6 opacity-0 group-hover:opacity-100 transition-opacity">
                     <div className="w-8 h-8 rounded-full bg-[#234465]/10 flex items-center justify-center">
                       <ArrowLeft className="w-4 h-4 text-[#234465] rotate-180" />
