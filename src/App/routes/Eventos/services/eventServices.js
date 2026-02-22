@@ -314,3 +314,20 @@ export const getWorkerZonesService = async (eventId) => {
     };
   }
 };
+
+export const getWorkerAttendanceService = async (eventId) => {
+  try {
+    const { data } = await axios.get(`${EVENTS_URL}/worker/attendance/${eventId}`);
+    return {
+      status: true,
+      attendance: data?.data ?? null,
+      errors: null,
+    };
+  } catch (error) {
+    return {
+      status: false,
+      attendance: null,
+      errors: error?.response?.data?.message || 'Error al obtener tu asistencia.',
+    };
+  }
+};

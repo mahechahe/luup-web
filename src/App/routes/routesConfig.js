@@ -73,4 +73,10 @@ export const routesAuth = [
     path: 'eventos/:eventId/worker',
     component: lazy(() => import('./Eventos/WorkerEventoModulesPage')),
   },
+
+  {
+    path: 'eventos/:eventId/worker/resumen',
+    component: lazy(() => import('./Eventos/WorkerEventoResumenPage')),
+  },
+  
 ];
