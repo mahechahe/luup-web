@@ -1,4 +1,4 @@
-import { constants } from '@/app/utils/constants/apiConstants';
+import { constants } from '@/App/utils/constants/apiConstants';
 import { paramShowMessageApi } from '@/App/utils/functions/paramShowMessageApi';
 import axios from 'axios';
 
@@ -130,7 +130,9 @@ export const getEventZonesWithStaffService = async (eventId) => {
     return {
       status: false,
       zones: [],
-      errors: error?.response?.data?.message || 'Error al obtener las zonas del evento.',
+      errors:
+        error?.response?.data?.message ||
+        'Error al obtener las zonas del evento.',
     };
   }
 };
@@ -147,7 +149,8 @@ export const createIncidentService = async (body) => {
     return {
       status: false,
       incident: null,
-      errors: error?.response?.data?.message || 'Error al registrar la incidencia.',
+      errors:
+        error?.response?.data?.message || 'Error al registrar la incidencia.',
     };
   }
 };
@@ -216,7 +219,11 @@ export const createWasteEntryService = async (zoneId, body) => {
       };
     }
 
-    const res = await axios.post(`${EVENTS_URL}/zones/${zoneId}/waste`, payload, { headers });
+    const res = await axios.post(
+      `${EVENTS_URL}/zones/${zoneId}/waste`,
+      payload,
+      { headers }
+    );
     paramShowMessageApi(res);
     return {
       status: true,
@@ -247,14 +254,17 @@ export const getZoneWasteHistoryService = async (zoneId) => {
     return {
       status: false,
       logs: [],
-      errors: error?.response?.data?.message || 'Error al obtener el historial.',
+      errors:
+        error?.response?.data?.message || 'Error al obtener el historial.',
     };
   }
 };
 
 export const getWasteSignedUrlService = async (zoneId, logId) => {
   try {
-    const res = await axios.get(`${EVENTS_URL}/zones/${zoneId}/waste/${logId}/signed-url`);
+    const res = await axios.get(
+      `${EVENTS_URL}/zones/${zoneId}/waste/${logId}/signed-url`
+    );
     paramShowMessageApi(res);
     return {
       status: true,
@@ -280,8 +290,7 @@ export const upsertAttendanceService = async (body) => {
       status: false,
       data: null,
       errors:
-        error?.response?.data?.message ||
-        'Error al actualizar la asistencia.',
+        error?.response?.data?.message || 'Error al actualizar la asistencia.',
     };
   }
 };
@@ -306,7 +315,10 @@ export const getWorkerCurrentEventService = async () => {
   }
 };
 
-export const getWorkerEventHistoryService = async ({ page = 1, limit = 10 }) => {
+export const getWorkerEventHistoryService = async ({
+  page = 1,
+  limit = 10,
+}) => {
   try {
     const { data } = await axios.get(
       `${EVENTS_URL}/worker/history?page=${page}&limit=${limit}`
@@ -375,7 +387,9 @@ export const getWorkerZonesService = async (eventId) => {
 
 export const getWorkerAttendanceService = async (eventId) => {
   try {
-    const { data } = await axios.get(`${EVENTS_URL}/worker/attendance/${eventId}`);
+    const { data } = await axios.get(
+      `${EVENTS_URL}/worker/attendance/${eventId}`
+    );
     return {
       status: true,
       attendance: data?.data ?? null,
@@ -385,12 +399,18 @@ export const getWorkerAttendanceService = async (eventId) => {
     return {
       status: false,
       attendance: null,
-      errors: error?.response?.data?.message || 'Error al obtener tu asistencia.',
+      errors:
+        error?.response?.data?.message || 'Error al obtener tu asistencia.',
     };
   }
 };
 
-export const transferPersonZoneService = async ({ userId, fromZoneId, toZoneId, eventId }) => {
+export const transferPersonZoneService = async ({
+  userId,
+  fromZoneId,
+  toZoneId,
+  eventId,
+}) => {
   try {
     const { data } = await axios.post(`${EVENTS_URL}/zones/transfer`, {
       userId,
@@ -407,7 +427,8 @@ export const transferPersonZoneService = async ({ userId, fromZoneId, toZoneId, 
     return {
       status: false,
       data: null,
-      errors: error?.response?.data?.message || 'Error al trasladar la persona.',
+      errors:
+        error?.response?.data?.message || 'Error al trasladar la persona.',
     };
   }
 };

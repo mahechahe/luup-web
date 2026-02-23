@@ -1,4 +1,4 @@
-import { constants } from '@/app/utils/constants/apiConstants';
+import { constants } from '@/App/utils/constants/apiConstants';
 import axios from 'axios';
 
 const { BASE_URL, ENDPOINTS } = constants;
@@ -150,21 +150,22 @@ export const getCollaboratorDetailService = async (collaboratorId) => {
 export const deleteCollaboratorService = async (collaboratorId) => {
   try {
     // La URL es la que tienes en Postman (sin el ID al final)
-    const url = `${COLLABORATOR_URL}/delete`; 
+    const url = `${COLLABORATOR_URL}/delete`;
 
     // En DELETE con Axios, el body se envía dentro de una propiedad llamada 'data'
     const { data } = await axios.delete(url, {
       data: {
-        userId: collaboratorId // Esto envía { "userId": 11 }
-      }
+        userId: collaboratorId, // Esto envía { "userId": 11 }
+      },
     });
 
     return { status: true, data, errors: null };
   } catch (error) {
-    console.error("Error en el service:", error.response);
+    console.error('Error en el service:', error.response);
     return {
       status: false,
-      errors: error?.response?.data?.message || 'Error al eliminar el colaborador.',
+      errors:
+        error?.response?.data?.message || 'Error al eliminar el colaborador.',
     };
   }
 };

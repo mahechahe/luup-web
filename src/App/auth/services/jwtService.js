@@ -2,8 +2,8 @@
 /* eslint-disable class-methods-use-this */
 import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
-import FuseUtils from '@/app/utils/fuse/utils';
-import { constants } from '@/app/utils/constants/apiConstants';
+import FuseUtils from '@/App/utils/fuse/utils';
+import { constants } from '@/App/utils/constants/apiConstants';
 
 const regularExpressionAuth = /auth/;
 
