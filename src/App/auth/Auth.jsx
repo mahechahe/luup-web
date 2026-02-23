@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import LoaderFullScreen from '../components/LoaderFullScreen/LoaderFullScreen';
 import JwtService from './services/jwtService';
 import { closeSesion } from './services/authService';
 import { useUserStore } from '../context/userStore';
+import LoaderFullScreen from '../components/LoaderFullScreen/LoaderFullScreen';
 
 function Auth({ children }) {
   /* State */
