@@ -1,9 +1,12 @@
-import { Users, FileText, Shield, Crown, Trash2, Weight, Plus, ClipboardList } from 'lucide-react';
+import { useState } from 'react';
+import { Users, FileText, Shield, Crown, Trash2, Weight, Plus, ClipboardList, History } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import { RoleSectionLabel } from './RoleSectionLabel';
 import { SupervisorCard } from './SupervisorCard';
 import { CoordinatorCard } from './CoordinatorCard';
 import { CollaboratorCard } from './CollaboratorCard';
+import { WasteHistoryModal } from './WasteHistoryModal';
 
 const CATEGORY_STYLE = {
   general: 'bg-[#234465]/10 text-[#234465]',
@@ -15,7 +18,9 @@ const CATEGORY_LABEL = {
   acopio: 'Centro de Acopio',
 };
 
-export function ZoneCard({ zone, incidents = {}, wasteEntries = [], onAddIncident, onViewHistory, onAddWaste, onTransfer, eventRole }) {
+export function ZoneCard({ zone, incidents = {}, wasteEntries = [], wasteLoading = false, onAddIncident, onViewHistory, onAddWaste, onTransfer, eventRole }) {
+  const [showWasteHistory, setShowWasteHistory] = useState(false);
+
   const staffCount =
     (zone.supervisor ? 1 : 0) +
     (zone.coordinator ? 1 : 0) +
@@ -127,58 +132,54 @@ export function ZoneCard({ zone, incidents = {}, wasteEntries = [], onAddInciden
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-xl bg-[#DD7419]/8 border border-[#DD7419]/20 px-4 py-3">
-                <p className="text-[11px] font-semibold text-[#DD7419]/70 uppercase tracking-wide flex items-center gap-1">
-                  <Trash2 className="w-3 h-3" /> Total registradas
-                </p>
-                <p className="text-3xl font-bold text-[#DD7419] leading-none mt-1">{totalWasteQty}</p>
-                <p className="text-xs text-[#DD7419]/50 mt-0.5">unidades</p>
-              </div>
-              <div className="rounded-xl bg-[#DD7419]/8 border border-[#DD7419]/20 px-4 py-3">
-                <p className="text-[11px] font-semibold text-[#DD7419]/70 uppercase tracking-wide flex items-center gap-1">
-                  <Weight className="w-3 h-3" /> Peso total
-                </p>
-                <p className="text-3xl font-bold text-[#DD7419] leading-none mt-1">
-                  {hasWasteKg ? totalWasteKg.toFixed(1) : '—'}
-                </p>
-                <p className="text-xs text-[#DD7419]/50 mt-0.5">kilogramos</p>
-              </div>
-            </div>
-
-            {wasteEntries.length > 0 && (
-              <div className="space-y-1.5">
-                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
-                  Últimas entradas
-                </p>
-                {[...wasteEntries].reverse().slice(0, 3).map((entry, i) => (
-                  <div
-                    key={i}
-                    className="flex items-start gap-2 px-3 py-2 rounded-lg bg-muted/40 border border-border"
-                  >
-                    <div className="w-1.5 h-1.5 rounded-full bg-[#DD7419] mt-1.5 shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs text-foreground font-medium">
-                        {entry.quantity} {entry.quantity === 1 ? 'unidad' : 'unidades'}
-                        {entry.weightKg != null && (
-                          <span className="text-muted-foreground font-normal"> · {entry.weightKg} kg</span>
-                        )}
-                      </p>
-                      {entry.note && (
-                        <p className="text-[11px] text-muted-foreground truncate mt-0.5">
-                          {entry.note}
-                        </p>
-                      )}
+            {wasteLoading ? (
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  {[0, 1].map((i) => (
+                    <div key={i} className="rounded-xl bg-[#DD7419]/8 border border-[#DD7419]/20 px-4 py-3 flex flex-col gap-1">
+                      <Skeleton className="h-2.5 w-28 bg-[#DD7419]/20" />
+                      <Skeleton className="h-8 w-10 mt-1 bg-[#DD7419]/20" />
+                      <Skeleton className="h-2.5 w-16 bg-[#DD7419]/15" />
                     </div>
+                  ))}
+                </div>
+                <Skeleton className="h-9 w-full rounded-lg" />
+              </>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-xl bg-[#DD7419]/8 border border-[#DD7419]/20 px-4 py-3">
+                    <p className="text-[11px] font-semibold text-[#DD7419]/70 uppercase tracking-wide flex items-center gap-1">
+                      <Trash2 className="w-3 h-3" /> Total registradas
+                    </p>
+                    <p className="text-3xl font-bold text-[#DD7419] leading-none mt-1">{totalWasteQty}</p>
+                    <p className="text-xs text-[#DD7419]/50 mt-0.5">unidades</p>
                   </div>
-                ))}
-              </div>
-            )}
+                  <div className="rounded-xl bg-[#DD7419]/8 border border-[#DD7419]/20 px-4 py-3">
+                    <p className="text-[11px] font-semibold text-[#DD7419]/70 uppercase tracking-wide flex items-center gap-1">
+                      <Weight className="w-3 h-3" /> Peso total
+                    </p>
+                    <p className="text-3xl font-bold text-[#DD7419] leading-none mt-1">
+                      {hasWasteKg ? totalWasteKg.toFixed(1) : '—'}
+                    </p>
+                    <p className="text-xs text-[#DD7419]/50 mt-0.5">kilogramos</p>
+                  </div>
+                </div>
 
-            {wasteEntries.length === 0 && (
-              <p className="text-xs text-muted-foreground italic text-center py-1">
-                Sin registros aún
-              </p>
+                {wasteEntries.length > 0 ? (
+                  <button
+                    onClick={() => setShowWasteHistory(true)}
+                    className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border border-[#DD7419]/30 text-[#DD7419] text-xs font-semibold hover:bg-[#DD7419]/8 transition"
+                  >
+                    <History className="w-3.5 h-3.5" />
+                    Ver historial · {wasteEntries.length} {wasteEntries.length === 1 ? 'entrada' : 'entradas'}
+                  </button>
+                ) : (
+                  <p className="text-xs text-muted-foreground italic text-center py-1">
+                    Sin registros aún
+                  </p>
+                )}
+              </>
             )}
           </div>
           <div className="mx-6 border-t border-border" />
@@ -250,6 +251,13 @@ export function ZoneCard({ zone, incidents = {}, wasteEntries = [], onAddInciden
           <p className="text-sm text-muted-foreground italic">Sin personal asignado</p>
         )}
       </div>
+
+      <WasteHistoryModal
+        open={showWasteHistory}
+        onClose={() => setShowWasteHistory(false)}
+        zone={zone}
+        entries={wasteEntries}
+      />
     </div>
   );
 }

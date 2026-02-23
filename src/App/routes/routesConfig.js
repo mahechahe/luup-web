@@ -51,11 +51,6 @@ export const routesAuth = [
     path: 'eventos/:eventId',
     component: lazy(() => import('./Eventos/EventoModulesPage')),
   },
-  {
-    path: 'eventos',
-    // Esta es la raíz. Si ninguna de las de arriba coincide, entra aquí.
-    component: lazy(() => import('./Zonas/ZonasPage')),
-  },
 
   // --- MÓDULO DE COLABORADORES ---
   {

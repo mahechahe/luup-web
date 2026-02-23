@@ -198,17 +198,75 @@ export const deleteEventZoneService = async (zoneId) => {
 
 export const createWasteEntryService = async (zoneId, body) => {
   try {
-    const { data } = await axios.post(`${EVENTS_URL}/zones/${zoneId}/waste`, body);
+    let payload;
+    let headers = {};
+
+    if (body.file) {
+      payload = new FormData();
+      payload.append('quantity', body.quantity);
+      if (body.weightKg != null) payload.append('weightKg', body.weightKg);
+      if (body.note) payload.append('note', body.note);
+      payload.append('file', body.file);
+      headers = { 'Content-Type': 'multipart/form-data' };
+    } else {
+      payload = {
+        quantity: body.quantity,
+        weightKg: body.weightKg ?? null,
+        note: body.note ?? null,
+      };
+    }
+
+    const res = await axios.post(`${EVENTS_URL}/zones/${zoneId}/waste`, payload, { headers });
+    paramShowMessageApi(res);
     return {
       status: true,
-      entry: data?.data?.entry ?? null,
+      entry: res.data?.data?.log ?? null,
       errors: null,
     };
   } catch (error) {
+    paramShowMessageApi(error?.response);
     return {
       status: false,
       entry: null,
       errors: error?.response?.data?.message || 'Error al registrar la basura.',
+    };
+  }
+};
+
+export const getZoneWasteHistoryService = async (zoneId) => {
+  try {
+    const res = await axios.get(`${EVENTS_URL}/zones/${zoneId}/waste`);
+    paramShowMessageApi(res);
+    return {
+      status: true,
+      logs: res.data?.data?.logs ?? [],
+      errors: null,
+    };
+  } catch (error) {
+    paramShowMessageApi(error?.response);
+    return {
+      status: false,
+      logs: [],
+      errors: error?.response?.data?.message || 'Error al obtener el historial.',
+    };
+  }
+};
+
+export const getWasteSignedUrlService = async (zoneId, logId) => {
+  try {
+    const res = await axios.get(`${EVENTS_URL}/zones/${zoneId}/waste/${logId}/signed-url`);
+    paramShowMessageApi(res);
+    return {
+      status: true,
+      signedUrl: res.data?.data?.signedUrl ?? null,
+      errors: null,
+    };
+  } catch (error) {
+    paramShowMessageApi(error?.response);
+    return {
+      status: false,
+      signedUrl: null,
+      errors: error?.response?.data?.message || 'Error al obtener la imagen.',
     };
   }
 };

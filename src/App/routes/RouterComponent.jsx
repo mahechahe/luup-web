@@ -47,6 +47,7 @@ function RouterComponent() {
         }
       >
         <Route element={<AppLayout />}>
+          <Route path="eventos" element={<Navigate to="/eventos/listado" replace />} />
           {filteredRoutesAuth.map((route) => (
             <Route
               key={route.path}

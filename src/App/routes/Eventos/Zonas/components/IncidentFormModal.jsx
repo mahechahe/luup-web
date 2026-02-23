@@ -1,14 +1,12 @@
 import { useState } from 'react';
-import { X, Loader2, UtensilsCrossed, Coffee, MapPinOff, AlertTriangle, CornerDownLeft } from 'lucide-react';
+import { X, Loader2, Coffee, UtensilsCrossed, CircleCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { createIncidentService } from '../../services/eventServices';
 
-const PRESETS = [
-  { label: 'En almuerzo', Icon: UtensilsCrossed },
-  { label: 'En descanso', Icon: Coffee },
-  { label: 'Fuera de zona', Icon: MapPinOff },
-  { label: 'Emergencia', Icon: AlertTriangle },
-  { label: 'Regresó', Icon: CornerDownLeft },
+const TIPOS = [
+  { label: 'Break', Icon: Coffee, color: 'text-[#7493B2]', activeBg: 'bg-[#7493B2]', activeBorder: 'border-[#7493B2]', ring: 'focus:ring-[#7493B2]/30' },
+  { label: 'Almuerzo', Icon: UtensilsCrossed, color: 'text-[#DD7419]', activeBg: 'bg-[#DD7419]', activeBorder: 'border-[#DD7419]', ring: 'focus:ring-[#DD7419]/30' },
+  { label: 'Activo', Icon: CircleCheck, color: 'text-emerald-600', activeBg: 'bg-emerald-500', activeBorder: 'border-emerald-500', ring: 'focus:ring-emerald-500/30' },
 ];
 
 function nowTime() {
@@ -22,8 +20,6 @@ export function IncidentFormModal({ open, onClose, person, eventId, onSave }) {
   const [error, setError] = useState(null);
 
   if (!open || !person) return null;
-
-  const handlePreset = (label) => setForm((f) => ({ ...f, name: label }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -80,42 +76,31 @@ export function IncidentFormModal({ open, onClose, person, eventId, onSave }) {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Presets */}
+          {/* Tipo */}
           <div>
             <label className="block text-xs font-medium text-foreground mb-2">
-              Tipo de incidencia
+              Tipo de incidencia <span className="text-destructive">*</span>
             </label>
-            <div className="flex flex-wrap gap-2">
-              {PRESETS.map(({ label, Icon }) => (
-                <button
-                  key={label}
-                  type="button"
-                  onClick={() => handlePreset(label)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition ${
-                    form.name === label
-                      ? 'bg-[#234465] text-white border-[#234465]'
-                      : 'bg-white text-foreground border-border hover:bg-muted'
-                  }`}
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                  {label}
-                </button>
-              ))}
+            <div className="grid grid-cols-3 gap-2">
+              {TIPOS.map(({ label, Icon, color, activeBg, activeBorder }) => {
+                const active = form.name === label;
+                return (
+                  <button
+                    key={label}
+                    type="button"
+                    onClick={() => setForm((f) => ({ ...f, name: label }))}
+                    className={`flex flex-col items-center justify-center gap-2 py-4 rounded-xl border-2 font-semibold text-sm transition active:scale-95 ${
+                      active
+                        ? `${activeBg} ${activeBorder} text-white`
+                        : `bg-white border-border ${color} hover:bg-muted`
+                    }`}
+                  >
+                    <Icon className="w-5 h-5" />
+                    {label}
+                  </button>
+                );
+              })}
             </div>
-          </div>
-
-          {/* Nombre personalizado */}
-          <div>
-            <label className="block text-xs font-medium text-foreground mb-1.5">
-              Nombre de la incidencia
-            </label>
-            <input
-              type="text"
-              value={form.name}
-              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              placeholder="Escribe o selecciona un tipo…"
-              className="w-full h-9 px-3 rounded-md border border-border bg-white text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#234465]/30"
-            />
           </div>
 
           {/* Hora */}

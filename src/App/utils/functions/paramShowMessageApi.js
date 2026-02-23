@@ -39,7 +39,7 @@ export const paramShowMessageApi = async (body) => {
 
   const actuallyMessage = body?.data?.message ?? MESSAGE_ERROR_SERVIDOR;
 
-  if (body.status === 200) {
+  if (body.status === 200 || body.status === 201) {
     toast.success(actuallyMessage);
   } else {
     toast.error(actuallyMessage);

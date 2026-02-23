@@ -7,6 +7,7 @@ import {
   getWorkerZonesService,
   getWorkerCurrentEventService,
   transferPersonZoneService,
+  getZoneWasteHistoryService,
 } from '../services/eventServices';
 import { useUserStore } from '@/App/context/userStore';
 import { EventoHeader } from '../Canvas/components/EventoHeader';
@@ -46,10 +47,32 @@ export default function ZonasPage() {
   const [historyTarget, setHistoryTarget] = useState(null);
 
   const [wasteEntries, setWasteEntries] = useState({});
+  const [wasteLoading, setWasteLoading] = useState({});
   const [wasteTarget, setWasteTarget] = useState(null);
 
   const [transferTarget, setTransferTarget] = useState(null);
   const [transferLoading, setTransferLoading] = useState(false);
+
+  const fetchWasteEntries = useCallback(async (zones) => {
+    const acopioZones = zones.filter((z) => z.category === 'acopio');
+    if (acopioZones.length === 0) return;
+
+    setWasteLoading((prev) => {
+      const next = { ...prev };
+      acopioZones.forEach((z) => { next[z.id] = true; });
+      return next;
+    });
+
+    await Promise.all(
+      acopioZones.map(async (zone) => {
+        const res = await getZoneWasteHistoryService(zone.id);
+        if (res.status) {
+          setWasteEntries((prev) => ({ ...prev, [zone.id]: res.logs }));
+        }
+        setWasteLoading((prev) => ({ ...prev, [zone.id]: false }));
+      })
+    );
+  }, []);
 
   const parseIncidents = (zones) => {
     const map = {};
@@ -70,8 +93,9 @@ export default function ZonasPage() {
     if (res.status) {
       setZones(res.zones);
       setIncidents(parseIncidents(res.zones));
+      fetchWasteEntries(res.zones);
     }
-  }, [eventId, isAdmin]);
+  }, [eventId, isAdmin, fetchWasteEntries]);
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -90,6 +114,7 @@ export default function ZonasPage() {
       if (zonesRes.status) {
         setZones(zonesRes.zones);
         setIncidents(parseIncidents(zonesRes.zones));
+        fetchWasteEntries(zonesRes.zones);
       }
 
       // El rol viene como string: 'coordinator', 'supervisor', 'worker'
@@ -101,7 +126,7 @@ export default function ZonasPage() {
     };
 
     fetchAll();
-  }, [eventId, isAdmin]);
+  }, [eventId, isAdmin, fetchWasteEntries]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -167,6 +192,7 @@ export default function ZonasPage() {
       zone={zone}
       incidents={incidents}
       wasteEntries={wasteEntries[zone.id] ?? []}
+      wasteLoading={!!wasteLoading[zone.id]}
       onAddIncident={(person) => setIncidentTarget(person)}
       onViewHistory={(person) => setHistoryTarget(person)}
       onAddWaste={() => setWasteTarget(zone)}

@@ -4,7 +4,7 @@ import { NavLink } from 'react-router-dom';
 
 const NAV_ITEMS = [
   { label: 'Inicio', path: '/dashboard', icon: Home },
-  { label: 'Eventos', path: '/eventos', icon: Calendar },
+  { label: 'Eventos', path: '/eventos/listado', icon: Calendar },
   { label: 'Colaboradores', path: '/colaboradores', icon: UserCheck, adminOnly: true },
 ];
 
@@ -22,9 +22,9 @@ export default function BottomNav() {
         paddingBottom: 'env(safe-area-inset-bottom)',
       }}
     >
-      <ul className="flex items-stretch h-16 w-full sm:max-w-md sm:mx-auto">
+      <ul className="flex items-stretch justify-center h-16 w-full">
         {visibleItems.map(({ label, path, icon: Icon }) => (
-          <li key={path} className="flex-1">
+          <li key={path} className="w-24">
             <NavLink
               to={path}
               end
