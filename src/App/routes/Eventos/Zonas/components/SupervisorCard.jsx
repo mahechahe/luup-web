@@ -1,8 +1,8 @@
-import { Shield, Phone, CreditCard, Plus, History } from 'lucide-react';
+import { Shield, Phone, CreditCard, Plus, History, ArrowRightLeft } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { IncidentBadge } from './IncidentBadge';
 
-export function SupervisorCard({ person, zoneColor, incident, onAddIncident, onViewHistory }) {
+export function SupervisorCard({ person, zoneColor, incident, onAddIncident, onViewHistory, onTransfer }) {
   return (
     <div
       className="rounded-xl border-l-4 overflow-hidden"
@@ -37,6 +37,20 @@ export function SupervisorCard({ person, zoneColor, incident, onAddIncident, onV
       <div className="flex items-center justify-between gap-2 px-4 py-2 border-t border-black/5">
         <IncidentBadge incident={incident} />
         <div className="flex items-center gap-1 shrink-0">
+          {onTransfer && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={onTransfer}
+                  className="h-7 w-7 rounded-md flex items-center justify-center text-muted-foreground hover:bg-black/10 transition"
+                >
+                  <ArrowRightLeft className="w-4 h-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top">Trasladar a zona</TooltipContent>
+            </Tooltip>
+          )}
+
           <Tooltip>
             <TooltipTrigger asChild>
               <button

@@ -331,3 +331,25 @@ export const getWorkerAttendanceService = async (eventId) => {
     };
   }
 };
+
+export const transferPersonZoneService = async ({ userId, fromZoneId, toZoneId, eventId }) => {
+  try {
+    const { data } = await axios.post(`${EVENTS_URL}/zones/transfer`, {
+      userId,
+      fromZoneId,
+      toZoneId,
+      eventId,
+    });
+    return {
+      status: true,
+      data: data?.data ?? null,
+      errors: null,
+    };
+  } catch (error) {
+    return {
+      status: false,
+      data: null,
+      errors: error?.response?.data?.message || 'Error al trasladar la persona.',
+    };
+  }
+};

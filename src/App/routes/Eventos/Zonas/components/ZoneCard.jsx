@@ -15,7 +15,7 @@ const CATEGORY_LABEL = {
   acopio: 'Centro de Acopio',
 };
 
-export function ZoneCard({ zone, incidents = {}, wasteEntries = [], onAddIncident, onViewHistory, onAddWaste }) {
+export function ZoneCard({ zone, incidents = {}, wasteEntries = [], onAddIncident, onViewHistory, onAddWaste, onTransfer, eventRole }) {
   const staffCount =
     (zone.supervisor ? 1 : 0) +
     (zone.coordinator ? 1 : 0) +
@@ -38,7 +38,6 @@ export function ZoneCard({ zone, incidents = {}, wasteEntries = [], onAddInciden
       {/* Header de la zona */}
       <div className="px-6 pt-5 pb-4">
         <div className="flex items-start justify-between gap-4">
-          {/* Nombre + swatch */}
           <div className="flex items-center gap-3 min-w-0">
             <div
               className="w-12 h-12 rounded-xl shrink-0 shadow-sm ring-1 ring-black/5"
@@ -51,7 +50,6 @@ export function ZoneCard({ zone, incidents = {}, wasteEntries = [], onAddInciden
             </div>
           </div>
 
-          {/* Badges */}
           <div className="flex flex-col items-end gap-1.5 shrink-0">
             <Badge
               className={`text-xs border-0 font-medium ${CATEGORY_STYLE[zone.category] ?? 'bg-muted text-foreground'}`}
@@ -68,7 +66,6 @@ export function ZoneCard({ zone, incidents = {}, wasteEntries = [], onAddInciden
           </div>
         </div>
 
-        {/* Notas */}
         {zone.notes && (
           <div className="mt-4 flex items-start gap-2 px-3 py-2.5 rounded-xl bg-muted/50">
             <FileText className="w-3.5 h-3.5 text-muted-foreground mt-0.5 shrink-0" />
@@ -77,7 +74,6 @@ export function ZoneCard({ zone, incidents = {}, wasteEntries = [], onAddInciden
         )}
       </div>
 
-      {/* Divisor */}
       <div className="mx-6 border-t border-border" />
 
       {/* Límites de acopio */}
@@ -117,7 +113,6 @@ export function ZoneCard({ zone, incidents = {}, wasteEntries = [], onAddInciden
       {zone.category === 'acopio' && (
         <>
           <div className="px-6 py-4 space-y-3">
-            {/* Título + botón registrar */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-[#DD7419]">
                 <ClipboardList className="w-4 h-4" />
@@ -132,7 +127,6 @@ export function ZoneCard({ zone, incidents = {}, wasteEntries = [], onAddInciden
               </button>
             </div>
 
-            {/* Totales */}
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-xl bg-[#DD7419]/8 border border-[#DD7419]/20 px-4 py-3">
                 <p className="text-[11px] font-semibold text-[#DD7419]/70 uppercase tracking-wide flex items-center gap-1">
@@ -152,7 +146,6 @@ export function ZoneCard({ zone, incidents = {}, wasteEntries = [], onAddInciden
               </div>
             </div>
 
-            {/* Últimas entradas */}
             {wasteEntries.length > 0 && (
               <div className="space-y-1.5">
                 <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
@@ -208,6 +201,7 @@ export function ZoneCard({ zone, incidents = {}, wasteEntries = [], onAddInciden
               incident={getLatest(zone.supervisor.userId)}
               onAddIncident={() => onAddIncident(zone.supervisor)}
               onViewHistory={() => onViewHistory(zone.supervisor)}
+              onTransfer={onTransfer ? () => onTransfer(zone.supervisor, zone.id) : undefined}
             />
           </div>
         )}
@@ -220,6 +214,11 @@ export function ZoneCard({ zone, incidents = {}, wasteEntries = [], onAddInciden
               incident={getLatest(zone.coordinator.userId)}
               onAddIncident={() => onAddIncident(zone.coordinator)}
               onViewHistory={() => onViewHistory(zone.coordinator)}
+              onTransfer={
+                onTransfer && eventRole !== 'coordinator'
+                  ? () => onTransfer(zone.coordinator, zone.id)
+                  : undefined
+              }
             />
           </div>
         )}
@@ -240,6 +239,7 @@ export function ZoneCard({ zone, incidents = {}, wasteEntries = [], onAddInciden
                   incident={getLatest(c.userId)}
                   onAddIncident={() => onAddIncident(c)}
                   onViewHistory={() => onViewHistory(c)}
+                  onTransfer={onTransfer ? () => onTransfer(c, zone.id) : undefined}
                 />
               ))}
             </div>

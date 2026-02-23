@@ -1,11 +1,10 @@
-import { User, Phone, CreditCard, Plus, History } from 'lucide-react';
+import { User, Phone, CreditCard, Plus, History, ArrowRightLeft } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { IncidentBadge } from './IncidentBadge';
 
-export function CollaboratorCard({ person, incident, onAddIncident, onViewHistory }) {
+export function CollaboratorCard({ person, incident, onAddIncident, onViewHistory, onTransfer }) {
   return (
     <div className="rounded-xl bg-[#7493B2]/8 border border-[#7493B2]/15 overflow-hidden">
-      {/* Info principal */}
       <div className="flex items-start gap-3 p-3">
         <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-[#7493B2]/20">
           <User className="w-4 h-4 text-[#7493B2]" />
@@ -25,10 +24,22 @@ export function CollaboratorCard({ person, incident, onAddIncident, onViewHistor
         </div>
       </div>
 
-      {/* Fila de incidencia */}
       <div className="flex items-center justify-between gap-2 px-3 py-1.5 border-t border-[#7493B2]/15">
         <IncidentBadge incident={incident} />
         <div className="flex items-center gap-1 shrink-0">
+          {onTransfer && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={onTransfer}
+                  className="h-7 w-7 rounded-md flex items-center justify-center text-muted-foreground hover:bg-[#7493B2]/20 transition"
+                >
+                  <ArrowRightLeft className="w-4 h-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top">Trasladar a zona</TooltipContent>
+            </Tooltip>
+          )}
           <Tooltip>
             <TooltipTrigger asChild>
               <button
@@ -40,7 +51,6 @@ export function CollaboratorCard({ person, incident, onAddIncident, onViewHistor
             </TooltipTrigger>
             <TooltipContent side="top">Ver historial de incidencias</TooltipContent>
           </Tooltip>
-
           <Tooltip>
             <TooltipTrigger asChild>
               <button

@@ -1,11 +1,10 @@
-import { Crown, Phone, CreditCard, Plus, History } from 'lucide-react';
+import { Crown, Phone, CreditCard, Plus, History, ArrowRightLeft } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { IncidentBadge } from './IncidentBadge';
 
-export function CoordinatorCard({ person, incident, onAddIncident, onViewHistory }) {
+export function CoordinatorCard({ person, incident, onAddIncident, onViewHistory, onTransfer }) {
   return (
     <div className="rounded-xl border-l-4 border-l-[#DD7419] overflow-hidden bg-[#DD7419]/8">
-      {/* Info principal */}
       <div className="flex items-center gap-4 px-4 pt-4 pb-3">
         <div className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 bg-[#DD7419]/20">
           <Crown className="w-5 h-5 text-[#DD7419]" />
@@ -27,10 +26,22 @@ export function CoordinatorCard({ person, incident, onAddIncident, onViewHistory
         </div>
       </div>
 
-      {/* Fila de incidencia */}
       <div className="flex items-center justify-between gap-2 px-4 py-2 border-t border-[#DD7419]/15">
         <IncidentBadge incident={incident} />
         <div className="flex items-center gap-1 shrink-0">
+          {onTransfer && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={onTransfer}
+                  className="h-7 w-7 rounded-md flex items-center justify-center text-muted-foreground hover:bg-[#DD7419]/15 transition"
+                >
+                  <ArrowRightLeft className="w-4 h-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top">Trasladar a zona</TooltipContent>
+            </Tooltip>
+          )}
           <Tooltip>
             <TooltipTrigger asChild>
               <button
@@ -42,7 +53,6 @@ export function CoordinatorCard({ person, incident, onAddIncident, onViewHistory
             </TooltipTrigger>
             <TooltipContent side="top">Ver historial de incidencias</TooltipContent>
           </Tooltip>
-
           <Tooltip>
             <TooltipTrigger asChild>
               <button

@@ -1,7 +1,13 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Layers, PackageOpen, RefreshCw } from 'lucide-react';
-import { getEventoDetailService, getEventZonesWithStaffService, getWorkerZonesService } from '../services/eventServices';
+import {
+  getEventoDetailService,
+  getEventZonesWithStaffService,
+  getWorkerZonesService,
+  getWorkerCurrentEventService,
+  transferPersonZoneService,
+} from '../services/eventServices';
 import { useUserStore } from '@/App/context/userStore';
 import { EventoHeader } from '../Canvas/components/EventoHeader';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -13,12 +19,22 @@ import { EmptyZones } from './components/EmptyZones';
 import { IncidentFormModal } from './components/IncidentFormModal';
 import { IncidentHistoryModal } from './components/IncidentHistoryModal';
 import { WasteFormModal } from './components/WasteFormModal';
+import { TransferZoneModal } from './components/TransferZoneModal';
+
+// Cambiar a true cuando se confirme que el coordinador puede trasladar a cualquier zona
+const COORDINATOR_CAN_TRANSFER_ANY_ZONE = false;
 
 export default function ZonasPage() {
   const { eventId } = useParams();
   const navigate = useNavigate();
   const { user } = useUserStore();
+
   const isAdmin = user?.roleId === 1;
+
+  // Rol dentro del evento (coordinator, supervisor, worker)
+  const [eventRole, setEventRole] = useState(null);
+  const isCoordinator = eventRole === 'coordinator';
+  const canTransfer = isAdmin || isCoordinator;
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -32,6 +48,9 @@ export default function ZonasPage() {
   const [wasteEntries, setWasteEntries] = useState({});
   const [wasteTarget, setWasteTarget] = useState(null);
 
+  const [transferTarget, setTransferTarget] = useState(null);
+  const [transferLoading, setTransferLoading] = useState(false);
+
   const parseIncidents = (zones) => {
     const map = {};
     zones.forEach((z) => {
@@ -43,7 +62,6 @@ export default function ZonasPage() {
     return map;
   };
 
-  // Usa el endpoint correcto según el rol
   const fetchZones = useCallback(async () => {
     const res = isAdmin
       ? await getEventZonesWithStaffService(eventId)
@@ -61,16 +79,24 @@ export default function ZonasPage() {
         ? getEventZonesWithStaffService(eventId)
         : getWorkerZonesService(eventId);
 
-      const [eventRes, zonesRes] = await Promise.all([
+      const [eventRes, zonesRes, workerRes] = await Promise.all([
         getEventoDetailService(eventId),
         zonesPromise,
+        getWorkerCurrentEventService(),
       ]);
 
       if (eventRes.status) setEvent(eventRes.event);
+
       if (zonesRes.status) {
         setZones(zonesRes.zones);
         setIncidents(parseIncidents(zonesRes.zones));
       }
+
+      // El rol viene como string: 'coordinator', 'supervisor', 'worker'
+      if (workerRes.status && workerRes.currentEvent) {
+        setEventRole(workerRes.currentEvent.role);
+      }
+
       setLoading(false);
     };
 
@@ -97,10 +123,36 @@ export default function ZonasPage() {
     }));
   };
 
+  const getAvailableZones = () => {
+    if (isAdmin) return zones;
+    if (isCoordinator) {
+      if (COORDINATOR_CAN_TRANSFER_ANY_ZONE) return zones;
+      return zones.filter((z) => z.coordinator?.userId === user?.userId);
+    }
+    return [];
+  };
+
+  const handleTransferConfirm = async (person, fromZoneId, toZoneId) => {
+    setTransferLoading(true);
+    const res = await transferPersonZoneService({
+      userId: person.userId,
+      fromZoneId,
+      toZoneId,
+      eventId,
+    });
+
+    if (res.status) {
+      await fetchZones();
+      setTransferTarget(null);
+    } else {
+      console.error(res.errors);
+    }
+    setTransferLoading(false);
+  };
+
   const generales = zones.filter((z) => z.category === 'general');
   const acopios = zones.filter((z) => z.category === 'acopio');
 
-  // El worker vuelve a su módulo, el admin vuelve al detalle del evento
   const handleBack = () => {
     if (isAdmin) {
       navigate(`/eventos/${eventId}`);
@@ -108,6 +160,24 @@ export default function ZonasPage() {
       navigate(`/eventos/${eventId}/worker`);
     }
   };
+
+  const renderZoneCard = (zone) => (
+    <ZoneCard
+      key={zone.id}
+      zone={zone}
+      incidents={incidents}
+      wasteEntries={wasteEntries[zone.id] ?? []}
+      onAddIncident={(person) => setIncidentTarget(person)}
+      onViewHistory={(person) => setHistoryTarget(person)}
+      onAddWaste={() => setWasteTarget(zone)}
+      onTransfer={
+        canTransfer
+          ? (person, zoneId) => setTransferTarget({ person, zoneId })
+          : undefined
+      }
+      eventRole={eventRole}
+    />
+  );
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -190,15 +260,7 @@ export default function ZonasPage() {
                 <EmptyZones message="No hay zonas generales configuradas." />
               ) : (
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-                  {generales.map((zone) => (
-                    <ZoneCard
-                      key={zone.id}
-                      zone={zone}
-                      incidents={incidents}
-                      onAddIncident={(person) => setIncidentTarget(person)}
-                      onViewHistory={(person) => setHistoryTarget(person)}
-                    />
-                  ))}
+                  {generales.map((zone) => renderZoneCard(zone))}
                 </div>
               )}
             </TabsContent>
@@ -208,17 +270,7 @@ export default function ZonasPage() {
                 <EmptyZones message="No hay centros de acopio configurados." />
               ) : (
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-                  {acopios.map((zone) => (
-                    <ZoneCard
-                      key={zone.id}
-                      zone={zone}
-                      incidents={incidents}
-                      wasteEntries={wasteEntries[zone.id] ?? []}
-                      onAddIncident={(person) => setIncidentTarget(person)}
-                      onViewHistory={(person) => setHistoryTarget(person)}
-                      onAddWaste={() => setWasteTarget(zone)}
-                    />
-                  ))}
+                  {acopios.map((zone) => renderZoneCard(zone))}
                 </div>
               )}
             </TabsContent>
@@ -246,6 +298,16 @@ export default function ZonasPage() {
         onClose={() => setWasteTarget(null)}
         zone={wasteTarget}
         onSave={handleSaveWaste}
+      />
+
+      <TransferZoneModal
+        open={transferTarget !== null}
+        onClose={() => setTransferTarget(null)}
+        person={transferTarget?.person}
+        currentZoneId={transferTarget?.zoneId}
+        availableZones={getAvailableZones()}
+        onConfirm={handleTransferConfirm}
+        loading={transferLoading}
       />
     </div>
   );
