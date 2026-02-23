@@ -4,13 +4,13 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
 import * as yup from 'yup';
-import { CustomButton } from '@/app/components/CustomButton/CustomButton';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { version } from '../../../../package.json';
 import { INIT_LOADER } from '@/App/utils/constants/utilsConstants';
 import { submitLoginService } from '@/App/auth/services/authService';
+import { CustomButton } from '@/App/components/CustomButton/CustomButton';
 
 const INIT_LOGIN = {
   username: '',
@@ -68,24 +68,23 @@ function LoginPage() {
     const res = await submitLoginService(body);
 
     if (res.status) {
-  if (window.ReactNativeWebView) {
-    window.ReactNativeWebView.postMessage(JSON.stringify(res));
-  }
-  navigate('/dashboard');
-} else {
-  setError('username', {
-    type: 'manual',
-    message: res.errors,
-  });
-  setError('password', {
-    type: 'manual',
-    message: res.errors,
-  });
-}
+      if (window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage(JSON.stringify(res));
+      }
+      navigate('/dashboard');
+    } else {
+      setError('username', {
+        type: 'manual',
+        message: res.errors,
+      });
+      setError('password', {
+        type: 'manual',
+        message: res.errors,
+      });
+    }
 
     setLoading(INIT_LOADER);
-  }
-  );
+  });
 
   return (
     <div className="min-h-screen bg-linear-to-br from-brand/5 via-background to-brand/10 flex items-center justify-center p-4">

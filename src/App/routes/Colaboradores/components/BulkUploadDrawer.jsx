@@ -7,7 +7,6 @@ import {
   XCircle,
 } from 'lucide-react';
 import { useState } from 'react';
-import { FileUpload } from '@/app/components/FileUpload/FileUpload';
 import { useHandleUpload } from '@/hooks/useHandleUpload';
 import { Button } from '@/components/ui/button';
 import {
@@ -30,6 +29,7 @@ import {
   uploadExcelCollaboratorsService,
 } from '../services/collaboratorServices';
 import { toast } from 'sonner';
+import { FileUpload } from '@/App/components/FileUpload/FileUpload';
 
 /* ── Tipos de archivo aceptados ──────────────────────────── */
 const EXCEL_ACCEPT = {
