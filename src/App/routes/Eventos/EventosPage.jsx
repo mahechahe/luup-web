@@ -19,6 +19,7 @@ import { CreateEventDrawer } from './components/CreateEventDrawer';
 import { EditEventDrawer } from './components/EditEventDrawer';
 import { FilterEventDrawer } from './components/FilterEventDrawer';
 import { getEventosService } from './services/eventServices';
+import { useUserStore } from '@/App/context/userStore';
 
 const PAGE_LIMIT = 10;
 const EMPTY_FILTERS = { name: '', location: '', dateFrom: '', dateTo: '' };
@@ -169,6 +170,10 @@ function Pagination({ page, totalPages, total, limit, onPageChange }) {
 /* ── Vista principal ─────────────────────────────────────── */
 function EventosPage() {
   const navigate = useNavigate();
+  
+  // --- CAMBIO: El usuario se obtiene DENTRO del componente ---
+  const user = useUserStore((state) => state.user);
+
   const [loading, setLoading] = useState(true);
   const [events, setEvents] = useState([]);
   const [pagination, setPagination] = useState({
@@ -204,9 +209,17 @@ function EventosPage() {
     setLoading(false);
   }, []);
 
+  // --- CAMBIO: El useEffect ahora está DENTRO del componente y valida el rol ---
   useEffect(() => {
-    fetchData(1, EMPTY_FILTERS);
-  }, [fetchData]);
+    // VALIDACIÓN ANTES DE LA PETICIÓN
+    if (user) {
+      if (user.roleId === 1) {
+        fetchData(1, EMPTY_FILTERS); // Si es Admin, carga normal
+      } else {
+        navigate('/eventos/mis-eventos'); // Si es trabajador, lo mandamos a su página
+      }
+    }
+  }, [user, navigate, fetchData]);
 
   function handlePageChange(newPage) {
     fetchData(newPage, activeFilters);
@@ -222,6 +235,9 @@ function EventosPage() {
     setActiveFilters(EMPTY_FILTERS);
     fetchData(1, EMPTY_FILTERS);
   }
+
+  // Bloqueo de renderizado para no admin (mientras redirige)
+  if (user && user.roleId !== 1) return null;
 
   return (
     <div className="min-h-screen bg-background px-4 py-6">

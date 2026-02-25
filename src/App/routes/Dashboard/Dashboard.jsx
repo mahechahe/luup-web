@@ -1,6 +1,8 @@
-import { Calendar, Users, MapPin, ClipboardList } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Calendar, Users, MapPin, ClipboardList, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useUserStore } from '@/App/context/userStore';
+import { getWorkerCurrentEventService } from '@/App/routes/Eventos/services/eventServices';
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -12,6 +14,14 @@ function getGreeting() {
 function getRoleLabel(roleId) {
   if (roleId === 1) return 'Administrador';
   return 'Colaborador';
+}
+
+// Etiqueta legible del rol asignado en el evento activo
+function getEventRoleLabel(eventRole) {
+  if (eventRole === 'coordinator') return 'Coordinador';
+  if (eventRole === 'supervisor') return 'Supervisor';
+  if (eventRole === 'worker') return 'Colaborador';
+  return null;
 }
 
 const FEATURES = [
@@ -37,13 +47,72 @@ const FEATURES = [
   },
 ];
 
+// Ruta destino según el rol en el evento activo
+const ROLE_PATH = {
+  coordinator: (eventId) => `/eventos/${eventId}/zonas`,
+  supervisor:  (eventId) => `/eventos/${eventId}/zonas`,
+  worker:      (eventId) => `/eventos/${eventId}/worker`,
+};
+
+// Label del botón según el rol en el evento activo
+const ROLE_LABEL = {
+  coordinator: 'Ir a mis zonas',
+  supervisor:  'Ir a mis zonas',
+  worker:      'Ver mi estado en el evento',
+};
+
 function Dashboard() {
   const { user } = useUserStore();
   const navigate = useNavigate();
 
+  const isAdmin = user?.roleId === 1;
+
+  const [currentEvent, setCurrentEvent] = useState(null);
+  const [eventRole, setEventRole] = useState(null); // 'coordinator' | 'supervisor' | 'worker'
+  const [loadingEvent, setLoadingEvent] = useState(true);
+  const [navigating, setNavigating] = useState(false);
+
   const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Usuario';
   const cedula = user?.username ?? '—';
   const role = getRoleLabel(user?.roleId);
+
+  // Solo los no-admins necesitan consultar su evento activo
+  useEffect(() => {
+    if (isAdmin) {
+      setLoadingEvent(false);
+      return;
+    }
+    getWorkerCurrentEventService().then((res) => {
+      if (res.status && res.currentEvent) {
+        setCurrentEvent(res.currentEvent);
+        setEventRole(res.currentEvent.role);
+      }
+      setLoadingEvent(false);
+    });
+  }, [isAdmin]);
+
+  const handleNavigate = async (path) => {
+    setNavigating(true);
+    await new Promise((r) => setTimeout(r, 250));
+    navigate(path);
+  };
+
+  // Decide ruta y label del botón según el contexto del usuario
+  const getButtonProps = () => {
+    if (isAdmin) {
+      return { label: 'Ir a eventos', path: '/eventos/listado' };
+    }
+    if (!loadingEvent && !currentEvent) {
+      return { label: 'Ver mis eventos', path: '/eventos/mis-eventos' };
+    }
+    const eventId = currentEvent?.eventId ?? currentEvent?.id;
+    return {
+      label: ROLE_LABEL[eventRole] ?? 'Ir al evento',
+      path: eventId ? ROLE_PATH[eventRole]?.(eventId) : null,
+    };
+  };
+
+  const { label: btnLabel, path: btnPath } = getButtonProps();
 
   return (
     <div className="min-h-screen bg-background">
@@ -70,9 +139,19 @@ function Dashboard() {
             <div className="min-w-0">
               <p className="font-bold text-base leading-tight truncate">{fullName}</p>
               <p className="text-white/60 text-xs mt-0.5">CC {cedula}</p>
-              <span className="inline-block mt-1.5 px-2 py-0.5 rounded-full bg-white/15 text-white text-[11px] font-semibold">
-                {role}
-              </span>
+              <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                {/* Rol base del sistema */}
+                <span className="inline-block px-2 py-0.5 rounded-full bg-white/15 text-white text-[11px] font-semibold">
+                  {role}
+                </span>
+                {/* Rol en el evento activo — aparece solo cuando está asignado */}
+                {!loadingEvent && eventRole && !isAdmin && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#DD7419] text-white text-[11px] font-semibold">
+                    <span className="w-1.5 h-1.5 rounded-full bg-white/70" />
+                    {getEventRoleLabel(eventRole)}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </section>
@@ -114,14 +193,19 @@ function Dashboard() {
           </div>
         </section>
 
-        {/* CTA */}
+        {/* CTA — botón naranja original, label cambia según rol */}
         <section>
           <button
             type="button"
-            onClick={() => navigate('/eventos/listado')}
-            className="w-full h-12 rounded-xl bg-[#DD7419] text-white font-bold text-sm hover:bg-[#DD7419]/90 active:scale-[0.98] transition-all shadow-sm"
+            onClick={() => btnPath && handleNavigate(btnPath)}
+            disabled={navigating || loadingEvent || !btnPath}
+            className="w-full h-12 rounded-xl bg-[#DD7419] text-white font-bold text-sm hover:bg-[#DD7419]/90 active:scale-[0.98] transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
           >
-            Ir a eventos
+            {navigating || loadingEvent ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              btnLabel
+            )}
           </button>
         </section>
 

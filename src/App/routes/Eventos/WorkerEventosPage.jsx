@@ -53,7 +53,7 @@ const ROLE_CONFIG = {
     className: 'bg-blue-50 text-blue-600 border-blue-200',
   },
   worker: {
-    label: 'Worker',
+    label: 'Colaborador',
     icon: HardHat,
     className: 'bg-slate-50 text-slate-600 border-slate-200',
   },
@@ -312,7 +312,7 @@ function WorkerEventosPage() {
           variant="ghost"
           size="sm"
           className="group gap-2 text-muted-foreground hover:text-brand -ml-2"
-          onClick={() => navigate('/eventos')}
+          onClick={() => navigate('/dashboard')}
         >
           <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
           Volver a selección
