@@ -73,7 +73,7 @@ function Avatar({ firstName }) {
 function SkeletonRow() {
   return (
     <tr className="border-b border-border animate-pulse">
-      {Array.from({ length: 6 }).map((_, i) => (
+      {Array.from({ length: 5 }).map((_, i) => (
         <td key={i} className="px-4 py-3.5">
           <div className="h-3.5 bg-muted rounded-full w-24" />
         </td>
@@ -102,7 +102,7 @@ function SkeletonCard() {
   );
 }
 
-const COLUMNS = ['Nombre', 'Rol', 'Zonas', 'Asistió', 'Horario', ''];
+const COLUMNS = ['Nombre', 'Rol', 'Asistió', 'Horario', ''];
 const PAGE_SIZE_OPTIONS = [25, 50, 100];
 
 /* ── Componente principal ────────────────────────────────── */
@@ -121,6 +121,13 @@ export default function CheckinPage() {
   const [filterInput, setFilterInput] = useState({ name: '', cedula: '' });
   const [refreshKey, setRefreshKey] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
 
   useEffect(() => {
     getEventoDetailService(eventId).then((res) => {
@@ -271,68 +278,72 @@ export default function CheckinPage() {
           </div>
 
           {/* ── MOBILE: tarjetas ── */}
-          <div className="sm:hidden space-y-2">
-            {loading ? (
-              Array.from({ length: 5 }).map((_, i) => <SkeletonCard key={i} />)
-            ) : collaborators.length === 0 ? (
-              <div className="text-center py-16 space-y-3">
-                <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto">
-                  <UserCheck className="w-6 h-6 text-muted-foreground" />
+          {isMobile && (
+            <div className="space-y-2">
+              {loading ? (
+                Array.from({ length: 5 }).map((_, i) => <SkeletonCard key={i} />)
+              ) : collaborators.length === 0 ? (
+                <div className="text-center py-16 space-y-3">
+                  <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto">
+                    <UserCheck className="w-6 h-6 text-muted-foreground" />
+                  </div>
+                  <p className="text-sm font-medium text-foreground">No hay colaboradores asignados</p>
                 </div>
-                <p className="text-sm font-medium text-foreground">No hay colaboradores asignados</p>
-              </div>
-            ) : (
-              paginated.map((collab) => (
-                <div key={collab.userId} className="bg-white rounded-2xl border border-border p-3 flex items-center gap-3">
-                  <Avatar firstName={collab.firstName} />
+              ) : (
+                paginated.map((collab) => (
+                  <div key={collab.userId} className="bg-white rounded-2xl border border-border p-3 flex items-center gap-3">
+                    <Avatar firstName={collab.firstName} />
 
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-foreground truncate">{collab.firstName} {collab.lastName}</p>
-                    <p className="text-[11px] text-muted-foreground">{collab.cedula} · {collab.phone ?? '—'}</p>
-                    <div className="flex items-center gap-1 mt-1.5 flex-wrap">
-                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-md ${roleBadgeClass(collab.role)}`}>
-                        {roleLabel(collab.role)}
-                      </span>
-                      {collab.zones?.map((zone, idx) => (
-                        <span key={idx} className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-[#eff6ff] text-[#2563eb]">{zone}</span>
-                      ))}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-foreground truncate">{collab.firstName} {collab.lastName}</p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">{collab.cedula} · {collab.phone ?? '—'}</p>
+                      <div className="flex items-center gap-1 mt-1 flex-wrap">
+                        {collab.zones?.map((zone, idx) => (
+                          <span key={idx} className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-[#eff6ff] text-[#2563eb]">{zone}</span>
+                        ))}
+                      </div>
+                      <div className="mt-1">
+                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-md ${roleBadgeClass(collab.role)}`}>
+                          {roleLabel(collab.role)}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col items-end gap-1.5 shrink-0">
+                      <div className="flex items-center gap-1.5">
+                        {savingIds.has(collab.userId) ? (
+                          <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                        ) : (
+                          <button
+                            onClick={() => handleQuickAttendance(collab, !collab.attendance?.attended)}
+                            className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-colors ${collab.attendance?.attended ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white border-border hover:border-[#234465]'}`}
+                          >
+                            {collab.attendance?.attended && <Check className="w-3.5 h-3.5" strokeWidth={3} />}
+                          </button>
+                        )}
+                        {collab.attendance?.notes && (
+                          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#7493B2]/20 text-[#234465] text-[10px] font-bold">N</span>
+                        )}
+                      </div>
+                      <div className="text-[11px] text-right leading-relaxed">
+                        <span className="text-muted-foreground font-semibold">E </span>
+                        <span className="text-foreground font-medium">{collab.attendance?.entryTime ? formatTime(collab.attendance.entryTime) : '—'}</span>
+                        <br />
+                        <span className="text-muted-foreground font-semibold">S </span>
+                        <span className="text-foreground font-medium">{collab.attendance?.exitTime ? formatTime(collab.attendance.exitTime) : '—'}</span>
+                      </div>
+                      <button onClick={() => setEditTarget(collab)} className="h-6 w-6 rounded-md border border-border flex items-center justify-center text-muted-foreground hover:bg-muted transition">
+                        <Pencil className="w-3 h-3" />
+                      </button>
                     </div>
                   </div>
-
-                  <div className="flex flex-col items-end gap-1.5 shrink-0">
-                    <div className="flex items-center gap-1.5">
-                      {savingIds.has(collab.userId) ? (
-                        <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-                      ) : (
-                        <button
-                          onClick={() => handleQuickAttendance(collab, !collab.attendance?.attended)}
-                          className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-colors ${collab.attendance?.attended ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white border-border hover:border-[#234465]'}`}
-                        >
-                          {collab.attendance?.attended && <Check className="w-3.5 h-3.5" strokeWidth={3} />}
-                        </button>
-                      )}
-                      {collab.attendance?.notes && (
-                        <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#7493B2]/20 text-[#234465] text-[10px] font-bold">N</span>
-                      )}
-                    </div>
-                    <div className="text-[11px] text-right leading-relaxed">
-                      <span className="text-muted-foreground font-semibold">E </span>
-                      <span className="text-foreground font-medium">{collab.attendance?.entryTime ? formatTime(collab.attendance.entryTime) : '—'}</span>
-                      <br />
-                      <span className="text-muted-foreground font-semibold">S </span>
-                      <span className="text-foreground font-medium">{collab.attendance?.exitTime ? formatTime(collab.attendance.exitTime) : '—'}</span>
-                    </div>
-                    <button onClick={() => setEditTarget(collab)} className="h-6 w-6 rounded-md border border-border flex items-center justify-center text-muted-foreground hover:bg-muted transition">
-                      <Pencil className="w-3 h-3" />
-                    </button>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
+                ))
+              )}
+            </div>
+          )}
 
           {/* ── DESKTOP: tabla ── */}
-          <div className="hidden sm:block bg-white rounded-lg border border-border overflow-hidden">
+          {!isMobile && <div className="bg-white rounded-lg border border-border overflow-hidden">
             <table className="w-full">
               <thead className="bg-muted/30 border-b border-border">
                 <tr>
@@ -346,7 +357,7 @@ export default function CheckinPage() {
                   Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
                 ) : collaborators.length === 0 ? (
                   <tr>
-                    <td colSpan={COLUMNS.length} className="px-4 py-12">
+                    <td colSpan={5} className="px-4 py-12">
                       <div className="text-center space-y-3">
                         <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto">
                           <UserCheck className="w-6 h-6 text-muted-foreground" />
@@ -364,21 +375,19 @@ export default function CheckinPage() {
                           <div>
                             <span className="text-sm font-medium text-foreground block leading-snug">{collab.firstName} {collab.lastName}</span>
                             <span className="text-xs text-muted-foreground">{collab.cedula}</span>
+                            {collab.zones?.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {collab.zones.map((zone, idx) => (
+                                  <Badge key={idx} className="text-xs border-0 bg-muted text-foreground">{zone}</Badge>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         </div>
                       </td>
                       <td className="px-4 py-3.5">
                         <Badge className={`text-xs border-0 ${roleBadgeClass(collab.role)} mb-1`}>{roleLabel(collab.role)}</Badge>
                         <span className="text-xs text-muted-foreground block">{collab.phone ?? '—'}</span>
-                      </td>
-                      <td className="px-4 py-3.5">
-                        {collab.zones?.length > 0 ? (
-                          <div className="flex flex-wrap gap-1">
-                            {collab.zones.map((zone, idx) => (
-                              <Badge key={idx} className="text-xs border-0 bg-muted text-foreground">{zone}</Badge>
-                            ))}
-                          </div>
-                        ) : <span className="text-sm text-muted-foreground">—</span>}
                       </td>
                       <td className="px-4 py-3.5">
                         <div className="flex items-center gap-2">
@@ -418,7 +427,7 @@ export default function CheckinPage() {
                 )}
               </tbody>
             </table>
-          </div>
+          </div>}
 
           {/* Paginación */}
           {!loading && totalItems > 0 && (
