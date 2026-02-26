@@ -319,14 +319,7 @@ function CollaboratorDetailPage() {
         {loading && <DetailSkeleton />}
 
         {!loading && collaborator && (
-          <div className="space-y-4">
-            {!loading && collaborator && (
-  <div style={{background:'yellow', padding:'8px', fontSize:'11px', wordBreak:'break-all'}}>
-    HISTORY: {JSON.stringify(collaborator.eventHistory)}
-  </div>
-)}
-
-            
+          <div className="space-y-4">      
 
             {/* Información personal */}
             <Section icon={User} title="Información personal">
