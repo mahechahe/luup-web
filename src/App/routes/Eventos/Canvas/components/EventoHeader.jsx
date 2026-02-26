@@ -3,9 +3,11 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from './Skeleton';
 import { DATE_TYPE_LABEL, formatDate, IS_ADMIN } from './constants';
+import { useUserStore } from '@/App/context/userStore';
 
 export function EventoHeader({ loading, event, onBack, onSave }) {
-
+  const user = useUserStore((state) => state.user);
+  const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || '—';
   return (
     <header className="shrink-0 flex items-center gap-3 px-5 py-3 border-b border-border bg-white">
       <Button
@@ -41,7 +43,7 @@ export function EventoHeader({ loading, event, onBack, onSave }) {
             </Badge>
           </div>
 
-          {/* Línea 2: ubicación + badge Fecha única + fecha + usuario */}
+          {/* Línea 2: ubicación + badge Fecha única + fecha + usuario logueado */}
           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5 text-xs text-muted-foreground">
             {event.location && (
               <span className="flex items-center gap-1">
@@ -60,14 +62,10 @@ export function EventoHeader({ loading, event, onBack, onSave }) {
                 {formatDate(event.date)}
               </span>
             )}
-            {event.createdBy?.firstName && (
-              <span className="flex items-center gap-1">
-                <User className="w-3 h-3 shrink-0" />
-                <span className="truncate max-w-[110px] sm:max-w-none">
-                  {`${event.createdBy.firstName} ${event.createdBy.lastName ?? ''}`.trim()}
-                </span>
-              </span>
-            )}
+            <span className="flex items-center gap-1">
+              <User className="w-3 h-3 shrink-0" />
+              <span className="truncate max-w-[110px] sm:max-w-none">{fullName}</span>
+            </span>
           </div>
 
         </div>
