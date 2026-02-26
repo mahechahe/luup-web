@@ -10,6 +10,7 @@ import {
   UserCheck,
   Users,
   X,
+  AlertTriangle,
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -61,6 +62,58 @@ function SkeletonRow() {
   );
 }
 
+/* ── Modal de confirmación ───────────────────────────────── */
+function DeleteConfirmModal({ collaborator, onConfirm, onCancel, loading }) {
+  if (!collaborator) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        onClick={onCancel}
+      />
+      {/* Card */}
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 flex flex-col items-center text-center gap-4 animate-in fade-in zoom-in-95 duration-200">
+        {/* Ícono */}
+        <div className="w-14 h-14 rounded-full bg-red-100 flex items-center justify-center">
+          <AlertTriangle className="w-7 h-7 text-red-500" />
+        </div>
+
+        {/* Texto */}
+        <div>
+          <h3 className="text-lg font-bold text-foreground">¿Eliminar colaborador?</h3>
+          <p className="text-sm text-muted-foreground mt-1">
+            Estás a punto de eliminar a{' '}
+            <span className="font-semibold text-foreground">
+              {collaborator.firstName} {collaborator.lastName}
+            </span>
+            . Esta acción no se puede deshacer.
+          </p>
+        </div>
+
+        {/* Botones */}
+        <div className="flex gap-3 w-full mt-1">
+          <Button
+            variant="outline"
+            className="flex-1"
+            onClick={onCancel}
+            disabled={loading}
+          >
+            Cancelar
+          </Button>
+          <Button
+            className="flex-1 bg-red-500 hover:bg-red-600 text-white border-0"
+            onClick={onConfirm}
+            disabled={loading}
+          >
+            {loading ? 'Eliminando...' : 'Sí, eliminar'}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const COLUMNS = [
   'Nombre',
   'Documento',
@@ -87,9 +140,13 @@ function ColaboradoresPage() {
   const [createDrawerOpen, setCreateDrawerOpen] = useState(false);
   const [editDrawerOpen, setEditDrawerOpen] = useState(false);
   const [bulkUploadOpen, setBulkUploadOpen] = useState(false);
-  
+
   const [selectedCollaborator, setSelectedCollaborator] = useState(null);
   const [activeFilters, setActiveFilters] = useState(EMPTY_FILTERS);
+
+  // Estado para el modal de confirmación
+  const [collaboratorToDelete, setCollaboratorToDelete] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const hasActiveFilter = Object.values(activeFilters).some((v) => v !== '');
 
@@ -101,7 +158,6 @@ function ColaboradoresPage() {
         limit: currentLimit,
         ...Object.fromEntries(Object.entries(filters).filter(([, v]) => v !== '')),
       };
-
       const res = await ColabServices.getColaboradoresService(body);
       if (res.status) {
         setUsers(res.users || []);
@@ -122,32 +178,34 @@ function ColaboradoresPage() {
 
   const handlePageChange = (newPage) => fetchData(newPage, activeFilters);
   const handleLimitChange = (newLimit) => fetchData(1, activeFilters, newLimit);
-  
-const handleDelete = async (u) => {
-  if (window.confirm(`¿Estás seguro de eliminar a ${u.firstName} ${u.lastName}?`)) {
+
+  // Abre el modal
+  const handleDeleteClick = (u) => setCollaboratorToDelete(u);
+
+  // Confirma y ejecuta el borrado
+  const handleDeleteConfirm = async () => {
+    if (!collaboratorToDelete) return;
+    setDeleteLoading(true);
     try {
-      const res = await ColabServices.deleteCollaboratorService(u.userId);
-      
+      const res = await ColabServices.deleteCollaboratorService(collaboratorToDelete.userId);
       if (res.status) {
         toast.success('Colaborador eliminado correctamente');
-        
-        // --- LA CLAVE ESTÁ AQUÍ ---
-        // Volvemos a pedir los datos a la API para que la tabla se refresque
-        await fetchData(pagination.page, activeFilters); 
-        
+        setCollaboratorToDelete(null);
+        await fetchData(pagination.page, activeFilters);
       } else {
         toast.error(res.errors || 'No se pudo eliminar');
       }
     } catch (error) {
       toast.error('Error al procesar la solicitud');
+    } finally {
+      setDeleteLoading(false);
     }
-  }
-};
+  };
 
   return (
     <div className="min-h-screen bg-background px-4 py-6">
       <div className="max-w-7xl mx-auto space-y-6">
-        
+
         {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
@@ -164,11 +222,9 @@ const handleDelete = async (u) => {
             <Button className="bg-brand text-brand-foreground hover:bg-brand/90 gap-1.5 h-9" onClick={() => setCreateDrawerOpen(true)}>
               <Plus className="w-4 h-4" /> Crear colaborador
             </Button>
-            
             <Button variant="outline" className="gap-1.5 h-9" onClick={() => setBulkUploadOpen(true)}>
               <Upload className="w-4 h-4" /> Carga masiva
             </Button>
-
             <Button
               variant="outline"
               className={`gap-1.5 h-9 ${hasActiveFilter ? 'border-brand text-brand bg-brand/5' : ''}`}
@@ -176,7 +232,6 @@ const handleDelete = async (u) => {
             >
               <Filter className="w-4 h-4" /> Filtrar
             </Button>
-
             {hasActiveFilter && (
               <Button variant="ghost" className="gap-1.5 h-9 text-muted-foreground" onClick={() => { setActiveFilters(EMPTY_FILTERS); fetchData(1, EMPTY_FILTERS); }}>
                 <X className="w-4 h-4" /> Limpiar
@@ -239,7 +294,7 @@ const handleDelete = async (u) => {
                             <Button variant="outline" size="sm" className="h-8 text-sky-600" onClick={() => navigate(`/colaboradores/${u.userId}`)}>
                               <Eye className="w-3.5 h-3.5 mr-1" /> Ver
                             </Button>
-                            <Button variant="outline" size="sm" className="h-8 text-red-500" onClick={() => handleDelete(u)}>
+                            <Button variant="outline" size="sm" className="h-8 text-red-500" onClick={() => handleDeleteClick(u)}>
                               <Trash2 className="w-3.5 h-3.5 mr-1" /> Eliminar
                             </Button>
                           </div>
@@ -251,15 +306,13 @@ const handleDelete = async (u) => {
               </table>
             </div>
 
-            {/* Paginación - Selector OVALADO, NARANJA, Letras NEGRAS y Hover GRIS */}
             {!loading && (
               <div className="flex items-center justify-between px-5 py-3 border-t border-border">
                 <div className="flex items-center gap-4 text-xs text-muted-foreground">
                   <span>Mostrando {users.length} de {pagination.total}</span>
-                  
                   <div className="relative group">
-                    <select 
-                      value={pagination.limit} 
+                    <select
+                      value={pagination.limit}
                       onChange={(e) => handleLimitChange(Number(e.target.value))}
                       className="appearance-none bg-transparent border border-brand text-black rounded-full px-4 py-1.5 pr-8 outline-none cursor-pointer hover:bg-gray-100 transition-colors font-medium"
                     >
@@ -274,7 +327,6 @@ const handleDelete = async (u) => {
                     </div>
                   </div>
                 </div>
-
                 <div className="flex gap-1">
                   <Button variant="outline" size="icon" className="h-8 w-8" disabled={pagination.page === 1} onClick={() => handlePageChange(pagination.page - 1)}>
                     <ChevronLeft className="w-4 h-4" />
@@ -288,6 +340,14 @@ const handleDelete = async (u) => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Modal de confirmación de eliminación */}
+      <DeleteConfirmModal
+        collaborator={collaboratorToDelete}
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setCollaboratorToDelete(null)}
+        loading={deleteLoading}
+      />
 
       <BulkUploadDrawer open={bulkUploadOpen} onClose={() => setBulkUploadOpen(false)} onSuccess={() => fetchData(1, activeFilters)} />
       <FilterDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} onApply={(f) => { setActiveFilters(f); fetchData(1, f); }} activeFilters={activeFilters} />
