@@ -9,7 +9,9 @@
       "Bash(\"C:\\\\Users\\\\mahec\\\\OneDrive\\\\Documentos\\\\Trabajos - Independientes\\\\Luup\\\\luup-web\\\\src\\\\App\\\\routes\\\\Colaboradores\\\\ColaboradoresPage.jsx\" << 'ENDOFFILE'\nplaceholder\nENDOFFILE)",
       "Bash(npm install:*)",
       "Bash(npm run dev:*)",
-      "Bash(node -e:*)"
+      "Bash(node -e:*)",
+      "Bash(npx pwa-assets-generator:*)",
+      "Bash(npm run:*)"
     ]
   }
 }
