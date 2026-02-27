@@ -1,4 +1,3 @@
-// ─── CollaboratorCard.jsx ─────────────────────────────────────────────────────
 import { User, Phone, CreditCard, Plus, History, ArrowRightLeft } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { IncidentBadge } from './IncidentBadge';
@@ -8,7 +7,7 @@ export function CollaboratorCard({ person, incident, onAddIncident, onViewHistor
     <div className="rounded-xl bg-[#7493B2]/8 border border-[#7493B2]/15 overflow-hidden">
       {/* Info personal */}
       <div className="flex items-start gap-3 p-3">
-        <div className="w-9 h-9 sm:w-8 sm:h-8 rounded-full flex items-center justify-center shrink-0 bg-[#7493B2]/20">
+        <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 bg-[#7493B2]/20">
           <User className="w-4 h-4 text-[#7493B2]" />
         </div>
         <div className="min-w-0 flex-1">
@@ -30,46 +29,50 @@ export function CollaboratorCard({ person, incident, onAddIncident, onViewHistor
         </div>
       </div>
 
-      {/* Barra de acciones */}
-      <div className="flex items-center justify-between gap-2 px-3 py-2 sm:py-1.5 border-t border-[#7493B2]/15">
+      {/* Badge + botones */}
+      <div className="border-t border-[#7493B2]/15 px-3 pt-2 pb-2.5 space-y-2">
         <IncidentBadge incident={incident} />
 
-        {/* Botones — más grandes en móvil */}
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-1.5">
           {onTransfer && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
                   onClick={onTransfer}
-                  className="h-9 w-9 sm:h-7 sm:w-7 rounded-lg sm:rounded-md flex items-center justify-center text-muted-foreground hover:bg-[#7493B2]/20 active:bg-[#7493B2]/30 transition"
                   aria-label="Trasladar a zona"
+                  className="flex-1 flex flex-col items-center justify-center gap-1 h-12 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 active:bg-slate-200 text-slate-600 transition"
                 >
-                  <ArrowRightLeft className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+                  <ArrowRightLeft className="w-3.5 h-3.5" />
+                  <span className="text-[10px] font-semibold leading-none">Trasladar</span>
                 </button>
               </TooltipTrigger>
               <TooltipContent side="top">Trasladar a zona</TooltipContent>
             </Tooltip>
           )}
+
           <Tooltip>
             <TooltipTrigger asChild>
               <button
                 onClick={onViewHistory}
-                className="h-9 w-9 sm:h-7 sm:w-7 rounded-lg sm:rounded-md flex items-center justify-center text-muted-foreground hover:bg-[#7493B2]/20 active:bg-[#7493B2]/30 transition"
-                aria-label="Ver historial de incidencias"
+                aria-label="Ver historial"
+                className="flex-1 flex flex-col items-center justify-center gap-1 h-12 rounded-xl border border-[#7493B2]/25 bg-[#7493B2]/8 hover:bg-[#7493B2]/15 active:bg-[#7493B2]/25 text-[#7493B2] transition"
               >
-                <History className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+                <History className="w-3.5 h-3.5" />
+                <span className="text-[10px] font-semibold leading-none">Historial</span>
               </button>
             </TooltipTrigger>
             <TooltipContent side="top">Ver historial de incidencias</TooltipContent>
           </Tooltip>
+
           <Tooltip>
             <TooltipTrigger asChild>
               <button
                 onClick={onAddIncident}
-                className="h-9 w-9 sm:h-7 sm:w-7 rounded-lg sm:rounded-md flex items-center justify-center bg-[#7493B2]/15 hover:bg-[#7493B2]/25 active:bg-[#7493B2]/35 text-[#7493B2] transition"
-                aria-label="Registrar nueva incidencia"
+                aria-label="Registrar incidencia"
+                className="flex-1 flex flex-col items-center justify-center gap-1 h-12 rounded-xl bg-[#7493B2] hover:bg-[#7493B2]/90 active:bg-[#7493B2]/80 text-white transition shadow-sm"
               >
-                <Plus className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+                <Plus className="w-3.5 h-3.5" />
+                <span className="text-[10px] font-semibold leading-none">Incidencia</span>
               </button>
             </TooltipTrigger>
             <TooltipContent side="top">Registrar nueva incidencia</TooltipContent>

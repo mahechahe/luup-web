@@ -3,12 +3,17 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { IncidentBadge } from './IncidentBadge';
 
 export function SupervisorCard({ person, zoneColor, incident, onAddIncident, onViewHistory, onTransfer }) {
+  // Versiones con opacidad para los botones
+  const colorBg12 = zoneColor + '1F'; // ~12%
+  const colorBg25 = zoneColor + '40'; // ~25%
+  const colorBorder = zoneColor + '40';
+
   return (
     <div
       className="rounded-xl border-l-4 overflow-hidden"
       style={{ backgroundColor: zoneColor + '12', borderLeftColor: zoneColor }}
     >
-      {/* Info principal */}
+      {/* Info */}
       <div className="flex items-center gap-4 px-4 pt-4 pb-3">
         <div
           className="w-11 h-11 rounded-full flex items-center justify-center shrink-0"
@@ -37,50 +42,60 @@ export function SupervisorCard({ person, zoneColor, incident, onAddIncident, onV
         </div>
       </div>
 
-      {/* Fila de incidencia + botones */}
-      <div className="flex items-center justify-between gap-2 px-4 py-2 sm:py-1.5 border-t border-black/5">
+      {/* Badge + botones */}
+      <div className="border-t border-black/5 px-4 pt-2 pb-3 space-y-2">
         <IncidentBadge incident={incident} />
-        <div className="flex items-center gap-1.5 shrink-0">
+
+        <div className="flex items-center gap-1.5">
           {onTransfer && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
                   onClick={onTransfer}
-                  className="h-9 w-9 sm:h-7 sm:w-7 rounded-lg sm:rounded-md flex items-center justify-center text-muted-foreground hover:bg-black/10 active:bg-black/15 transition"
                   aria-label="Trasladar a zona"
+                  className="flex-1 flex flex-col items-center justify-center gap-1 h-12 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 active:bg-slate-200 text-slate-600 transition"
                 >
-                  <ArrowRightLeft className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+                  <ArrowRightLeft className="w-3.5 h-3.5" />
+                  <span className="text-[10px] font-semibold leading-none">Trasladar</span>
                 </button>
               </TooltipTrigger>
               <TooltipContent side="top">Trasladar a zona</TooltipContent>
             </Tooltip>
           )}
+
           <Tooltip>
             <TooltipTrigger asChild>
               <button
                 onClick={onViewHistory}
-                className="h-9 w-9 sm:h-7 sm:w-7 rounded-lg sm:rounded-md flex items-center justify-center text-muted-foreground hover:bg-black/10 active:bg-black/15 transition"
-                aria-label="Ver historial de incidencias"
+                aria-label="Ver historial"
+                className="flex-1 flex flex-col items-center justify-center gap-1 h-12 rounded-xl transition"
+                style={{
+                  backgroundColor: colorBg12,
+                  border: `1px solid ${colorBorder}`,
+                  color: zoneColor,
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colorBg25}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = colorBg12}
               >
-                <History className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+                <History className="w-3.5 h-3.5" />
+                <span className="text-[10px] font-semibold leading-none">Historial</span>
               </button>
             </TooltipTrigger>
             <TooltipContent side="top">Ver historial de incidencias</TooltipContent>
           </Tooltip>
+
           <Tooltip>
             <TooltipTrigger asChild>
               <button
                 onClick={onAddIncident}
-                className="h-9 w-9 sm:h-7 sm:w-7 rounded-lg sm:rounded-md flex items-center justify-center transition"
-                style={{
-                  backgroundColor: zoneColor + '25',
-                  color: zoneColor,
-                }}
-                aria-label="Registrar nueva incidencia"
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = zoneColor + '40'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = zoneColor + '25'}
+                aria-label="Registrar incidencia"
+                className="flex-1 flex flex-col items-center justify-center gap-1 h-12 rounded-xl text-white transition shadow-sm"
+                style={{ backgroundColor: zoneColor }}
+                onMouseEnter={(e) => e.currentTarget.style.opacity = '0.9'}
+                onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
               >
-                <Plus className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+                <Plus className="w-3.5 h-3.5" />
+                <span className="text-[10px] font-semibold leading-none">Incidencia</span>
               </button>
             </TooltipTrigger>
             <TooltipContent side="top">Registrar nueva incidencia</TooltipContent>

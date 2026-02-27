@@ -5,6 +5,7 @@ import { IncidentBadge } from './IncidentBadge';
 export function CoordinatorCard({ person, incident, onAddIncident, onViewHistory, onTransfer }) {
   return (
     <div className="rounded-xl border-l-4 border-l-[#DD7419] overflow-hidden bg-[#DD7419]/8">
+      {/* Info */}
       <div className="flex items-center gap-4 px-4 pt-4 pb-3">
         <div className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 bg-[#DD7419]/20">
           <Crown className="w-5 h-5 text-[#DD7419]" />
@@ -30,43 +31,50 @@ export function CoordinatorCard({ person, incident, onAddIncident, onViewHistory
         </div>
       </div>
 
-      <div className="flex items-center justify-between gap-2 px-4 py-2 sm:py-1.5 border-t border-[#DD7419]/15">
+      {/* Badge + botones */}
+      <div className="border-t border-[#DD7419]/15 px-4 pt-2 pb-3 space-y-2">
         <IncidentBadge incident={incident} />
-        <div className="flex items-center gap-1.5 shrink-0">
+
+        <div className="flex items-center gap-1.5">
           {onTransfer && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
                   onClick={onTransfer}
-                  className="h-9 w-9 sm:h-7 sm:w-7 rounded-lg sm:rounded-md flex items-center justify-center text-muted-foreground hover:bg-[#DD7419]/15 active:bg-[#DD7419]/25 transition"
                   aria-label="Trasladar a zona"
+                  className="flex-1 flex flex-col items-center justify-center gap-1 h-12 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 active:bg-slate-200 text-slate-600 transition"
                 >
-                  <ArrowRightLeft className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+                  <ArrowRightLeft className="w-3.5 h-3.5" />
+                  <span className="text-[10px] font-semibold leading-none">Trasladar</span>
                 </button>
               </TooltipTrigger>
               <TooltipContent side="top">Trasladar a zona</TooltipContent>
             </Tooltip>
           )}
+
           <Tooltip>
             <TooltipTrigger asChild>
               <button
                 onClick={onViewHistory}
-                className="h-9 w-9 sm:h-7 sm:w-7 rounded-lg sm:rounded-md flex items-center justify-center text-muted-foreground hover:bg-[#DD7419]/15 active:bg-[#DD7419]/25 transition"
-                aria-label="Ver historial de incidencias"
+                aria-label="Ver historial"
+                className="flex-1 flex flex-col items-center justify-center gap-1 h-12 rounded-xl border border-[#DD7419]/25 bg-[#DD7419]/8 hover:bg-[#DD7419]/15 active:bg-[#DD7419]/25 text-[#DD7419] transition"
               >
-                <History className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+                <History className="w-3.5 h-3.5" />
+                <span className="text-[10px] font-semibold leading-none">Historial</span>
               </button>
             </TooltipTrigger>
             <TooltipContent side="top">Ver historial de incidencias</TooltipContent>
           </Tooltip>
+
           <Tooltip>
             <TooltipTrigger asChild>
               <button
                 onClick={onAddIncident}
-                className="h-9 w-9 sm:h-7 sm:w-7 rounded-lg sm:rounded-md flex items-center justify-center bg-[#DD7419]/15 hover:bg-[#DD7419]/25 active:bg-[#DD7419]/35 text-[#DD7419] transition"
-                aria-label="Registrar nueva incidencia"
+                aria-label="Registrar incidencia"
+                className="flex-1 flex flex-col items-center justify-center gap-1 h-12 rounded-xl bg-[#DD7419] hover:bg-[#DD7419]/90 active:bg-[#DD7419]/80 text-white transition shadow-sm"
               >
-                <Plus className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+                <Plus className="w-3.5 h-3.5" />
+                <span className="text-[10px] font-semibold leading-none">Incidencia</span>
               </button>
             </TooltipTrigger>
             <TooltipContent side="top">Registrar nueva incidencia</TooltipContent>
