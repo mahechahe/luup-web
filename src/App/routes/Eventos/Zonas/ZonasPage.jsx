@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Layers, PackageOpen, RefreshCw } from 'lucide-react';
+import { Layers, PackageOpen, RefreshCw, Search, X } from 'lucide-react';
 import {
   getEventoDetailService,
   getEventZonesWithStaffService,
@@ -22,7 +22,6 @@ import { IncidentHistoryModal } from './components/IncidentHistoryModal';
 import { WasteFormModal } from './components/WasteFormModal';
 import { TransferZoneModal } from './components/TransferZoneModal';
 
-// Cambiar a true cuando se confirme que el coordinador puede trasladar a cualquier zona
 const COORDINATOR_CAN_TRANSFER_ANY_ZONE = false;
 
 export default function ZonasPage() {
@@ -31,8 +30,6 @@ export default function ZonasPage() {
   const { user } = useUserStore();
 
   const isAdmin = user?.roleId === 1;
-
-  // Rol dentro del evento (coordinator, supervisor, worker)
   const [eventRole, setEventRole] = useState(null);
   const isCoordinator = eventRole === 'coordinator';
   const canTransfer = isAdmin || isCoordinator;
@@ -41,6 +38,7 @@ export default function ZonasPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [event, setEvent] = useState(null);
   const [zones, setZones] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const [incidents, setIncidents] = useState({});
   const [incidentTarget, setIncidentTarget] = useState(null);
@@ -56,19 +54,15 @@ export default function ZonasPage() {
   const fetchWasteEntries = useCallback(async (zones) => {
     const acopioZones = zones.filter((z) => z.category === 'acopio');
     if (acopioZones.length === 0) return;
-
     setWasteLoading((prev) => {
       const next = { ...prev };
       acopioZones.forEach((z) => { next[z.id] = true; });
       return next;
     });
-
     await Promise.all(
       acopioZones.map(async (zone) => {
         const res = await getZoneWasteHistoryService(zone.id);
-        if (res.status) {
-          setWasteEntries((prev) => ({ ...prev, [zone.id]: res.logs }));
-        }
+        if (res.status) setWasteEntries((prev) => ({ ...prev, [zone.id]: res.logs }));
         setWasteLoading((prev) => ({ ...prev, [zone.id]: false }));
       })
     );
@@ -78,9 +72,7 @@ export default function ZonasPage() {
     const map = {};
     zones.forEach((z) => {
       const people = [z.supervisor, z.coordinator, ...z.collaborators].filter(Boolean);
-      people.forEach((p) => {
-        if (p.incidents?.length) map[p.userId] = p.incidents;
-      });
+      people.forEach((p) => { if (p.incidents?.length) map[p.userId] = p.incidents; });
     });
     return map;
   };
@@ -89,7 +81,6 @@ export default function ZonasPage() {
     const res = isAdmin
       ? await getEventZonesWithStaffService(eventId)
       : await getWorkerZonesService(eventId);
-
     if (res.status) {
       setZones(res.zones);
       setIncidents(parseIncidents(res.zones));
@@ -110,21 +101,14 @@ export default function ZonasPage() {
       ]);
 
       if (eventRes.status) setEvent(eventRes.event);
-
       if (zonesRes.status) {
         setZones(zonesRes.zones);
         setIncidents(parseIncidents(zonesRes.zones));
         fetchWasteEntries(zonesRes.zones);
       }
-
-      // El rol viene como string: 'coordinator', 'supervisor', 'worker'
-      if (workerRes.status && workerRes.currentEvent) {
-        setEventRole(workerRes.currentEvent.role);
-      }
-
+      if (workerRes.status && workerRes.currentEvent) setEventRole(workerRes.currentEvent.role);
       setLoading(false);
     };
-
     fetchAll();
   }, [eventId, isAdmin, fetchWasteEntries]);
 
@@ -135,17 +119,11 @@ export default function ZonasPage() {
   };
 
   const handleSaveIncident = (userId, incident) => {
-    setIncidents((prev) => ({
-      ...prev,
-      [userId]: [...(prev[userId] ?? []), incident],
-    }));
+    setIncidents((prev) => ({ ...prev, [userId]: [...(prev[userId] ?? []), incident] }));
   };
 
   const handleSaveWaste = (zoneId, entry) => {
-    setWasteEntries((prev) => ({
-      ...prev,
-      [zoneId]: [...(prev[zoneId] ?? []), entry],
-    }));
+    setWasteEntries((prev) => ({ ...prev, [zoneId]: [...(prev[zoneId] ?? []), entry] }));
   };
 
   const getAvailableZones = () => {
@@ -159,31 +137,32 @@ export default function ZonasPage() {
 
   const handleTransferConfirm = async (person, fromZoneId, toZoneId) => {
     setTransferLoading(true);
-    const res = await transferPersonZoneService({
-      userId: person.userId,
-      fromZoneId,
-      toZoneId,
-      eventId,
-    });
-
-    if (res.status) {
-      await fetchZones();
-      setTransferTarget(null);
-    } else {
-      console.error(res.errors);
-    }
+    const res = await transferPersonZoneService({ userId: person.userId, fromZoneId, toZoneId, eventId });
+    if (res.status) { await fetchZones(); setTransferTarget(null); }
+    else console.error(res.errors);
     setTransferLoading(false);
   };
 
-  const generales = zones.filter((z) => z.category === 'general');
-  const acopios = zones.filter((z) => z.category === 'acopio');
+  // Filtrar zonas por búsqueda de personal
+  const filterZonesBySearch = (zoneList) => {
+    if (!searchQuery.trim()) return zoneList;
+    const q = searchQuery.toLowerCase();
+    return zoneList.filter((zone) => {
+      const people = [zone.coordinator, zone.supervisor, ...zone.collaborators].filter(Boolean);
+      return people.some((p) =>
+        `${p.firstName} ${p.lastName}`.toLowerCase().includes(q) ||
+        p.cedula?.toLowerCase().includes(q) ||
+        zone.name?.toLowerCase().includes(q)
+      );
+    });
+  };
+
+  const generales = filterZonesBySearch(zones.filter((z) => z.category === 'general'));
+  const acopios = filterZonesBySearch(zones.filter((z) => z.category === 'acopio'));
 
   const handleBack = () => {
-    if (isAdmin) {
-      navigate(`/eventos/${eventId}`);
-    } else {
-      navigate(`/eventos/${eventId}/worker`);
-    }
+    if (isAdmin) navigate(`/eventos/${eventId}`);
+    else navigate(`/eventos/${eventId}/worker`);
   };
 
   const renderZoneCard = (zone) => (
@@ -196,31 +175,22 @@ export default function ZonasPage() {
       onAddIncident={(person) => setIncidentTarget(person)}
       onViewHistory={(person) => setHistoryTarget(person)}
       onAddWaste={() => setWasteTarget(zone)}
-      onTransfer={
-        canTransfer
-          ? (person, zoneId) => setTransferTarget({ person, zoneId })
-          : undefined
-      }
+      onTransfer={canTransfer ? (person, zoneId) => setTransferTarget({ person, zoneId }) : undefined}
       eventRole={eventRole}
     />
   );
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <EventoHeader
-        loading={loading}
-        event={event}
-        onBack={handleBack}
-      />
+      <EventoHeader loading={loading} event={event} onBack={handleBack} />
 
-      <div className="flex-1 max-w-7xl w-full mx-auto px-6 py-8 space-y-6">
+      <div className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-5">
+
+        {/* Título + Actualizar */}
         <div className="flex items-start justify-between gap-4">
           <div>
             {loading ? (
-              <>
-                <Skeleton className="h-8 w-44 mb-1.5" />
-                <Skeleton className="h-4 w-52" />
-              </>
+              <><Skeleton className="h-8 w-44 mb-1.5" /><Skeleton className="h-4 w-52" /></>
             ) : (
               <>
                 <h2 className="text-2xl font-bold text-[#234465]">
@@ -232,7 +202,6 @@ export default function ZonasPage() {
               </>
             )}
           </div>
-
           <Button
             variant="outline"
             onClick={handleRefresh}
@@ -244,6 +213,28 @@ export default function ZonasPage() {
           </Button>
         </div>
 
+        {/* Buscador de personal */}
+        {!loading && zones.length > 0 && (
+          <div className="relative max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Buscar persona o zona…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full h-9 pl-9 pr-8 rounded-lg border border-border bg-white text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#234465]/30 transition"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+        )}
+
         {loading ? (
           <div className="space-y-5">
             <div className="flex gap-2">
@@ -251,9 +242,7 @@ export default function ZonasPage() {
               <Skeleton className="h-9 w-36 rounded-lg" />
             </div>
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <ZoneCardSkeleton key={i} />
-              ))}
+              {Array.from({ length: 4 }).map((_, i) => <ZoneCardSkeleton key={i} />)}
             </div>
           </div>
         ) : (
@@ -283,7 +272,7 @@ export default function ZonasPage() {
 
             <TabsContent value="general" className="mt-5">
               {generales.length === 0 ? (
-                <EmptyZones message="No hay zonas generales configuradas." />
+                <EmptyZones message={searchQuery ? `Sin resultados para "${searchQuery}"` : 'No hay zonas generales configuradas.'} />
               ) : (
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
                   {generales.map((zone) => renderZoneCard(zone))}
@@ -293,7 +282,7 @@ export default function ZonasPage() {
 
             <TabsContent value="acopio" className="mt-5">
               {acopios.length === 0 ? (
-                <EmptyZones message="No hay centros de acopio configurados." />
+                <EmptyZones message={searchQuery ? `Sin resultados para "${searchQuery}"` : 'No hay centros de acopio configurados.'} />
               ) : (
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
                   {acopios.map((zone) => renderZoneCard(zone))}

@@ -1,12 +1,37 @@
 import { useState } from 'react';
-import { X, Loader2, Coffee, UtensilsCrossed, CircleCheck } from 'lucide-react';
+import { X, Loader2, Coffee, UtensilsCrossed, CircleCheck, UserX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { createIncidentService } from '../../services/eventServices';
 
 const TIPOS = [
-  { label: 'Break', Icon: Coffee, color: 'text-[#7493B2]', activeBg: 'bg-[#7493B2]', activeBorder: 'border-[#7493B2]', ring: 'focus:ring-[#7493B2]/30' },
-  { label: 'Almuerzo', Icon: UtensilsCrossed, color: 'text-[#DD7419]', activeBg: 'bg-[#DD7419]', activeBorder: 'border-[#DD7419]', ring: 'focus:ring-[#DD7419]/30' },
-  { label: 'Activo', Icon: CircleCheck, color: 'text-emerald-600', activeBg: 'bg-emerald-500', activeBorder: 'border-emerald-500', ring: 'focus:ring-emerald-500/30' },
+  {
+    label: 'Break',
+    Icon: Coffee,
+    color: 'text-[#7493B2]',
+    activeBg: 'bg-[#7493B2]',
+    activeBorder: 'border-[#7493B2]',
+  },
+  {
+    label: 'Almuerzo',
+    Icon: UtensilsCrossed,
+    color: 'text-[#DD7419]',
+    activeBg: 'bg-[#DD7419]',
+    activeBorder: 'border-[#DD7419]',
+  },
+  {
+    label: 'Activo',
+    Icon: CircleCheck,
+    color: 'text-emerald-600',
+    activeBg: 'bg-emerald-500',
+    activeBorder: 'border-emerald-500',
+  },
+  {
+    label: 'Inactivo',
+    Icon: UserX,
+    color: 'text-slate-500',
+    activeBg: 'bg-slate-500',
+    activeBorder: 'border-slate-500',
+  },
 ];
 
 function nowTime() {
@@ -35,14 +60,9 @@ export function IncidentFormModal({ open, onClose, person, eventId, onSave }) {
       note: form.note.trim() || null,
     });
 
-    if (!res.status) {
-      setError(res.errors);
-      setSaving(false);
-      return;
-    }
+    if (!res.status) { setError(res.errors); setSaving(false); return; }
 
     onSave(person.userId, res.incident);
-
     setForm({ name: '', time: nowTime(), note: '' });
     setSaving(false);
     onClose();
@@ -76,12 +96,12 @@ export function IncidentFormModal({ open, onClose, person, eventId, onSave }) {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Tipo */}
+          {/* Tipo — grid 2x2 para acomodar 4 opciones */}
           <div>
             <label className="block text-xs font-medium text-foreground mb-2">
               Tipo de incidencia <span className="text-destructive">*</span>
             </label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {TIPOS.map(({ label, Icon, color, activeBg, activeBorder }) => {
                 const active = form.name === label;
                 return (
@@ -119,8 +139,7 @@ export function IncidentFormModal({ open, onClose, person, eventId, onSave }) {
           {/* Nota */}
           <div>
             <label className="block text-xs font-medium text-foreground mb-1.5">
-              Nota{' '}
-              <span className="text-muted-foreground font-normal">(opcional)</span>
+              Nota <span className="text-muted-foreground font-normal">(opcional)</span>
             </label>
             <textarea
               value={form.note}
@@ -133,7 +152,6 @@ export function IncidentFormModal({ open, onClose, person, eventId, onSave }) {
 
           {error && <p className="text-xs text-destructive">{error}</p>}
 
-          {/* Acciones */}
           <div className="flex gap-2 pt-1">
             <Button type="button" variant="outline" onClick={handleClose} className="flex-1" disabled={saving}>
               Cancelar
@@ -148,9 +166,7 @@ export function IncidentFormModal({ open, onClose, person, eventId, onSave }) {
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   Guardando…
                 </span>
-              ) : (
-                'Registrar'
-              )}
+              ) : 'Registrar'}
             </Button>
           </div>
         </form>
