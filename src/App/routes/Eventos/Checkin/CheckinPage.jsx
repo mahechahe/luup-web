@@ -1,29 +1,24 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, UserCheck, ChevronLeft, ChevronRight, Pencil, Check, Loader2, Search, X, RefreshCw } from 'lucide-react';
+import {
+  ArrowLeft, UserCheck, ChevronLeft, ChevronRight,
+  RefreshCw, Search, X, Lock, ClipboardCheck,
+  Package, Boxes,
+} from 'lucide-react';
 import {
   getEventoDetailService,
   getEventAttendanceService,
   upsertAttendanceService,
 } from '../services/eventServices';
+import { useUserStore } from '@/App/context/userStore';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 import AttendanceEditModal from './AttendanceEditModal';
+import { Station1Tab } from '@/App/routes/Eventos/Checkin/components/Station1Tab';
+import { Station2Tab } from '@/App/routes/Eventos/Checkin/components/Station2Tab';
 
-/* ── Helpers ─────────────────────────────────────────────── */
-function formatTime(iso) {
-  if (!iso) return '—';
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return '—';
-  return d.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
-}
-
+/* ── Helpers ── */
 function formatEventDate(iso) {
   if (!iso) return null;
   const d = new Date(iso.toString().replace(' ', 'T'));
@@ -33,87 +28,59 @@ function formatEventDate(iso) {
   });
 }
 
-function roleLabel(role) {
-  const map = { supervisor: 'Supervisor', coordinador: 'Coordinador', colaborador: 'Colaborador' };
-  return map[role] ?? role;
-}
-
-function roleBadgeClass(role) {
-  if (role === 'supervisor') return 'bg-[#234465]/10 text-[#234465]';
-  if (role === 'coordinador') return 'bg-[#DD7419]/10 text-[#DD7419]';
-  return 'bg-[#7493B2]/10 text-[#7493B2]';
-}
-
-const AVATAR_COLORS = [
-  'from-[#234465] to-[#3a6b9f]',
-  'from-[#DD7419] to-[#f59e0b]',
-  'from-[#059669] to-[#34d399]',
-  'from-[#7c3aed] to-[#a78bfa]',
-  'from-[#dc2626] to-[#f87171]',
-  'from-[#0891b2] to-[#67e8f9]',
-];
-
-function getAvatarColor(name) {
-  if (!name) return AVATAR_COLORS[0];
-  return AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length];
-}
-
-function Avatar({ firstName }) {
-  const initial = (firstName?.[0] ?? '?').toUpperCase();
-  const color = getAvatarColor(firstName);
-  return (
-    <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center shrink-0`}>
-      <span className="text-white font-bold text-sm">{initial}</span>
-    </div>
-  );
-}
-
-/* ── Skeletons ───────────────────────────────────────────── */
-function SkeletonRow() {
-  return (
-    <tr className="border-b border-border animate-pulse">
-      {Array.from({ length: 5 }).map((_, i) => (
-        <td key={i} className="px-4 py-3.5">
-          <div className="h-3.5 bg-muted rounded-full w-24" />
-        </td>
-      ))}
-    </tr>
-  );
-}
-
-function SkeletonCard() {
-  return (
-    <div className="bg-white rounded-2xl border border-border overflow-hidden animate-pulse">
-      <div className="p-3 flex items-start gap-3">
-        <div className="w-10 h-10 rounded-xl bg-muted shrink-0" />
-        <div className="flex-1 space-y-2">
-          <div className="h-3.5 bg-muted rounded-full w-36" />
-          <div className="h-3 bg-muted rounded-full w-24" />
-          <div className="flex gap-1.5">
-            <div className="h-5 bg-muted rounded-md w-20" />
-            <div className="h-5 bg-muted rounded-md w-14" />
-          </div>
-        </div>
-        <div className="shrink-0 space-y-1">
-          <div className="h-3 bg-muted rounded-full w-12" />
-          <div className="h-3 bg-muted rounded-full w-12" />
-        </div>
-      </div>
-      <div className="border-t border-border p-3 flex gap-2">
-        <div className="flex-1 h-10 bg-muted rounded-xl" />
-        <div className="w-10 h-10 bg-muted rounded-xl" />
-      </div>
-    </div>
-  );
-}
-
-const COLUMNS = ['Nombre', 'Rol', 'Asistió', 'Horario', ''];
 const PAGE_SIZE_OPTIONS = [25, 50, 100];
 
-/* ── Componente principal ────────────────────────────────── */
+/* ── Configuración de estaciones ── */
+const STATIONS = [
+  {
+    id: 1,
+    label: 'Estación 1',
+    sublabel: 'Check-in · Uniforme',
+    Icon: ClipboardCheck,
+    color: 'emerald',
+    activeClass: 'bg-emerald-600 text-white shadow-sm',
+    inactiveClass: 'text-foreground hover:bg-muted',
+    lockedClass: 'text-muted-foreground/40 cursor-not-allowed',
+  },
+  {
+    id: 2,
+    label: 'Estación 2',
+    sublabel: 'Maleta · Almuerzo · Refrigerio',
+    Icon: Package,
+    color: 'indigo',
+    activeClass: 'bg-indigo-600 text-white shadow-sm',
+    inactiveClass: 'text-foreground hover:bg-muted',
+    lockedClass: 'text-muted-foreground/40 cursor-not-allowed',
+  },
+  {
+    id: 3,
+    label: 'Estación 3',
+    sublabel: 'Insumos',
+    Icon: Boxes,
+    color: 'orange',
+    activeClass: 'bg-[#DD7419] text-white shadow-sm',
+    inactiveClass: 'text-foreground hover:bg-muted',
+    lockedClass: 'text-muted-foreground/40 cursor-not-allowed',
+  },
+];
+
+/* ── Componente principal ── */
 export default function CheckinPage() {
   const { eventId } = useParams();
   const navigate = useNavigate();
+  const { user } = useUserStore();
+
+  // stationId del usuario: null = superadmin (ve todo), 1|2|3 = solo esa estación
+  // TODO: obtener del backend — user.stationAssignment para este evento
+  const userStationId = user?.stationId ?? null; // null = ve todo
+
+  const canAccess = (stationId) =>
+    userStationId === null || userStationId === stationId;
+
+  // Tab activo: arranca en la estación que le corresponde al usuario
+  const defaultTab = userStationId ?? 1;
+  const [activeStation, setActiveStation] = useState(defaultTab);
+
   const [loading, setLoading] = useState(true);
   const [event, setEvent] = useState(null);
   const [collaborators, setCollaborators] = useState([]);
@@ -121,18 +88,10 @@ export default function CheckinPage() {
   const [pageSize, setPageSize] = useState(25);
   const [currentPage, setCurrentPage] = useState(1);
   const [editTarget, setEditTarget] = useState(null);
-  const [savingIds, setSavingIds] = useState(new Set());
   const [filters, setFilters] = useState({ name: '', cedula: '' });
   const [filterInput, setFilterInput] = useState({ name: '', cedula: '' });
   const [refreshKey, setRefreshKey] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-
-  useEffect(() => {
-    const handler = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener('resize', handler);
-    return () => window.removeEventListener('resize', handler);
-  }, []);
 
   useEffect(() => {
     getEventoDetailService(eventId).then((res) => {
@@ -160,23 +119,17 @@ export default function CheckinPage() {
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
   const safePage = Math.min(currentPage, totalPages);
   const startIdx = (safePage - 1) * pageSize;
-  const paginated = collaborators.slice(startIdx, startIdx + pageSize);
 
   const handleAttendanceUpdated = (userId, attendance) => {
-    setCollaborators((prev) => prev.map((c) => (c.userId === userId ? { ...c, attendance } : c)));
+    setCollaborators((prev) => prev.map((c) => c.userId === userId ? { ...c, attendance } : c));
   };
 
-  const handleQuickAttendance = async (collab, attended) => {
-    setSavingIds((prev) => new Set(prev).add(collab.userId));
-    const body = {
-      eventId: Number(eventId), userId: collab.userId, attended,
-      entryTime: collab.attendance?.entryTime ?? null,
-      exitTime: collab.attendance?.exitTime ?? null,
-      notes: collab.attendance?.notes ?? null,
-    };
-    const res = await upsertAttendanceService(body);
-    if (res.status) handleAttendanceUpdated(collab.userId, { attended, entryTime: body.entryTime, exitTime: body.exitTime, notes: body.notes });
-    setSavingIds((prev) => { const next = new Set(prev); next.delete(collab.userId); return next; });
+  const handleUniformSaved = (userId, size) => {
+    setCollaborators((prev) => prev.map((c) => c.userId === userId ? { ...c, uniformSize: size } : c));
+  };
+
+  const handleStation2ActionSaved = (userId, station2) => {
+    setCollaborators((prev) => prev.map((c) => c.userId === userId ? { ...c, station2 } : c));
   };
 
   if (!loading && error) {
@@ -186,8 +139,7 @@ export default function CheckinPage() {
           <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto">
             <UserCheck className="w-8 h-8 text-destructive" />
           </div>
-          <h2 className="text-lg font-bold text-foreground mb-2">El evento relacionado no existe</h2>
-          <p className="text-sm text-muted-foreground max-w-md">{error}</p>
+          <h2 className="text-lg font-bold text-foreground">El evento no existe</h2>
           <Button onClick={() => navigate('/eventos/listado')} className="bg-[#234465] hover:bg-[#234465]/90">Ir al listado</Button>
         </div>
       </div>
@@ -220,15 +172,54 @@ export default function CheckinPage() {
         </div>
       </header>
 
+      {/* ── Tabs de estaciones ── */}
+      <div className="shrink-0 bg-white border-b border-border px-4">
+        <div className="flex gap-1 py-2">
+          {STATIONS.map(({ id, label, sublabel, Icon, activeClass, inactiveClass, lockedClass }) => {
+            const accessible = canAccess(id);
+            const isActive = activeStation === id;
+            const isComingSoon = id === 3; // Estación 3 aún no implementada
+
+            return (
+              <button
+                key={id}
+                onClick={() => accessible && !isComingSoon && setActiveStation(id)}
+                disabled={!accessible || isComingSoon}
+                className={`relative flex-1 flex flex-col items-center gap-0.5 px-2 py-2 rounded-lg text-xs font-semibold transition-all ${
+                  !accessible || isComingSoon
+                    ? lockedClass
+                    : isActive
+                    ? activeClass
+                    : inactiveClass
+                }`}
+              >
+                <div className="flex items-center gap-1.5">
+                  <Icon className="w-3.5 h-3.5 shrink-0" />
+                  <span>{label}</span>
+                  {(!accessible || isComingSoon) && <Lock className="w-3 h-3" />}
+                </div>
+                <span className={`text-[10px] font-normal leading-tight text-center ${
+                  isActive ? 'text-white/80' : 'text-muted-foreground'
+                }`}>
+                  {isComingSoon ? 'Próximamente' : sublabel}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* ── Contenido ── */}
       <div className="flex-1 overflow-auto">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 py-4 space-y-3">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 py-4 space-y-4">
 
-          {/* Título */}
+          {/* Título + fecha */}
           <div>
             {loading ? (<><Skeleton className="h-7 w-32 mb-1" /><Skeleton className="h-4 w-52" /></>) : (
               <>
-                <h2 className="text-xl font-bold text-[#234465]">Asistencia</h2>
+                <h2 className="text-xl font-bold text-[#234465]">
+                  {STATIONS.find((s) => s.id === activeStation)?.label}
+                </h2>
                 {event && formatEventDate(event.date) && (
                   <p className="text-xs text-muted-foreground mt-0.5 capitalize">{formatEventDate(event.date)}</p>
                 )}
@@ -236,239 +227,83 @@ export default function CheckinPage() {
             )}
           </div>
 
-          {/* Filtros */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="relative flex-1 min-w-[130px]">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
-              <input type="text" placeholder="Buscar nombre…" value={filterInput.name}
-                onChange={(e) => setFilterInput((f) => ({ ...f, name: e.target.value }))}
-                onKeyDown={handleKeyDown}
-                className="h-9 pl-8 pr-3 rounded-md border border-border bg-white text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#234465]/30 w-full" />
-            </div>
-            <div className="relative flex-1 min-w-[110px]">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
-              <input type="text" placeholder="Cédula…" value={filterInput.cedula}
-                onChange={(e) => setFilterInput((f) => ({ ...f, cedula: e.target.value }))}
-                onKeyDown={handleKeyDown}
-                className="h-9 pl-8 pr-3 rounded-md border border-border bg-white text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#234465]/30 w-full" />
-            </div>
-            <Button onClick={handleSearch} className="h-9 bg-[#234465] hover:bg-[#234465]/90 text-white gap-1.5 shrink-0">
-              <Search className="w-3.5 h-3.5" /><span className="hidden sm:inline">Buscar</span>
-            </Button>
-            {hasActiveFilters && (
-              <Button variant="outline" onClick={handleClearFilters} className="h-9 gap-1.5 text-muted-foreground shrink-0">
-                <X className="w-3.5 h-3.5" />
-              </Button>
-            )}
-          </div>
-
-          {/* Stats + page size */}
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
-              {loading ? <span className="inline-block h-4 w-28 bg-muted rounded-full animate-pulse" /> : (
-                <><span className="font-medium text-foreground">{totalItems}</span> colaborador{totalItems !== 1 ? 'es' : ''}</>
-              )}
-            </p>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground hidden sm:inline">Filas por página:</span>
-              <div className="flex border border-border rounded-md overflow-hidden">
-                {PAGE_SIZE_OPTIONS.map((size) => (
-                  <button key={size} onClick={() => { setPageSize(size); setCurrentPage(1); }}
-                    className={`px-3 py-1.5 text-xs font-medium transition ${pageSize === size ? 'bg-[#234465] text-white' : 'bg-white text-foreground hover:bg-muted'}`}>
-                    {size}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* ── MOBILE: tarjetas ── */}
-          {isMobile && (
-            <div className="space-y-2">
-              {loading ? (
-                Array.from({ length: 5 }).map((_, i) => <SkeletonCard key={i} />)
-              ) : collaborators.length === 0 ? (
-                <div className="text-center py-16 space-y-3">
-                  <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto">
-                    <UserCheck className="w-6 h-6 text-muted-foreground" />
-                  </div>
-                  <p className="text-sm font-medium text-foreground">No hay colaboradores asignados</p>
+          {/* Filtros globales + page size (solo estación 1 y 2 los usan) */}
+          {activeStation <= 2 && (
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-2 flex-1 flex-wrap">
+                <div className="relative flex-1 min-w-[130px]">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+                  <input type="text" placeholder="Buscar nombre…" value={filterInput.name}
+                    onChange={(e) => setFilterInput((f) => ({ ...f, name: e.target.value }))}
+                    onKeyDown={handleKeyDown}
+                    className="h-9 pl-8 pr-3 rounded-md border border-border bg-white text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#234465]/30 w-full" />
                 </div>
-              ) : (
-                paginated.map((collab) => {
-                  const attended = collab.attendance?.attended;
-                  const isSaving = savingIds.has(collab.userId);
-                  return (
-                    <div key={collab.userId} className="bg-white rounded-2xl border border-border overflow-hidden">
+                <div className="relative flex-1 min-w-[110px]">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+                  <input type="text" placeholder="Cédula…" value={filterInput.cedula}
+                    onChange={(e) => setFilterInput((f) => ({ ...f, cedula: e.target.value }))}
+                    onKeyDown={handleKeyDown}
+                    className="h-9 pl-8 pr-3 rounded-md border border-border bg-white text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#234465]/30 w-full" />
+                </div>
+                <Button onClick={handleSearch} className="h-9 bg-[#234465] hover:bg-[#234465]/90 text-white gap-1.5 shrink-0">
+                  <Search className="w-3.5 h-3.5" /><span className="hidden sm:inline">Buscar</span>
+                </Button>
+                {hasActiveFilters && (
+                  <Button variant="outline" onClick={handleClearFilters} className="h-9 gap-1.5 text-muted-foreground shrink-0">
+                    <X className="w-3.5 h-3.5" />
+                  </Button>
+                )}
+              </div>
 
-                      {/* Fila principal */}
-                      <div className="p-3 flex items-start gap-3">
-                        <Avatar firstName={collab.firstName} />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-bold text-foreground truncate">{collab.firstName} {collab.lastName}</p>
-                          <p className="text-[11px] text-muted-foreground mt-0.5">{collab.cedula} · {collab.phone ?? '—'}</p>
-                          <div className="flex items-center gap-1 mt-1.5 flex-wrap">
-                            {collab.zones?.map((zone, idx) => (
-                              <span key={idx} className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-[#eff6ff] text-[#2563eb]">{zone}</span>
-                            ))}
-                            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-md ${roleBadgeClass(collab.role)}`}>
-                              {roleLabel(collab.role)}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Horario */}
-                        <div className="shrink-0 text-right">
-                          <div className="flex items-center justify-end gap-1 text-xs mb-0.5">
-                            <span className="text-muted-foreground font-semibold">E</span>
-                            <span className={`font-medium ${collab.attendance?.entryTime ? 'text-foreground' : 'text-muted-foreground'}`}>
-                              {collab.attendance?.entryTime ? formatTime(collab.attendance.entryTime) : '—'}
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-end gap-1 text-xs">
-                            <span className="text-muted-foreground font-semibold">S</span>
-                            <span className={`font-medium ${collab.attendance?.exitTime ? 'text-foreground' : 'text-muted-foreground'}`}>
-                              {collab.attendance?.exitTime ? formatTime(collab.attendance.exitTime) : '—'}
-                            </span>
-                          </div>
-                          {collab.attendance?.notes && (
-                            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#7493B2]/20 text-[#234465] text-[10px] font-bold mt-1">N</span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Barra de acciones */}
-                      <div className="border-t border-border flex items-center gap-2 px-3 py-2">
-                        {/* Botón asistencia — ocupa la mayor parte */}
-                        <button
-                          onClick={() => !isSaving && handleQuickAttendance(collab, !attended)}
-                          disabled={isSaving}
-                          className={`flex-1 flex items-center justify-center gap-2 h-10 rounded-xl font-semibold text-sm transition-all active:scale-95 ${
-                            attended
-                              ? 'bg-emerald-500 text-white hover:bg-emerald-600'
-                              : 'bg-muted text-muted-foreground hover:bg-muted/80 border border-border'
-                          }`}
-                        >
-                          {isSaving ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : attended ? (
-                            <>
-                              <Check className="w-4 h-4" strokeWidth={3} />
-                              Asistió
-                            </>
-                          ) : (
-                            <>
-                              <div className="w-4 h-4 rounded border-2 border-muted-foreground/40" />
-                              No asistió
-                            </>
-                          )}
-                        </button>
-
-                        {/* Botón editar */}
-                        <button
-                          onClick={() => setEditTarget(collab)}
-                          className="h-10 w-10 rounded-xl border border-border flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition shrink-0"
-                          aria-label="Editar asistencia"
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-xs text-muted-foreground hidden sm:inline">Filas:</span>
+                <div className="flex border border-border rounded-md overflow-hidden">
+                  {PAGE_SIZE_OPTIONS.map((size) => (
+                    <button key={size} onClick={() => { setPageSize(size); setCurrentPage(1); }}
+                      className={`px-3 py-1.5 text-xs font-medium transition ${pageSize === size ? 'bg-[#234465] text-white' : 'bg-white text-foreground hover:bg-muted'}`}>
+                      {size}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
 
-          {/* ── DESKTOP: tabla ── */}
-          {!isMobile && <div className="bg-white rounded-lg border border-border overflow-hidden">
-            <table className="w-full">
-              <thead className="bg-muted/30 border-b border-border">
-                <tr>
-                  {COLUMNS.map((col) => (
-                    <th key={col} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">{col}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {loading ? (
-                  Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
-                ) : collaborators.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="px-4 py-12">
-                      <div className="text-center space-y-3">
-                        <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto">
-                          <UserCheck className="w-6 h-6 text-muted-foreground" />
-                        </div>
-                        <p className="text-sm font-medium text-foreground">No hay colaboradores asignados</p>
-                      </div>
-                    </td>
-                  </tr>
-                ) : (
-                  paginated.map((collab) => (
-                    <tr key={collab.userId} className="hover:bg-muted/20 transition">
-                      <td className="px-4 py-3.5">
-                        <div className="flex items-center gap-2.5">
-                          <Avatar firstName={collab.firstName} />
-                          <div>
-                            <span className="text-sm font-medium text-foreground block leading-snug">{collab.firstName} {collab.lastName}</span>
-                            <span className="text-xs text-muted-foreground">{collab.cedula}</span>
-                            {collab.zones?.length > 0 && (
-                              <div className="flex flex-wrap gap-1 mt-1">
-                                {collab.zones.map((zone, idx) => (
-                                  <Badge key={idx} className="text-xs border-0 bg-muted text-foreground">{zone}</Badge>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3.5">
-                        <Badge className={`text-xs border-0 ${roleBadgeClass(collab.role)} mb-1`}>{roleLabel(collab.role)}</Badge>
-                        <span className="text-xs text-muted-foreground block">{collab.phone ?? '—'}</span>
-                      </td>
-                      <td className="px-4 py-3.5">
-                        <div className="flex items-center gap-2">
-                          {savingIds.has(collab.userId) ? (
-                            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-                          ) : (
-                            <button
-                              onClick={() => handleQuickAttendance(collab, !collab.attendance?.attended)}
-                              className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-colors ${collab.attendance?.attended ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white border-border hover:border-[#234465]'}`}
-                            >
-                              {collab.attendance?.attended && <Check className="w-3.5 h-3.5" strokeWidth={3} />}
-                            </button>
-                          )}
-                          {collab.attendance?.notes && (
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#7493B2]/20 text-[#234465] text-[10px] font-bold cursor-default select-none">N</span>
-                              </TooltipTrigger>
-                              <TooltipContent side="top" className="max-w-xs text-xs">{collab.attendance.notes}</TooltipContent>
-                            </Tooltip>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3.5">
-                        <div className="flex flex-col gap-1">
-                          <span className="text-sm text-foreground"><span className="text-xs font-semibold text-muted-foreground mr-1">E</span>{collab.attendance?.entryTime ? formatTime(collab.attendance.entryTime) : '—'}</span>
-                          <span className="text-sm text-foreground"><span className="text-xs font-semibold text-muted-foreground mr-1">S</span>{collab.attendance?.exitTime ? formatTime(collab.attendance.exitTime) : '—'}</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3.5 text-right">
-                        <button onClick={() => setEditTarget(collab)} className="h-7 w-7 rounded-md border border-border flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition">
-                          <Pencil className="w-3.5 h-3.5" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>}
+          {/* ── Contenido por estación ── */}
+          {activeStation === 1 && (
+            <Station1Tab
+              collaborators={collaborators}
+              loading={loading}
+              eventId={eventId}
+              pageSize={pageSize}
+              currentPage={safePage}
+              onAttendanceUpdated={handleAttendanceUpdated}
+              onUniformSaved={handleUniformSaved}
+            />
+          )}
+
+          {activeStation === 2 && (
+            <Station2Tab
+              collaborators={collaborators}
+              loading={loading}
+              onActionSaved={handleStation2ActionSaved}
+            />
+          )}
+
+          {activeStation === 3 && (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <div className="w-14 h-14 rounded-2xl bg-[#DD7419]/10 flex items-center justify-center mx-auto mb-4">
+                <Boxes className="w-7 h-7 text-[#DD7419]" />
+              </div>
+              <h3 className="text-base font-bold text-foreground">Módulo de Insumos</h3>
+              <p className="text-sm text-muted-foreground mt-1.5 max-w-xs">
+                Este módulo está en construcción. Pronto podrás gestionar el inventario de insumos por evento.
+              </p>
+            </div>
+          )}
 
           {/* Paginación */}
-          {!loading && totalItems > 0 && (
+          {activeStation === 1 && !loading && totalItems > 0 && (
             <div className="flex items-center justify-between pt-1 pb-4">
               <p className="text-xs text-muted-foreground">
                 <span className="font-medium text-foreground">{startIdx + 1}–{Math.min(startIdx + pageSize, totalItems)}</span> de <span className="font-medium text-foreground">{totalItems}</span>
