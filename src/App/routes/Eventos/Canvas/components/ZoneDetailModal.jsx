@@ -1,4 +1,5 @@
 import {
+  Package,
   Plus,
   StickyNote,
   Trash2,
@@ -7,7 +8,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { AddPersonModal } from './AddPersonModal';
-import { CATEGORIES, COLORS, ZONE_ROLES } from './constants';
+import { COLORS, ZONE_ROLES } from './constants';
 
 export function ZoneDetailModal({
   zone,
@@ -85,46 +86,38 @@ export function ZoneDetailModal({
       )}
 
       {/* Overlay */}
-      <div
-        className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4"
-      >
-        {/* Modal */}
+      <div className="fixed inset-0 bg-black/50 z-[100] flex items-end sm:items-center sm:justify-center sm:p-4">
+        {/* Modal — bottom sheet en mobile, centrado en sm+ */}
         <div
-          className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col"
+          className="bg-white w-full rounded-t-2xl sm:rounded-xl shadow-2xl sm:max-w-2xl max-h-[92dvh] sm:max-h-[90vh] flex flex-col"
           onClick={(e) => e.stopPropagation()}
         >
+          {/* Pill handle visible solo en mobile */}
+          <div className="flex justify-center pt-3 pb-1 sm:hidden shrink-0">
+            <div className="w-10 h-1 rounded-full bg-muted-foreground/20" />
+          </div>
+
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
+          <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-border shrink-0">
             <div className="flex items-center gap-3">
               <div
-                className="w-3 h-3 rounded-full"
+                className="w-3 h-3 rounded-full shrink-0"
                 style={{ backgroundColor: zone.color }}
               />
-              <h2 className="text-lg font-bold text-foreground">{zone.name}</h2>
-              <span
-                className={`text-xs px-2 py-1 rounded-full font-medium ${
-                  CATEGORIES.find((c) => c.id === (zone.category || 'general'))
-                    ?.color
-                }`}
-              >
-                {
-                  CATEGORIES.find((c) => c.id === (zone.category || 'general'))
-                    ?.label
-                }
-              </span>
+              <h2 className="text-base sm:text-lg font-bold text-foreground">{zone.name}</h2>
             </div>
             <button
               onClick={onClose}
-              className="text-muted-foreground hover:text-foreground transition"
+              className="text-muted-foreground hover:text-foreground transition p-1"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
 
           {/* Body */}
-          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-4">
             {/* Nombre + Color */}
-            <div className="flex gap-4 items-end">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:items-end">
               <div className="flex-1">
                 <label className="text-xs font-bold text-muted-foreground uppercase block mb-2">
                   Nombre de la zona
@@ -154,7 +147,7 @@ export function ZoneDetailModal({
                       onClick={() =>
                         isAdmin && onUpdate(zone.id, { color: c.hex })
                       }
-                      className={`w-7 h-7 rounded-lg border-2 transition ${
+                      className={`w-8 h-8 sm:w-7 sm:h-7 rounded-lg border-2 transition ${
                         zone.color === c.hex
                           ? 'border-[#234465] scale-110 shadow-md'
                           : 'border-transparent hover:border-muted-foreground/30'
@@ -167,32 +160,39 @@ export function ZoneDetailModal({
               </div>
             </div>
 
-            {/* Categoría + Capacidad */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
+            {/* Tipo de zona + Capacidad */}
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:items-end">
+              <div className="flex-1">
                 <label className="text-xs font-bold text-muted-foreground uppercase block mb-2">
-                  Categoría
+                  Tipo de zona
                 </label>
-                <select
-                  disabled={!isAdmin}
-                  value={zone.category || 'general'}
-                  onChange={(e) =>
-                    isAdmin && onUpdate(zone.id, { category: e.target.value })
-                  }
-                  className={`w-full text-sm py-2 pl-3 pr-8 rounded-lg border border-border outline-none ${
-                    isAdmin
-                      ? 'bg-white focus:border-[#234465] focus:ring-2 focus:ring-[#234465]/20'
-                      : 'bg-muted/30 cursor-not-allowed'
-                  }`}
+                <div
+                  className={`inline-flex rounded-lg border border-border bg-muted/30 p-1 gap-1 ${!isAdmin ? 'opacity-60 pointer-events-none' : ''}`}
                 >
-                  {CATEGORIES.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.label}
-                    </option>
-                  ))}
-                </select>
+                  <button
+                    onClick={() => isAdmin && onUpdate(zone.id, { category: 'general' })}
+                    className={`flex items-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-md text-xs font-semibold transition-all ${
+                      (zone.category || 'general') !== 'acopio'
+                        ? 'bg-[#234465] text-white shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    Zona
+                  </button>
+                  <button
+                    onClick={() => isAdmin && onUpdate(zone.id, { category: 'acopio' })}
+                    className={`flex items-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-md text-xs font-semibold transition-all ${
+                      zone.category === 'acopio'
+                        ? 'bg-[#DD7419] text-white shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    <Package className="w-3 h-3" />
+                    Centro de acopio
+                  </button>
+                </div>
               </div>
-              <div>
+              <div className="sm:w-36">
                 <label className="text-xs font-bold text-muted-foreground uppercase block mb-2">
                   Capacidad máxima
                 </label>
@@ -294,8 +294,8 @@ export function ZoneDetailModal({
 
             {/* Personas */}
             <div className="space-y-3">
-              {/* Supervisor y Coordinador en la misma línea */}
-              <div className="grid grid-cols-2 gap-3">
+              {/* Supervisor y Coordinador */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <PeopleSubsection
                   label="Supervisor de Zona"
                   people={supervisores}
@@ -337,6 +337,9 @@ export function ZoneDetailModal({
                 <Trash2 className="w-4 h-4" /> Eliminar zona
               </button>
             )}
+
+            {/* Espaciado extra para evitar que el contenido quede bajo el home indicator */}
+            <div className="h-2 sm:hidden" />
           </div>
         </div>
       </div>

@@ -281,6 +281,21 @@ export const getWasteSignedUrlService = async (zoneId, logId) => {
   }
 };
 
+export const updateDeliveryService = async ({ attendanceId, type, received, snackDetail }) => {
+  try {
+    const body = { attendanceId, type, received };
+    if (type === 'snack' && snackDetail) body.snackDetail = snackDetail;
+    const { data } = await axios.patch(`${EVENTS_URL}/attendance/delivery`, body);
+    return { status: true, data: data?.data, errors: null };
+  } catch (error) {
+    return {
+      status: false,
+      data: null,
+      errors: error?.response?.data?.message || 'Error al actualizar la entrega.',
+    };
+  }
+};
+
 export const upsertAttendanceService = async (body) => {
   try {
     const { data } = await axios.put(`${EVENTS_URL}/attendance/upsert`, body);

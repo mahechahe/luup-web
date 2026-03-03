@@ -33,10 +33,7 @@ export function ZoneAccordionItem({
                   ?.color
               }`}
             >
-              {
-                CATEGORIES.find((c) => c.id === (zone.category || 'general'))
-                  ?.label
-              }
+              Zona General
             </span>
           </div>
         </div>

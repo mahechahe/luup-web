@@ -8,7 +8,7 @@ import {
   ZoomOut,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { COLORS, generateId, getCenter, getStatusColor } from './constants';
+import { COLORS, generateId, getCenter } from './constants';
 
 export function ZonesCanvas({
   zones,
@@ -82,7 +82,10 @@ export function ZonesCanvas({
   const handleZoneMouseDown = (e, zone) => {
     if (tool !== 'select') return;
     e.stopPropagation();
-    if (!isAdmin) { onSelectZone(zone.id); return; }
+    if (!isAdmin) {
+      onSelectZone(zone.id);
+      return;
+    }
     const pos = getMousePos(e);
     onSelectZone(zone.id);
     setDragInfo({
@@ -108,8 +111,10 @@ export function ZonesCanvas({
       return;
     }
     if (isPanning) {
-      const dx = (startPan.x - e.clientX) * (viewBox.w / svgRef.current.clientWidth);
-      const dy = (startPan.y - e.clientY) * (viewBox.h / svgRef.current.clientHeight);
+      const dx =
+        (startPan.x - e.clientX) * (viewBox.w / svgRef.current.clientWidth);
+      const dy =
+        (startPan.y - e.clientY) * (viewBox.h / svgRef.current.clientHeight);
       setViewBox((prev) => ({ ...prev, x: prev.x + dx, y: prev.y + dy }));
       setStartPan({ x: e.clientX, y: e.clientY });
       return;
@@ -134,8 +139,14 @@ export function ZonesCanvas({
     }
     if (isDrawing && tool === 'rect' && currentRect) {
       let r = { ...currentRect };
-      if (r.width < 0) { r.x += r.width; r.width = Math.abs(r.width); }
-      if (r.height < 0) { r.y += r.height; r.height = Math.abs(r.height); }
+      if (r.width < 0) {
+        r.x += r.width;
+        r.width = Math.abs(r.width);
+      }
+      if (r.height < 0) {
+        r.y += r.height;
+        r.height = Math.abs(r.height);
+      }
       if (r.width > 10 && r.height > 10) {
         const newZone = {
           id: generateId(),
@@ -181,7 +192,7 @@ export function ZonesCanvas({
   /* ── Render ──────────────────────────────────────────── */
   return (
     <main
-      className={`flex-1 overflow-hidden relative ${
+      className={`hidden md:block md:flex-1 overflow-hidden relative ${
         tool === 'move'
           ? 'cursor-grab active:cursor-grabbing'
           : tool === 'select'
@@ -224,11 +235,18 @@ export function ZonesCanvas({
         onMouseUp={handleMouseUp}
         onContextMenu={(e) => e.preventDefault()}
         onDoubleClick={
-          tool === 'poly' && polyPoints.length >= 3 ? onFinishPolygon : undefined
+          tool === 'poly' && polyPoints.length >= 3
+            ? onFinishPolygon
+            : undefined
         }
       >
         <defs>
-          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+          <pattern
+            id="grid"
+            width="40"
+            height="40"
+            patternUnits="userSpaceOnUse"
+          >
             <path
               d="M 40 0 L 0 0 0 40"
               fill="none"
@@ -238,9 +256,30 @@ export function ZonesCanvas({
             />
           </pattern>
         </defs>
-        <rect id="background-rect" x="-5000" y="-5000" width="10000" height="10000" fill="#f8fafc" />
-        <rect id="workspace-rect" x="0" y="0" width="1200" height="800" fill="white" />
-        <rect id="grid-rect" x="0" y="0" width="1200" height="800" fill="url(#grid)" />
+        <rect
+          id="background-rect"
+          x="-5000"
+          y="-5000"
+          width="10000"
+          height="10000"
+          fill="#f8fafc"
+        />
+        <rect
+          id="workspace-rect"
+          x="0"
+          y="0"
+          width="1200"
+          height="800"
+          fill="white"
+        />
+        <rect
+          id="grid-rect"
+          x="0"
+          y="0"
+          width="1200"
+          height="800"
+          fill="url(#grid)"
+        />
 
         <image
           href={planImage}
@@ -257,7 +296,6 @@ export function ZonesCanvas({
         {zones.map((zone) => {
           const isSelected = selectedId === zone.id;
           const center = getCenter(zone);
-          const statusColor = getStatusColor(zone.people.length, zone.maxCapacity);
           return (
             <g
               key={zone.id}
@@ -290,22 +328,24 @@ export function ZonesCanvas({
               >
                 <rect
                   x="-55"
-                  y="-22"
+                  y="-14"
                   width="110"
-                  height="44"
+                  height="28"
                   rx="4"
                   fill="white"
                   fillOpacity="0.9"
-                  stroke={statusColor}
+                  stroke={zone.color}
                   strokeWidth="1.5"
                 />
-                <text y="-4" textAnchor="middle" fontSize="12" fontWeight="bold" fill="#1e293b">
+                <text
+                  y="5"
+                  textAnchor="middle"
+                  fontSize="12"
+                  fontWeight="bold"
+                  fill="#1e293b"
+                >
                   {zone.name}
                 </text>
-                <text y="13" textAnchor="middle" fontSize="10" fill="#475569">
-                  👥 {zone.people.length} / {zone.maxCapacity}
-                </text>
-                <circle cx="46" cy="-13" r="4" fill={statusColor} />
               </g>
             </g>
           );
@@ -314,8 +354,16 @@ export function ZonesCanvas({
         {/* Preview rect en dibujo */}
         {isDrawing && currentRect && tool === 'rect' && (
           <rect
-            x={currentRect.width < 0 ? currentRect.x + currentRect.width : currentRect.x}
-            y={currentRect.height < 0 ? currentRect.y + currentRect.height : currentRect.y}
+            x={
+              currentRect.width < 0
+                ? currentRect.x + currentRect.width
+                : currentRect.x
+            }
+            y={
+              currentRect.height < 0
+                ? currentRect.y + currentRect.height
+                : currentRect.y
+            }
             width={Math.abs(currentRect.width)}
             height={Math.abs(currentRect.height)}
             fill="rgba(35,68,101,0.15)"
@@ -355,7 +403,9 @@ export function ZonesCanvas({
             <div className="absolute bottom-12 left-1/3 w-48 h-20 rounded-lg animate-pulse bg-muted delay-150" />
             <div className="absolute bottom-8 right-8 w-24 h-16 rounded-lg animate-pulse bg-muted delay-100" />
           </div>
-          <p className="text-xs text-muted-foreground animate-pulse">Cargando plano del evento…</p>
+          <p className="text-xs text-muted-foreground animate-pulse">
+            Cargando plano del evento…
+          </p>
         </div>
       )}
 
@@ -367,7 +417,9 @@ export function ZonesCanvas({
               <ImageOff className="w-7 h-7 text-muted-foreground" />
             </div>
             <div>
-              <p className="font-semibold text-sm text-foreground">Sin plano cargado</p>
+              <p className="font-semibold text-sm text-foreground">
+                Sin plano cargado
+              </p>
               <p className="text-xs text-muted-foreground mt-1">
                 No hay un plano del recinto para este evento.
               </p>

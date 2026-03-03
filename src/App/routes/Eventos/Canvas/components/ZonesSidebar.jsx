@@ -6,7 +6,6 @@ import {
   MapPin,
   Move,
   MousePointer2,
-  Package,
   RefreshCw,
   Square,
   Upload,
@@ -39,8 +38,6 @@ export function ZonesSidebar({
   onDeleteRequest,
 }) {
   const [detailZoneId, setDetailZoneId] = useState(null);
-  const generalZones = zones.filter((z) => z.category !== 'acopio');
-  const acopioZones  = zones.filter((z) => z.category === 'acopio');
   const detailZone = zones.find((z) => z.id === detailZoneId);
 
   // Calcular todos los IDs de personas asignadas en TODAS las zonas del evento
@@ -77,11 +74,11 @@ export function ZonesSidebar({
       )}
 
       <aside
-        className={`shrink-0 flex flex-col border-l border-border bg-white transition-all duration-300 ease-in-out overflow-hidden ${
-          isOpen ? 'w-80' : 'w-0'
+        className={`shrink-0 flex flex-col border-l border-border bg-white transition-all duration-300 ease-in-out overflow-hidden w-full ${
+          isOpen ? 'md:w-80' : 'md:w-0'
         }`}
       >
-        <div className="w-80 flex flex-col h-full overflow-y-auto">
+        <div className="w-full md:w-80 flex flex-col h-full overflow-y-auto">
         {/* Título */}
         <div className="px-5 py-4 border-b border-border shrink-0">
           <div className="flex items-center gap-2">
@@ -158,34 +155,14 @@ export function ZonesSidebar({
 
         {/* Panel de zonas */}
         <div className="flex-1 px-4 py-4 space-y-4 overflow-y-auto">
-          {/* Zonas generales */}
           <ZoneSection
             title="Zonas generales"
-            count={generalZones.length}
+            count={zones.length}
             color="#234465"
             icon={<MapPin className="w-3 h-3 text-white" />}
             emptyLabel="Sin zonas registradas"
           >
-            {generalZones.map((zone) => (
-              <ZoneAccordionItem
-                key={zone.id}
-                zone={zone}
-                isSelected={selectedId === zone.id}
-                onSelect={onSelectZone}
-                onViewDetails={setDetailZoneId}
-              />
-            ))}
-          </ZoneSection>
-
-          {/* Centros de acopio */}
-          <ZoneSection
-            title="Centros de acopio"
-            count={acopioZones.length}
-            color="#DD7419"
-            icon={<Package className="w-3 h-3 text-white" />}
-            emptyLabel="Sin centros registrados"
-          >
-            {acopioZones.map((zone) => (
+            {zones.map((zone) => (
               <ZoneAccordionItem
                 key={zone.id}
                 zone={zone}
