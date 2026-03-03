@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import {
-  Users, FileText, Shield, Crown, Trash2, Weight,
+  Users, UserCheck, UserX, Utensils, Coffee,
+  FileText, Shield, Crown, Trash2, Weight,
   Plus, ClipboardList, History, ChevronDown,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -21,10 +22,10 @@ const CATEGORY_LABEL = {
   acopio: 'Centro de Acopio',
 };
 
-function MiniStat({ emoji, value, label, color }) {
+function MiniStat({ icon: Icon, value, label, color }) {
   return (
-    <div className="flex flex-col items-center gap-0.5 min-w-0">
-      <span className="text-lg leading-none">{emoji}</span>
+    <div className="flex flex-col items-center gap-1 min-w-0">
+      <Icon className={`w-4 h-4 ${color}`} />
       <span className={`text-sm font-bold leading-none ${color}`}>{value}</span>
       <span className="text-[9px] text-muted-foreground leading-tight text-center">{label}</span>
     </div>
@@ -147,11 +148,11 @@ export function ZoneCard({
           <div className="mx-4 sm:mx-6 border-t border-border mb-3" />
           <div className="px-4 sm:px-6 pb-4">
             <div className="grid grid-cols-5 gap-1.5 bg-muted/30 rounded-2xl px-3 py-3">
-              <MiniStat emoji="👥" value={staffCount}    label="Total"      color="text-foreground" />
-              <MiniStat emoji="⚡" value={activeCount}   label="Activos"    color="text-emerald-600" />
-              <MiniStat emoji="🍽️" value={lunchCount}   label="Almuerzo"   color="text-[#DD7419]" />
-              <MiniStat emoji="☕" value={breakCount}    label="Break"      color="text-[#7493B2]" />
-              <MiniStat emoji="🔴" value={inactiveCount} label="Inactivos"  color="text-slate-500" />
+              <MiniStat icon={Users}      value={staffCount}    label="Total"     color="text-foreground" />
+              <MiniStat icon={UserCheck}  value={activeCount}   label="Activos"   color="text-emerald-600" />
+              <MiniStat icon={Utensils}   value={lunchCount}    label="Almuerzo"  color="text-[#DD7419]" />
+              <MiniStat icon={Coffee}     value={breakCount}    label="Break"     color="text-[#7493B2]" />
+              <MiniStat icon={UserX}      value={inactiveCount} label="Inactivos" color="text-slate-500" />
             </div>
           </div>
         </>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Loader2, Coffee, UtensilsCrossed, CircleCheck, UserX } from 'lucide-react';
+import { X, Loader2, Coffee, UtensilsCrossed, CircleCheck, UserX, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { createIncidentService } from '../../services/eventServices';
 
@@ -8,6 +8,7 @@ const TIPOS = [
     label: 'Break',
     Icon: Coffee,
     color: 'text-[#7493B2]',
+    iconBg: 'bg-[#7493B2]/10',
     activeBg: 'bg-[#7493B2]',
     activeBorder: 'border-[#7493B2]',
   },
@@ -15,6 +16,7 @@ const TIPOS = [
     label: 'Almuerzo',
     Icon: UtensilsCrossed,
     color: 'text-[#DD7419]',
+    iconBg: 'bg-[#DD7419]/10',
     activeBg: 'bg-[#DD7419]',
     activeBorder: 'border-[#DD7419]',
   },
@@ -22,6 +24,7 @@ const TIPOS = [
     label: 'Activo',
     Icon: CircleCheck,
     color: 'text-emerald-600',
+    iconBg: 'bg-emerald-50',
     activeBg: 'bg-emerald-500',
     activeBorder: 'border-emerald-500',
   },
@@ -29,6 +32,7 @@ const TIPOS = [
     label: 'Inactivo',
     Icon: UserX,
     color: 'text-slate-500',
+    iconBg: 'bg-slate-100',
     activeBg: 'bg-slate-500',
     activeBorder: 'border-slate-500',
   },
@@ -102,21 +106,32 @@ export function IncidentFormModal({ open, onClose, person, eventId, onSave }) {
               Tipo de incidencia <span className="text-destructive">*</span>
             </label>
             <div className="grid grid-cols-2 gap-2">
-              {TIPOS.map(({ label, Icon, color, activeBg, activeBorder }) => {
+              {TIPOS.map(({ label, Icon, color, iconBg, activeBg, activeBorder }) => {
                 const active = form.name === label;
                 return (
                   <button
                     key={label}
                     type="button"
                     onClick={() => setForm((f) => ({ ...f, name: label }))}
-                    className={`flex flex-col items-center justify-center gap-2 py-4 rounded-xl border-2 font-semibold text-sm transition active:scale-95 ${
+                    className={`relative flex flex-col items-center justify-center gap-2 py-4 rounded-xl border-2 font-semibold text-sm transition-all active:scale-95 ${
                       active
-                        ? `${activeBg} ${activeBorder} text-white`
-                        : `bg-white border-border ${color} hover:bg-muted`
+                        ? `${activeBg} ${activeBorder} text-white shadow-sm`
+                        : `bg-white border-border hover:border-gray-300 hover:bg-muted/40`
                     }`}
                   >
-                    <Icon className="w-5 h-5" />
-                    {label}
+                    {/* Checkmark cuando está activo */}
+                    {active && (
+                      <span className="absolute top-2 right-2 w-4 h-4 rounded-full bg-white/25 flex items-center justify-center">
+                        <Check className="w-2.5 h-2.5 text-white" />
+                      </span>
+                    )}
+                    {/* Contenedor del ícono */}
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                      active ? 'bg-white/20' : iconBg
+                    }`}>
+                      <Icon className={`w-5 h-5 ${active ? 'text-white' : color}`} />
+                    </div>
+                    <span className={active ? 'text-white' : color}>{label}</span>
                   </button>
                 );
               })}

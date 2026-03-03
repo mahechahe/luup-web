@@ -40,18 +40,20 @@ function formatDate(iso) {
 
 /* ── Skeleton row ─────────────────────────────────────────── */
 function SkeletonRow() {
-  const widths = ['w-40', 'w-20', 'w-32', 'w-44', 'w-20'];
   return (
     <tr className="border-b border-border animate-pulse">
-      {widths.map((w, i) => (
-        <td key={i} className="px-4 py-3.5">
-          <div className={`h-3.5 bg-muted rounded-full ${w}`} />
-        </td>
-      ))}
+      <td className="px-4 py-3.5">
+        <div className="h-3.5 bg-muted rounded-full w-40 mb-1.5" />
+        <div className="h-3 bg-muted rounded-full w-28" />
+      </td>
+      <td className="px-4 py-3.5 hidden md:table-cell"><div className="h-3.5 bg-muted rounded-full w-20" /></td>
+      <td className="px-4 py-3.5 hidden md:table-cell"><div className="h-3.5 bg-muted rounded-full w-32" /></td>
+      <td className="px-4 py-3.5 hidden md:table-cell"><div className="h-3.5 bg-muted rounded-full w-44" /></td>
+      <td className="px-4 py-3.5 hidden md:table-cell"><div className="h-3.5 bg-muted rounded-full w-20" /></td>
       <td className="px-4 py-3.5">
         <div className="flex gap-2">
-          <div className="h-8 w-16 bg-muted rounded-md" />
-          <div className="h-8 w-24 bg-muted rounded-md" />
+          <div className="h-8 w-8 bg-muted rounded-md" />
+          <div className="h-8 w-8 bg-muted rounded-md md:w-24" />
         </div>
       </td>
     </tr>
@@ -83,7 +85,6 @@ function EmptyState({ hasFilter }) {
   );
 }
 
-const COLUMNS = ['Nombre', 'Tipo', 'Fechas', 'Ubicación', 'Creado', 'Acciones'];
 
 const DATE_TYPE_LABEL = {
   single_date: 'Fecha única',
@@ -353,14 +354,12 @@ function EventosPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-muted/40">
-                    {COLUMNS.map((col) => (
-                      <th
-                        key={col}
-                        className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide whitespace-nowrap border-b border-border"
-                      >
-                        {col}
-                      </th>
-                    ))}
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b border-border">Nombre</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide whitespace-nowrap border-b border-border hidden md:table-cell">Tipo</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide whitespace-nowrap border-b border-border hidden md:table-cell">Fechas</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b border-border hidden md:table-cell">Ubicación</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide whitespace-nowrap border-b border-border hidden md:table-cell">Creado</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b border-border">Acciones</th>
                   </tr>
                 </thead>
 
@@ -377,12 +376,15 @@ function EventosPage() {
                         key={ev.eventId}
                         className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors"
                       >
-                        <td className="px-4 py-3.5 whitespace-nowrap">
-                          <span className="font-semibold text-foreground">
-                            {ev.name}
+                        {/* Nombre — siempre visible; en móvil muestra fecha y ubicación como subtexto */}
+                        <td className="px-4 py-3.5">
+                          <span className="font-semibold text-foreground block">{ev.name}</span>
+                          <span className="text-xs text-muted-foreground md:hidden block mt-0.5">
+                            <EventDateCell ev={ev} />
+                            {ev.location && <> · {ev.location}</>}
                           </span>
                         </td>
-                        <td className="px-4 py-3.5 whitespace-nowrap">
+                        <td className="px-4 py-3.5 whitespace-nowrap hidden md:table-cell">
                           <Badge
                             variant="secondary"
                             className={`text-xs font-medium ${
@@ -394,37 +396,34 @@ function EventosPage() {
                             {DATE_TYPE_LABEL[ev.dateType] ?? '—'}
                           </Badge>
                         </td>
-                        <td className="px-4 py-3.5 whitespace-nowrap text-muted-foreground">
+                        <td className="px-4 py-3.5 whitespace-nowrap text-muted-foreground hidden md:table-cell">
                           <EventDateCell ev={ev} />
                         </td>
-                        <td className="px-4 py-3.5 text-muted-foreground">
+                        <td className="px-4 py-3.5 text-muted-foreground hidden md:table-cell">
                           {ev.location ?? '—'}
                         </td>
-                        <td className="px-4 py-3.5 whitespace-nowrap text-muted-foreground">
+                        <td className="px-4 py-3.5 whitespace-nowrap text-muted-foreground hidden md:table-cell">
                           {formatDate(ev.createdAt)}
                         </td>
                         <td className="px-4 py-3.5 whitespace-nowrap">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1.5">
                             <Button
                               variant="outline"
                               size="sm"
-                              className="h-8 gap-1.5 text-xs border-brand/40 text-brand hover:bg-brand/10 hover:border-brand"
-                              onClick={() => {
-                                setSelectedEvent(ev);
-                                setEditOpen(true);
-                              }}
+                              className="h-8 px-2 md:px-3 text-xs border-brand/40 text-brand hover:bg-brand/10 hover:border-brand"
+                              onClick={() => { setSelectedEvent(ev); setEditOpen(true); }}
                             >
                               <Pencil className="w-3.5 h-3.5" />
-                              Editar
+                              <span className="hidden md:inline ml-1">Editar</span>
                             </Button>
                             <Button
                               variant="outline"
                               size="sm"
-                              className="h-8 gap-1.5 text-xs border-sky-300 text-sky-600 hover:bg-sky-50 hover:border-sky-500"
+                              className="h-8 px-2 md:px-3 text-xs border-sky-300 text-sky-600 hover:bg-sky-50 hover:border-sky-500"
                               onClick={() => navigate(`/eventos/${ev.eventId}`)}
                             >
                               <Eye className="w-3.5 h-3.5" />
-                              Ver detalle
+                              <span className="hidden md:inline ml-1">Ver detalle</span>
                             </Button>
                           </div>
                         </td>

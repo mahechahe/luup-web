@@ -237,9 +237,9 @@ export default function ZonasPage() {
 
         {loading ? (
           <div className="space-y-5">
-            <div className="flex gap-2">
-              <Skeleton className="h-9 w-36 rounded-lg" />
-              <Skeleton className="h-9 w-36 rounded-lg" />
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Skeleton className="h-9 w-full sm:w-36 rounded-lg" />
+              <Skeleton className="h-9 w-full sm:w-36 rounded-lg" />
             </div>
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
               {Array.from({ length: 4 }).map((_, i) => <ZoneCardSkeleton key={i} />)}
@@ -247,10 +247,10 @@ export default function ZonasPage() {
           </div>
         ) : (
           <Tabs defaultValue="general">
-            <TabsList className="h-auto p-1 gap-1 bg-muted/60">
+            <TabsList className="h-auto p-1 gap-1 bg-muted/60 flex-col sm:flex-row w-full sm:w-auto">
               <TabsTrigger
                 value="general"
-                className="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium data-[state=active]:bg-[#234465] data-[state=active]:text-white data-[state=active]:shadow-sm"
+                className="w-full sm:w-auto justify-start sm:justify-center flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium data-[state=active]:bg-[#234465] data-[state=active]:text-white data-[state=active]:shadow-sm"
               >
                 <Layers className="w-4 h-4" />
                 Zona general
@@ -260,7 +260,7 @@ export default function ZonasPage() {
               </TabsTrigger>
               <TabsTrigger
                 value="acopio"
-                className="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium data-[state=active]:bg-[#DD7419] data-[state=active]:text-white data-[state=active]:shadow-sm"
+                className="w-full sm:w-auto justify-start sm:justify-center flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium data-[state=active]:bg-[#DD7419] data-[state=active]:text-white data-[state=active]:shadow-sm"
               >
                 <PackageOpen className="w-4 h-4" />
                 Centro de Acopio
