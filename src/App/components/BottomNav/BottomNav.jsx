@@ -1,11 +1,12 @@
 import { useUserStore } from '@/App/context/userStore';
-import { Calendar, Home, UserCheck } from 'lucide-react';
+import { Calendar, Home, Package, UserCheck } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 
 const NAV_ITEMS = [
-  { label: 'Inicio', path: '/dashboard', icon: Home },
-  { label: 'Eventos', path: '/eventos/listado', icon: Calendar },
-  { label: 'Colaboradores', path: '/colaboradores', icon: UserCheck, adminOnly: true },
+  { label: 'Inicio',        path: '/dashboard',    icon: Home,      adminOnly: false },
+  { label: 'Eventos',       path: '/eventos/listado', icon: Calendar, adminOnly: false },
+  { label: 'Inventario',    path: '/inventario',   icon: Package,   adminOnly: true  },
+  { label: 'Colaboradores', path: '/colaboradores', icon: UserCheck, adminOnly: true  },
 ];
 
 export default function BottomNav() {
