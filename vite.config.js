@@ -63,15 +63,32 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
         navigateFallback: '/index.html',
-        navigateFallbackDenylist: [/^\/api/],
+        // Excluir /api e /inventory del navigate fallback
+        navigateFallbackDenylist: [/^\/api/, /^\/inventory/],
         runtimeCaching: [
           {
+            // Rutas /api/*
             urlPattern: /^https?:\/\/.*\/api\/.*/i,
             handler: 'NetworkFirst',
             options: {
               cacheName: 'api-cache',
               expiration: {
                 maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24,
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+          {
+            // Ruta /inventory (sin /api/)
+            urlPattern: /^https?:\/\/.*\/inventory.*/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'inventory-cache',
+              expiration: {
+                maxEntries: 50,
                 maxAgeSeconds: 60 * 60 * 24,
               },
               cacheableResponse: {
