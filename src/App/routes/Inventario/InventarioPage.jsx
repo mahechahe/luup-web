@@ -1,7 +1,8 @@
 import {
   AlertTriangle,
-  Check,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   ChevronUp,
   Edit2,
   Loader2,
@@ -10,8 +11,11 @@ import {
   Search,
   Trash2,
   X,
+  TrendingUp,
+  DollarSign,
+  Boxes,
 } from 'lucide-react';
-import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import {
   getInventoryItemsService,
@@ -22,71 +26,21 @@ import {
 
 /* ── Helpers ─────────────────────────────────────────────── */
 const fmt = (n) =>
-  new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n ?? 0);
+  new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    maximumFractionDigits: 0,
+  }).format(n ?? 0);
 
-/* ── Celda editable inline ───────────────────────────────── */
-function EditableCell({ value, type = 'text', prefix, onSave, disabled }) {
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft]     = useState(value);
-  const inputRef              = useRef(null);
-
-  useEffect(() => { setDraft(value); }, [value]);
-  useEffect(() => { if (editing) inputRef.current?.focus(); }, [editing]);
-
-  const commit = () => {
-    const parsed = type === 'number' ? (parseFloat(draft) || 0) : draft.trim();
-    if (parsed !== value) onSave(parsed);
-    setEditing(false);
-  };
-
-  const cancel = () => { setDraft(value); setEditing(false); };
-
-  const handleKey = (e) => {
-    if (e.key === 'Enter') commit();
-    if (e.key === 'Escape') cancel();
-  };
-
-  if (disabled) {
-    return (
-      <span className="text-sm text-foreground">
-        {prefix}{type === 'number' && prefix ? fmt(value) : value}
-      </span>
-    );
-  }
-
-  if (editing) {
-    return (
-      <div className="flex items-center gap-1">
-        <input
-          ref={inputRef}
-          type={type}
-          min={type === 'number' ? 0 : undefined}
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={handleKey}
-          onBlur={commit}
-          className="w-full border border-[#234465] rounded-lg px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-[#234465]/20 bg-white"
-        />
-      </div>
-    );
-  }
-
-  return (
-    <button
-      onClick={() => setEditing(true)}
-      className="group flex items-center gap-1.5 text-left w-full hover:text-[#234465] transition"
-    >
-      <span className="text-sm text-foreground group-hover:text-[#234465] transition">
-        {prefix === '$' ? fmt(value) : value ?? '—'}
-      </span>
-      <Edit2 className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 shrink-0 transition" />
-    </button>
-  );
-}
-
-/* ── Modal: Agregar ítem ─────────────────────────────────── */
-function AddItemModal({ onSave, onClose }) {
-  const [form, setForm]   = useState({ nombre: '', descripcion: '', cantidad: '', precioUnitario: '' });
+/* ── Modal: Agregar / Editar ─────────────────────────────── */
+function ItemModal({ item, onSave, onClose }) {
+  const isEdit = !!item;
+  const [form, setForm] = useState({
+    nombre:         item?.nombre         ?? '',
+    descripcion:    item?.descripcion    ?? '',
+    cantidad:       item?.cantidad       ?? '',
+    precioUnitario: item?.precioUnitario ?? '',
+  });
   const [saving, setSaving] = useState(false);
   const set = (k, v) => setForm((p) => ({ ...p, [k]: v }));
 
@@ -94,6 +48,7 @@ function AddItemModal({ onSave, onClose }) {
     if (!form.nombre.trim() || !form.cantidad) return;
     setSaving(true);
     await onSave({
+      ...(isEdit ? { itemId: item.id } : {}),
       nombre:         form.nombre.trim(),
       descripcion:    form.descripcion.trim() || null,
       cantidad:       parseInt(form.cantidad) || 0,
@@ -104,59 +59,82 @@ function AddItemModal({ onSave, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4"
+      style={{ backgroundColor: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)' }}
+    >
       <div
-        className="bg-white w-full max-w-sm rounded-t-2xl sm:rounded-2xl shadow-2xl"
+        className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-          <h2 className="text-base font-bold text-foreground">Agregar ítem</h2>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition">
-            <X className="w-5 h-5" />
-          </button>
+        {/* Header del modal con acento de color */}
+        <div className="px-6 pt-6 pb-5" style={{ background: 'linear-gradient(135deg, #234465 0%, #1a3350 100%)' }}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-white/60 text-xs font-semibold uppercase tracking-widest mb-0.5">
+                {isEdit ? 'Modificar registro' : 'Nuevo registro'}
+              </p>
+              <h2 className="text-white text-xl font-black">
+                {isEdit ? item.nombre : 'Agregar ítem'}
+              </h2>
+            </div>
+            <button
+              onClick={onClose}
+              className="w-9 h-9 rounded-full flex items-center justify-center transition"
+              style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}
+            >
+              <X className="w-4 h-4 text-white" />
+            </button>
+          </div>
         </div>
 
-        <div className="px-5 py-4 space-y-4">
+        <div className="px-6 py-5 space-y-4">
+          {/* Nombre */}
           <div>
-            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide block mb-1.5">
-              Nombre <span className="text-destructive">*</span>
+            <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest block mb-2">
+              Nombre <span className="text-red-400">*</span>
             </label>
             <input
               autoFocus
               value={form.nombre}
               onChange={(e) => set('nombre', e.target.value)}
               placeholder="ej. Trapero industrial"
-              className="w-full border border-border rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#234465] focus:ring-2 focus:ring-[#234465]/15"
+              className="w-full border-2 border-slate-100 rounded-2xl px-4 py-3 text-sm font-medium outline-none transition focus:border-[#234465]"
+              style={{ background: '#f8fafc' }}
             />
           </div>
 
+          {/* Descripción */}
           <div>
-            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide block mb-1.5">
-              Descripción <span className="text-muted-foreground font-normal">(opcional)</span>
+            <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest block mb-2">
+              Descripción <span className="text-slate-300 font-normal normal-case tracking-normal">(opcional)</span>
             </label>
             <input
               value={form.descripcion}
               onChange={(e) => set('descripcion', e.target.value)}
               placeholder="ej. Para limpieza de pisos, color azul…"
-              className="w-full border border-border rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#234465] focus:ring-2 focus:ring-[#234465]/15"
+              className="w-full border-2 border-slate-100 rounded-2xl px-4 py-3 text-sm font-medium outline-none transition focus:border-[#234465]"
+              style={{ background: '#f8fafc' }}
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
+            {/* Cantidad */}
             <div>
-              <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide block mb-1.5">
-                Cantidad <span className="text-destructive">*</span>
+              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest block mb-2">
+                Cantidad <span className="text-red-400">*</span>
               </label>
               <input
                 type="number" min="0"
                 value={form.cantidad}
                 onChange={(e) => set('cantidad', e.target.value)}
                 placeholder="0"
-                className="w-full border border-border rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#234465] focus:ring-2 focus:ring-[#234465]/15"
+                className="w-full border-2 border-slate-100 rounded-2xl px-4 py-3 text-sm font-medium outline-none transition focus:border-[#234465]"
+                style={{ background: '#f8fafc' }}
               />
             </div>
+            {/* Precio */}
             <div>
-              <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide block mb-1.5">
+              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest block mb-2">
                 Precio unit.
               </label>
               <input
@@ -164,7 +142,8 @@ function AddItemModal({ onSave, onClose }) {
                 value={form.precioUnitario}
                 onChange={(e) => set('precioUnitario', e.target.value)}
                 placeholder="0"
-                className="w-full border border-border rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#234465] focus:ring-2 focus:ring-[#234465]/15"
+                className="w-full border-2 border-slate-100 rounded-2xl px-4 py-3 text-sm font-medium outline-none transition focus:border-[#234465]"
+                style={{ background: '#f8fafc' }}
               />
             </div>
           </div>
@@ -172,10 +151,11 @@ function AddItemModal({ onSave, onClose }) {
           <button
             onClick={handleSubmit}
             disabled={!form.nombre.trim() || !form.cantidad || saving}
-            className="w-full bg-[#234465] hover:bg-[#234465]/90 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl py-3 text-sm font-bold transition flex items-center justify-center gap-2"
+            className="w-full rounded-2xl py-3.5 text-sm font-black text-white transition flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{ background: 'linear-gradient(135deg, #DD7419 0%, #c46210 100%)' }}
           >
             {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-            Agregar ítem
+            {isEdit ? 'Guardar cambios' : 'Agregar ítem'}
           </button>
         </div>
       </div>
@@ -188,8 +168,10 @@ export default function InventarioPage() {
   const [items, setItems]               = useState([]);
   const [loading, setLoading]           = useState(true);
   const [search, setSearch]             = useState('');
-  const [cantidadFilter, setCantidadFilter] = useState('');  // '' | 'asc' | 'desc'
-  const [showAdd, setShowAdd]           = useState(false);
+  const [sortDir, setSortDir]           = useState('');
+  const [pageSize, setPageSize]         = useState(10);
+  const [page, setPage]                 = useState(1);
+  const [modalItem, setModalItem]       = useState(undefined);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deletingId, setDeletingId]     = useState(null);
 
@@ -207,61 +189,44 @@ export default function InventarioPage() {
   /* ── Filtros ─────────────────────────────────────────── */
   const filtered = useMemo(() => {
     let list = [...items];
-
     if (search.trim()) {
       const q = search.toLowerCase();
-      // buscar por nombre o por cantidad exacta
-      list = list.filter((i) => {
-        const byName     = i.nombre.toLowerCase().includes(q);
-        const byCantidad = String(i.cantidad).includes(q);
-        return byName || byCantidad;
-      });
+      list = list.filter((i) =>
+        i.nombre.toLowerCase().includes(q) || String(i.cantidad).includes(q)
+      );
     }
-
-    if (cantidadFilter === 'asc')  list.sort((a, b) => a.cantidad - b.cantidad);
-    if (cantidadFilter === 'desc') list.sort((a, b) => b.cantidad - a.cantidad);
-
+    if (sortDir === 'asc')  list.sort((a, b) => a.cantidad - b.cantidad);
+    if (sortDir === 'desc') list.sort((a, b) => b.cantidad - a.cantidad);
     return list;
-  }, [items, search, cantidadFilter]);
+  }, [items, search, sortDir]);
+
+  /* ── Paginación ──────────────────────────────────────── */
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const safePage   = Math.min(page, totalPages);
+  const paginated  = filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
+
+  const handlePageSize = (size) => { setPageSize(size); setPage(1); };
+  const handleSearch   = (v)    => { setSearch(v); setPage(1); };
 
   /* ── Stats ───────────────────────────────────────────── */
   const totalItems    = items.length;
   const totalUnidades = items.reduce((s, i) => s + i.cantidad, 0);
   const valorTotal    = items.reduce((s, i) => s + (i.cantidad * (i.precioUnitario ?? 0)), 0);
 
-  /* ── Update inline ───────────────────────────────────── */
-  const handleInlineUpdate = async (item, field, newValue) => {
-    // optimistic update
-    setItems((prev) =>
-      prev.map((i) => (i.id === item.id ? { ...i, [field]: newValue } : i))
-    );
-    const res = await updateInventoryItemService({
-      itemId:        item.id,
-      nombre:        field === 'nombre'        ? newValue : item.nombre,
-      cantidad:      field === 'cantidad'      ? newValue : item.cantidad,
-      precioUnitario: field === 'precioUnitario' ? newValue : item.precioUnitario,
-    });
-    if (!res.status) {
-      toast.error(res.errors ?? 'Error al actualizar.');
-      // revert
-      setItems((prev) =>
-        prev.map((i) => (i.id === item.id ? { ...i, [field]: item[field] } : i))
-      );
-    }
-  };
-
-  /* ── Add ─────────────────────────────────────────────── */
-  const handleAdd = async (data) => {
-    const res = await createInventoryItemService(data);
+  /* ── CRUD ────────────────────────────────────────────── */
+  const handleSave = async (data) => {
+    const isEdit = !!data.itemId;
+    const res = isEdit
+      ? await updateInventoryItemService(data)
+      : await createInventoryItemService(data);
     if (res.status) {
-      toast.success('Ítem agregado.');
-      setItems((prev) => [res.item, ...prev]);
+      toast.success(isEdit ? 'Ítem actualizado.' : 'Ítem agregado.');
+      await fetchItems();
     } else {
-      toast.error(res.errors ?? 'Error al agregar el ítem.');
+      toast.error(res.errors ?? 'Error al guardar.');
     }
   };
 
-  /* ── Delete ──────────────────────────────────────────── */
   const handleDelete = async (id) => {
     setDeletingId(id);
     const res = await deleteInventoryItemService(id);
@@ -275,21 +240,31 @@ export default function InventarioPage() {
     setDeleteTarget(null);
   };
 
-  /* ── Sort toggle ─────────────────────────────────────── */
-  const toggleSort = () => {
-    setCantidadFilter((p) => p === '' ? 'asc' : p === 'asc' ? 'desc' : '');
-  };
+  /* ── Page numbers ────────────────────────────────────── */
+  const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1)
+    .filter((p) => p === 1 || p === totalPages || Math.abs(p - safePage) <= 1)
+    .reduce((acc, p, idx, arr) => {
+      if (idx > 0 && p - arr[idx - 1] > 1) acc.push('...');
+      acc.push(p);
+      return acc;
+    }, []);
 
   /* ── Skeleton ────────────────────────────────────────── */
   const Skeleton = () => (
-    <div className="animate-pulse">
+    <div className="animate-pulse divide-y divide-slate-100">
       {Array.from({ length: 5 }).map((_, i) => (
-        <div key={i} className="flex items-center gap-4 px-4 py-3.5 border-b border-border">
-          <div className="h-4 bg-muted rounded flex-1" />
-          <div className="h-4 bg-muted rounded flex-1" />
-          <div className="h-4 bg-muted rounded w-16" />
-          <div className="h-4 bg-muted rounded w-24" />
-          <div className="w-7 h-7 bg-muted rounded-lg" />
+        <div key={i} className="flex items-center gap-4 px-5 py-4">
+          <div className="w-8 h-8 bg-slate-100 rounded-xl shrink-0" />
+          <div className="flex-1 space-y-2">
+            <div className="h-3.5 bg-slate-100 rounded-full w-2/3" />
+            <div className="h-3 bg-slate-100 rounded-full w-1/3" />
+          </div>
+          <div className="h-3.5 bg-slate-100 rounded-full w-12 hidden sm:block" />
+          <div className="h-3.5 bg-slate-100 rounded-full w-20 hidden sm:block" />
+          <div className="flex gap-2">
+            <div className="h-8 bg-slate-100 rounded-xl w-16" />
+            <div className="h-8 bg-slate-100 rounded-xl w-20" />
+          </div>
         </div>
       ))}
     </div>
@@ -297,156 +272,198 @@ export default function InventarioPage() {
 
   /* ── Render ──────────────────────────────────────────── */
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-4xl mx-auto px-4 py-6 space-y-5 pb-24">
+    <div className="min-h-screen pb-24" style={{ background: '#f1f5f9' }}>
+      <div className="max-w-5xl mx-auto px-4 py-6 space-y-5">
 
-        {/* Header */}
-        <div className="flex items-start justify-between gap-3">
+        {/* ── Header con gradiente ─────────────────────── */}
+        <div
+          className="rounded-3xl px-6 py-5 flex items-center justify-between"
+          style={{ background: 'linear-gradient(135deg, #234465 0%, #1a3350 100%)' }}
+        >
           <div>
-            <h1 className="text-2xl font-black text-[#234465] tracking-tight">Inventario</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              {loading ? '…' : `${totalItems} ítem${totalItems !== 1 ? 's' : ''}`}
+            <p className="text-white/50 text-xs font-bold uppercase tracking-widest mb-0.5">Módulo</p>
+            <h1 className="text-white text-2xl font-black tracking-tight">Inventario</h1>
+            <p className="text-white/60 text-sm mt-0.5">
+              {loading ? '…' : `${totalItems} ítem${totalItems !== 1 ? 's' : ''} registrados`}
             </p>
           </div>
           <button
-            onClick={() => setShowAdd(true)}
-            className="flex items-center gap-1.5 bg-[#DD7419] hover:bg-[#DD7419]/90 text-white rounded-xl px-4 py-2.5 text-sm font-bold shadow-sm transition shrink-0"
+            onClick={() => setModalItem(null)}
+            className="flex items-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-black transition-all shadow-lg hover:-translate-y-0.5 hover:shadow-xl active:translate-y-0"
+            style={{ background: '#DD7419', color: 'white' }}
           >
-            <Plus className="w-4 h-4" /> Agregar
+            <Plus className="w-4 h-4" />
+            <span>Agregar</span>
           </button>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-2">
+        {/* ── Stats cards ──────────────────────────────── */}
+        <div className="grid grid-cols-3 gap-3">
           {[
-            { label: 'Ítems',       value: totalItems,                                   color: '#234465' },
-            { label: 'Unidades',    value: loading ? '…' : totalUnidades.toLocaleString('es-CO'), color: '#DD7419' },
-            { label: 'Valor total', value: loading ? '…' : fmt(valorTotal),              color: '#059669' },
-          ].map(({ label, value, color }) => (
-            <div key={label} className="rounded-2xl border border-border bg-white px-3 py-3.5 text-center shadow-sm">
-              <p className="text-lg font-black truncate" style={{ color }}>{value}</p>
-              <p className="text-[11px] text-muted-foreground mt-0.5 font-medium">{label}</p>
+            { label: 'Total ítems',  value: loading ? '…' : totalItems,                            icon: Boxes,      bg: 'linear-gradient(135deg, #234465 0%, #1a3350 100%)', textColor: 'white',   subColor: 'rgba(255,255,255,0.6)' },
+            { label: 'Unidades',     value: loading ? '…' : totalUnidades.toLocaleString('es-CO'), icon: TrendingUp, bg: 'linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)', textColor: '#c2410c', subColor: '#f97316' },
+            { label: 'Valor total',  value: loading ? '…' : fmt(valorTotal),                       icon: DollarSign, bg: 'linear-gradient(135deg, #059669 0%, #047857 100%)', textColor: 'white',   subColor: 'rgba(255,255,255,0.6)' },
+          ].map(({ label, value, icon: Icon, bg, textColor, subColor }) => (
+            <div
+              key={label}
+              className="rounded-2xl p-3 sm:p-4 shadow-sm overflow-hidden relative"
+              style={{ background: bg }}
+            >
+              <div className="absolute -right-3 -top-3 w-16 h-16 rounded-full opacity-10" style={{ background: textColor }} />
+              <Icon className="w-4 h-4 mb-2" style={{ color: subColor }} />
+              <p className="font-black text-base sm:text-xl leading-none truncate" style={{ color: textColor }}>{value}</p>
+              <p className="text-[10px] sm:text-xs font-semibold mt-1 uppercase tracking-wide" style={{ color: subColor }}>{label}</p>
             </div>
           ))}
         </div>
 
-        {/* Buscador */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por nombre o cantidad…"
-            className="w-full h-10 pl-9 pr-8 rounded-xl border border-border bg-white text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#234465]/20 transition"
-          />
-          {search && (
-            <button
-              onClick={() => setSearch('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          )}
+        {/* ── Buscador + page size ──────────────────────── */}
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+            <input
+              value={search}
+              onChange={(e) => handleSearch(e.target.value)}
+              placeholder="Buscar por nombre o cantidad…"
+              className="w-full h-11 pl-11 pr-10 rounded-2xl border-2 border-transparent bg-white text-sm font-medium placeholder:text-slate-400 outline-none transition focus:border-[#234465] shadow-sm"
+            />
+            {search && (
+              <button
+                onClick={() => handleSearch('')}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+          <select
+            value={pageSize}
+            onChange={(e) => handlePageSize(Number(e.target.value))}
+            className="h-11 px-4 rounded-2xl border-2 border-transparent bg-white text-sm font-bold text-slate-600 outline-none focus:border-[#234465] shadow-sm shrink-0 transition"
+          >
+            <option value={10}>10</option>
+            <option value={25}>25</option>
+            <option value={50}>50</option>
+          </select>
         </div>
 
-        {/* Tabla */}
-        <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
+        {/* ── Tabla ────────────────────────────────────── */}
+        <div className="bg-white rounded-3xl shadow-sm overflow-hidden border border-slate-100">
 
           {/* Cabecera */}
-          <div className="grid grid-cols-[1fr_1fr_100px_140px_40px] items-center gap-4 px-4 py-3 border-b border-border bg-muted/30">
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Nombre</p>
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Descripción</p>
+          <div className="grid grid-cols-[1fr_72px_180px] sm:grid-cols-[1fr_1fr_90px_130px_180px] items-center gap-3 px-5 py-3.5 border-b border-slate-100"
+            style={{ background: '#f8fafc' }}
+          >
+            <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Nombre</p>
+            <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest hidden sm:block">Descripción</p>
             <button
-              onClick={toggleSort}
-              className="flex items-center gap-1 text-xs font-bold text-muted-foreground uppercase tracking-wide hover:text-[#234465] transition"
+              onClick={() => setSortDir((p) => p === '' ? 'asc' : p === 'asc' ? 'desc' : '')}
+              className="flex items-center gap-1 text-[11px] font-black text-slate-400 uppercase tracking-widest hover:text-[#234465] transition"
             >
-              Cantidad
-              {cantidadFilter === 'asc'  && <ChevronUp   className="w-3 h-3" />}
-              {cantidadFilter === 'desc' && <ChevronDown  className="w-3 h-3" />}
-              {cantidadFilter === ''     && <span className="w-3 h-3 opacity-40">↕</span>}
+              Cant.
+              {sortDir === 'asc'  && <ChevronUp   className="w-3 h-3" />}
+              {sortDir === 'desc' && <ChevronDown  className="w-3 h-3" />}
+              {sortDir === ''     && <span className="opacity-40">↕</span>}
             </button>
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Precio unit.</p>
-            <span />
+            <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest hidden sm:block">Precio unit.</p>
+            <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest text-right">Acciones</p>
           </div>
 
           {/* Filas */}
           {loading ? (
             <Skeleton />
-          ) : filtered.length === 0 ? (
-            <div className="text-center py-16 space-y-3">
-              <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center mx-auto">
-                <Package className="w-7 h-7 text-muted-foreground" />
+          ) : paginated.length === 0 ? (
+            <div className="text-center py-20 space-y-3">
+              <div
+                className="w-16 h-16 rounded-3xl flex items-center justify-center mx-auto"
+                style={{ background: '#f1f5f9' }}
+              >
+                <Package className="w-8 h-8 text-slate-400" />
               </div>
-              <div>
-                <p className="text-sm font-bold text-foreground">Sin ítems</p>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {search
-                    ? 'Sin resultados para tu búsqueda.'
-                    : 'Agrega el primer ítem con el botón "Agregar".'}
-                </p>
-              </div>
+              <p className="text-sm font-bold text-slate-500">Sin ítems</p>
+              <p className="text-xs text-slate-400">
+                {search ? 'Sin resultados para tu búsqueda.' : 'Agrega el primer ítem con el botón "Agregar".'}
+              </p>
             </div>
           ) : (
-            <div>
-              {filtered.map((item, idx) => (
+            <div className="divide-y divide-slate-50">
+              {paginated.map((item, idx) => (
                 <div
                   key={item.id}
-                  className={`grid grid-cols-[1fr_1fr_100px_140px_40px] items-center gap-4 px-4 py-3.5 ${
-                    idx !== filtered.length - 1 ? 'border-b border-border' : ''
-                  } hover:bg-muted/20 transition-colors group`}
+                  className="grid grid-cols-[1fr_72px_180px] sm:grid-cols-[1fr_1fr_90px_130px_180px] items-center gap-3 px-5 py-4 hover:bg-slate-50 transition-colors"
+                  style={{ animationDelay: `${idx * 30}ms` }}
                 >
-                  {/* Nombre */}
-                  <EditableCell
-                    value={item.nombre}
-                    type="text"
-                    onSave={(v) => handleInlineUpdate(item, 'nombre', v)}
-                  />
+                  {/* Nombre + descripcion mobile */}
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-slate-800 truncate">{item.nombre}</p>
+                    {item.descripcion && (
+                      <p className="text-[11px] text-slate-400 truncate sm:hidden mt-0.5">{item.descripcion}</p>
+                    )}
+                  </div>
 
-                  {/* Descripción */}
-                  <EditableCell
-                    value={item.descripcion ?? ''}
-                    type="text"
-                    onSave={(v) => handleInlineUpdate(item, 'descripcion', v)}
-                  />
+                  {/* Descripción desktop */}
+                  <p className="text-sm text-slate-400 truncate hidden sm:block">
+                    {item.descripcion || <span className="text-slate-200">—</span>}
+                  </p>
 
                   {/* Cantidad */}
-                  <EditableCell
-                    value={item.cantidad}
-                    type="number"
-                    onSave={(v) => handleInlineUpdate(item, 'cantidad', v)}
-                  />
+                  <div>
+                    <span
+                      className="inline-flex items-center px-2.5 py-1 rounded-xl text-xs font-black"
+                      style={{ background: '#EFF6FF', color: '#234465' }}
+                    >
+                      {item.cantidad.toLocaleString('es-CO')}
+                    </span>
+                  </div>
 
-                  {/* Precio */}
-                  <EditableCell
-                    value={item.precioUnitario ?? 0}
-                    type="number"
-                    prefix="$"
-                    onSave={(v) => handleInlineUpdate(item, 'precioUnitario', v)}
-                  />
+                  {/* Precio desktop */}
+                  <p className="text-sm font-semibold text-slate-600 hidden sm:block">
+                    {fmt(item.precioUnitario ?? 0)}
+                  </p>
 
-                  {/* Eliminar */}
-                  <button
-                    onClick={() => setDeleteTarget(item)}
-                    className="w-7 h-7 flex items-center justify-center rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/5 opacity-0 group-hover:opacity-100 transition"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  {/* Acciones */}
+                  <div className="flex items-center gap-1.5 justify-end">
+                    <button
+                      onClick={() => setModalItem(item)}
+                      className="flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-xs font-bold transition-all duration-200 hover:-translate-y-1 hover:shadow-md active:translate-y-0"
+                      style={{ background: '#EFF6FF', color: '#234465' }}
+                    >
+                      <Edit2 className="w-3 h-3" />
+                      <span>Editar</span>
+                    </button>
+                    <button
+                      onClick={() => setDeleteTarget(item)}
+                      className="flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-xs font-bold transition-all duration-200 hover:-translate-y-1 hover:shadow-md active:translate-y-0"
+                      style={{ background: '#FEF2F2', color: '#dc2626' }}
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      <span>Eliminar</span>
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
           )}
 
-          {/* Footer con totales */}
-          {!loading && filtered.length > 0 && (
-            <div className="grid grid-cols-[1fr_1fr_100px_140px_40px] items-center gap-4 px-4 py-3 border-t border-border bg-muted/20">
-              <p className="text-xs font-bold text-muted-foreground">
+          {/* Footer totales */}
+          {!loading && paginated.length > 0 && (
+            <div
+              className="grid grid-cols-[1fr_72px_180px] sm:grid-cols-[1fr_1fr_90px_130px_180px] items-center gap-3 px-5 py-3.5 border-t border-slate-100"
+              style={{ background: '#f8fafc' }}
+            >
+              <p className="text-xs font-bold text-slate-400">
                 {filtered.length} ítem{filtered.length !== 1 ? 's' : ''}
               </p>
-              <span />
-              <p className="text-sm font-black text-[#234465]">
-                {filtered.reduce((s, i) => s + i.cantidad, 0).toLocaleString('es-CO')}
-              </p>
-              <p className="text-sm font-black text-[#059669]">
+              <span className="hidden sm:block" />
+              <div>
+                <span
+                  className="inline-flex items-center px-2.5 py-1 rounded-xl text-xs font-black"
+                  style={{ background: '#234465', color: 'white' }}
+                >
+                  {filtered.reduce((s, i) => s + i.cantidad, 0).toLocaleString('es-CO')}
+                </span>
+              </div>
+              <p className="text-sm font-black hidden sm:block" style={{ color: '#059669' }}>
                 {fmt(filtered.reduce((s, i) => s + (i.cantidad * (i.precioUnitario ?? 0)), 0))}
               </p>
               <span />
@@ -454,52 +471,101 @@ export default function InventarioPage() {
           )}
         </div>
 
-        {/* Tip de edición */}
-        {!loading && items.length > 0 && (
-          <p className="text-center text-[11px] text-muted-foreground">
-            Toca cualquier celda para editarla directamente · Enter para guardar · Esc para cancelar
-          </p>
+        {/* ── Paginación ───────────────────────────────── */}
+        {!loading && totalPages > 1 && (
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs font-semibold text-slate-400">
+              Página {safePage} de {totalPages}
+            </p>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={safePage === 1}
+                className="w-8 h-8 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-30 transition shadow-sm"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+
+              {pageNumbers.map((p, idx) =>
+                p === '...' ? (
+                  <span key={`dot-${idx}`} className="w-8 text-center text-xs text-slate-400">…</span>
+                ) : (
+                  <button
+                    key={p}
+                    onClick={() => setPage(p)}
+                    className="w-8 h-8 rounded-xl text-xs font-black transition shadow-sm border"
+                    style={
+                      p === safePage
+                        ? { background: '#234465', color: 'white', borderColor: '#234465' }
+                        : { background: 'white', color: '#64748b', borderColor: '#e2e8f0' }
+                    }
+                  >
+                    {p}
+                  </button>
+                )
+              )}
+
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={safePage === totalPages}
+                className="w-8 h-8 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-30 transition shadow-sm"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
         )}
       </div>
 
-      {/* ── Modales ───────────────────────────────────────── */}
-      {showAdd && (
-        <AddItemModal
-          onSave={handleAdd}
-          onClose={() => setShowAdd(false)}
+      {/* ── Modal agregar/editar ─────────────────────────── */}
+      {modalItem !== undefined && (
+        <ItemModal
+          item={modalItem}
+          onSave={handleSave}
+          onClose={() => setModalItem(undefined)}
         />
       )}
 
+      {/* ── Modal eliminar ───────────────────────────────── */}
       {deleteTarget && (
-        <div className="fixed inset-0 bg-black/50 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4">
-          <div className="bg-white w-full max-w-sm rounded-t-2xl sm:rounded-2xl shadow-2xl p-5 space-y-4">
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl bg-destructive/10 flex items-center justify-center shrink-0">
-                <AlertTriangle className="w-5 h-5 text-destructive" />
-              </div>
-              <div>
-                <p className="font-bold text-foreground text-sm">Eliminar ítem</p>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Se eliminará "{deleteTarget.nombre}" del inventario. Esta acción no se puede deshacer.
-                </p>
+        <div
+          className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4"
+          style={{ backgroundColor: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)' }}
+        >
+          <div className="bg-white w-full max-w-sm rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden">
+            <div className="px-6 pt-6 pb-5" style={{ background: 'linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%)' }}>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.15)' }}>
+                  <AlertTriangle className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <p className="text-white/60 text-xs font-bold uppercase tracking-widest">Confirmar acción</p>
+                  <p className="text-white font-black text-base">Eliminar ítem</p>
+                </div>
               </div>
             </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setDeleteTarget(null)}
-                disabled={!!deletingId}
-                className="flex-1 border border-border rounded-xl py-2.5 text-sm font-semibold hover:bg-muted transition disabled:opacity-40"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={() => handleDelete(deleteTarget.id)}
-                disabled={!!deletingId}
-                className="flex-1 bg-destructive hover:bg-destructive/90 disabled:opacity-60 text-white rounded-xl py-2.5 text-sm font-bold transition flex items-center justify-center gap-2"
-              >
-                {deletingId === deleteTarget.id && <Loader2 className="w-4 h-4 animate-spin" />}
-                Eliminar
-              </button>
+            <div className="px-6 py-5 space-y-4">
+              <p className="text-sm text-slate-500 leading-relaxed">
+                Se eliminará <span className="font-bold text-slate-700">"{deleteTarget.nombre}"</span> del inventario permanentemente.
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setDeleteTarget(null)}
+                  disabled={!!deletingId}
+                  className="flex-1 border-2 border-slate-200 rounded-2xl py-3 text-sm font-bold text-slate-600 hover:bg-slate-50 transition disabled:opacity-40"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => handleDelete(deleteTarget.id)}
+                  disabled={!!deletingId}
+                  className="flex-1 rounded-2xl py-3 text-sm font-black text-white transition flex items-center justify-center gap-2 disabled:opacity-60"
+                  style={{ background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)' }}
+                >
+                  {deletingId === deleteTarget.id && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Eliminar
+                </button>
+              </div>
             </div>
           </div>
         </div>
