@@ -62,7 +62,10 @@ function formatDateTime(iso) {
 
 /* ── Modal disponibilidad de inventario ──────────────────── */
 function InventoryAvailabilityModal({ inventory, allDotaciones, onClose }) {
-  // Calcula cuánto se ha usado de cada item sumando todas las dotaciones
+  const [search, setSearch] = useState('');
+  const [page, setPage]     = useState(1);
+  const PAGE_SIZE = 10;
+
   const usedMap = {};
   allDotaciones.forEach((dotacion) => {
     dotacion.forEach(({ itemId, cantidad }) => {
@@ -70,13 +73,20 @@ function InventoryAvailabilityModal({ inventory, allDotaciones, onClose }) {
     });
   });
 
-  const items = inventory.map((item) => {
+  const allItems = inventory.map((item) => {
     const usado = usedMap[item.id] ?? 0;
     const disponible = item.cantidad - usado;
     return { ...item, usado, disponible };
   });
 
-  const hayItems = items.length > 0;
+  const filtered = allItems.filter((i) => {
+    const q = search.toLowerCase().trim();
+    return !q || i.nombre.toLowerCase().includes(q);
+  });
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage   = Math.min(page, totalPages);
+  const paginated  = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4"
@@ -95,7 +105,9 @@ function InventoryAvailabilityModal({ inventory, allDotaciones, onClose }) {
             </div>
             <div>
               <h2 className="text-base font-bold text-foreground">Disponibilidad de inventario</h2>
-              <p className="text-xs text-muted-foreground">{items.length} ítem{items.length !== 1 ? 's' : ''}</p>
+              <p className="text-xs text-muted-foreground">
+                {filtered.length} de {allItems.length} ítem{allItems.length !== 1 ? 's' : ''}
+              </p>
             </div>
           </div>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition">
@@ -103,9 +115,30 @@ function InventoryAvailabilityModal({ inventory, allDotaciones, onClose }) {
           </button>
         </div>
 
+        {/* Buscador */}
+        <div className="px-6 py-3 border-b border-border shrink-0">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+            <input
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+              placeholder="Buscar por nombre…"
+              className="w-full h-9 pl-9 pr-9 rounded-lg border border-border text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/20 bg-background"
+            />
+            {search && (
+              <button
+                onClick={() => { setSearch(''); setPage(1); }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+        </div>
+
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-6 py-4">
-          {!hayItems ? (
+          {allItems.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center space-y-3">
               <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center">
                 <Package className="w-7 h-7 text-muted-foreground" />
@@ -113,9 +146,16 @@ function InventoryAvailabilityModal({ inventory, allDotaciones, onClose }) {
               <p className="text-sm font-bold text-foreground">No hay ítems disponibles</p>
               <p className="text-xs text-muted-foreground">El inventario está vacío.</p>
             </div>
+          ) : filtered.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-center space-y-3">
+              <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center">
+                <Search className="w-7 h-7 text-muted-foreground" />
+              </div>
+              <p className="text-sm font-bold text-foreground">Sin resultados</p>
+              <p className="text-xs text-muted-foreground">No hay ítems que coincidan con "{search}".</p>
+            </div>
           ) : (
             <div className="space-y-2">
-              {/* Cabecera */}
               <div className="grid grid-cols-[1fr_80px_80px_80px] gap-3 px-3 py-2 rounded-lg bg-muted/40">
                 <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Ítem</p>
                 <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide text-center">Total</p>
@@ -123,7 +163,7 @@ function InventoryAvailabilityModal({ inventory, allDotaciones, onClose }) {
                 <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide text-center">Disp.</p>
               </div>
 
-              {items.map((item) => {
+              {paginated.map((item) => {
                 const agotado = item.disponible <= 0;
                 const pct = item.cantidad > 0 ? Math.round((item.usado / item.cantidad) * 100) : 0;
                 return (
@@ -140,7 +180,6 @@ function InventoryAvailabilityModal({ inventory, allDotaciones, onClose }) {
                       {item.descripcion && (
                         <p className="text-[11px] text-muted-foreground truncate mt-0.5">{item.descripcion}</p>
                       )}
-                      {/* Barra de progreso */}
                       <div className="mt-1.5 h-1.5 rounded-full bg-muted overflow-hidden">
                         <div
                           className={`h-full rounded-full transition-all ${agotado ? 'bg-red-500' : 'bg-violet-500'}`}
@@ -169,6 +208,50 @@ function InventoryAvailabilityModal({ inventory, allDotaciones, onClose }) {
             </div>
           )}
         </div>
+
+        {/* Footer paginación */}
+        {totalPages > 1 && (
+          <div className="px-6 py-3 border-t border-border shrink-0 flex items-center justify-between gap-3">
+            <p className="text-xs text-muted-foreground">
+              Mostrando{' '}
+              <span className="font-semibold text-foreground">
+                {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, filtered.length)}
+              </span>{' '}
+              de <span className="font-semibold text-foreground">{filtered.length}</span>
+            </p>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={safePage === 1}
+                className="w-8 h-8 rounded-lg border border-border flex items-center justify-center text-muted-foreground hover:bg-muted disabled:opacity-30 transition"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter((p) => p === 1 || p === totalPages || Math.abs(p - safePage) <= 1)
+                .reduce((acc, p, idx, arr) => { if (idx > 0 && p - arr[idx - 1] > 1) acc.push('...'); acc.push(p); return acc; }, [])
+                .map((p, idx) =>
+                  p === '...'
+                    ? <span key={`d${idx}`} className="text-xs text-muted-foreground px-1">…</span>
+                    : <button
+                        key={p}
+                        onClick={() => setPage(p)}
+                        className={`w-8 h-8 rounded-lg text-xs font-bold transition border ${
+                          p === safePage ? 'bg-violet-600 text-white border-violet-600' : 'bg-white border-border text-foreground hover:bg-muted'
+                        }`}
+                      >{p}</button>
+                )
+              }
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={safePage === totalPages}
+                className="w-8 h-8 rounded-lg border border-border flex items-center justify-center text-muted-foreground hover:bg-muted disabled:opacity-30 transition"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
