@@ -26,6 +26,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import AttendanceEditModal from './AttendanceEditModal';
 import { Station1Tab } from '@/App/routes/Eventos/Checkin/components/Station1Tab';
 import { Station2Tab } from '@/App/routes/Eventos/Checkin/components/Station2Tab';
+import { Station3Tab } from '@/App/routes/Eventos/Checkin/components/Station3Tab';
 
 function formatEventDate(iso) {
   if (!iso) return null;
@@ -63,9 +64,9 @@ const STATIONS = [
   {
     id: 3,
     label: 'Estación 3',
-    sublabel: 'Insumos',
+    sublabel: 'Dotación · Insumos',
     Icon: Boxes,
-    activeClass: 'bg-orange-100 text-orange-800 shadow-sm',
+    activeClass: 'bg-violet-100 text-violet-800 shadow-sm',
     inactiveClass: 'text-foreground hover:bg-muted',
     lockedClass: 'text-muted-foreground/40 cursor-not-allowed',
   },
@@ -91,10 +92,9 @@ export default function CheckinPage() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Controles de búsqueda y filtro — centralizados en CheckinPage
   const [filterInput, setFilterInput] = useState({ name: '', cedula: '' });
   const [filters, setFilters] = useState({ name: '', cedula: '' });
-  const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'pending' | 'done'
+  const [statusFilter, setStatusFilter] = useState('all');
 
   useEffect(() => {
     getEventoDetailService(eventId).then((res) => {
@@ -135,7 +135,6 @@ export default function CheckinPage() {
   };
   const hasActiveFilters = filterInput.name !== '' || filterInput.cedula !== '';
 
-  // Cambiar de estación resetea el filtro de estado
   const handleStationChange = (id) => {
     setActiveStation(id);
     setStatusFilter('all');
@@ -182,6 +181,23 @@ export default function CheckinPage() {
     );
   };
 
+  // Actualiza dotación localmente tras confirmar en estación 3
+  const handleDotacionSaved = (userId, cart) => {
+    setCollaborators((prev) =>
+      prev.map((c) => {
+        if (c.userId !== userId) return c;
+        const existing = c.dotacion ?? [];
+        const merged = [...existing];
+        cart.forEach(({ item, cantidad }) => {
+          const idx = merged.findIndex((d) => d.itemId === item.id);
+          if (idx >= 0) merged[idx] = { ...merged[idx], cantidad: merged[idx].cantidad + cantidad };
+          else merged.push({ itemId: item.id, itemNombre: item.nombre, cantidad });
+        });
+        return { ...c, dotacion: merged };
+      })
+    );
+  };
+
   if (!loading && error) {
     return (
       <div className="h-screen flex items-center justify-center bg-background">
@@ -189,13 +205,8 @@ export default function CheckinPage() {
           <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto">
             <UserCheck className="w-8 h-8 text-destructive" />
           </div>
-          <h2 className="text-lg font-bold text-foreground">
-            El evento no existe
-          </h2>
-          <Button
-            onClick={() => navigate('/eventos/listado')}
-            className="bg-[#234465] hover:bg-[#234465]/90"
-          >
+          <h2 className="text-lg font-bold text-foreground">El evento no existe</h2>
+          <Button onClick={() => navigate('/eventos/listado')} className="bg-[#234465] hover:bg-[#234465]/90">
             Ir al listado
           </Button>
         </div>
@@ -220,9 +231,7 @@ export default function CheckinPage() {
             </h1>
             {!loading && event && (
               <div className="flex items-center gap-2 mt-0.5">
-                <p className="text-xs text-muted-foreground truncate">
-                  {event.name}
-                </p>
+                <p className="text-xs text-muted-foreground truncate">{event.name}</p>
                 <Badge
                   className={`text-[10px] border-0 shrink-0 ${
                     event.isActive
@@ -241,9 +250,7 @@ export default function CheckinPage() {
             disabled={loading || refreshing}
             className="shrink-0 h-8 w-8 p-0"
           >
-            <RefreshCw
-              className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`}
-            />
+            <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
           </Button>
         </div>
       </header>
@@ -251,60 +258,38 @@ export default function CheckinPage() {
       {/* ── Tabs de estaciones ── */}
       <div className="sticky top-[57px] z-20 bg-white border-b border-border px-4">
         <div className="flex gap-1 py-2">
-          {STATIONS.map(
-            ({
-              id,
-              label,
-              sublabel,
-              Icon,
-              activeClass,
-              inactiveClass,
-              lockedClass,
-            }) => {
-              const accessible = canAccess(id);
-              const isActive = activeStation === id;
-              const isComingSoon = id === 3;
-              return (
-                <button
-                  key={id}
-                  onClick={() =>
-                    accessible && !isComingSoon && handleStationChange(id)
-                  }
-                  disabled={!accessible || isComingSoon}
-                  className={`relative flex-1 flex flex-col items-center gap-0.5 px-2 py-2 rounded-lg text-xs font-semibold transition-all ${
-                    !accessible || isComingSoon
-                      ? lockedClass
-                      : isActive
-                        ? activeClass
-                        : inactiveClass
-                  }`}
-                >
-                  <div className="flex items-center gap-1.5">
-                    <Icon className="w-3.5 h-3.5 shrink-0" />
-                    <span className="text-[13px]">{label}</span>
-                    {(!accessible || isComingSoon) && (
-                      <Lock className="w-3 h-3" />
-                    )}
-                  </div>
-                  <span
-                    className={`text-[12px] font-normal leading-tight text-center ${
-                      isActive
-                        ? 'text-current opacity-70'
-                        : 'text-muted-foreground'
-                    }`}
-                  >
-                    {isComingSoon ? 'Próximamente' : sublabel}
-                  </span>
-                </button>
-              );
-            }
-          )}
+          {STATIONS.map(({ id, label, sublabel, Icon, activeClass, inactiveClass, lockedClass }) => {
+            const accessible = canAccess(id);
+            const isActive = activeStation === id;
+            return (
+              <button
+                key={id}
+                onClick={() => accessible && handleStationChange(id)}
+                disabled={!accessible}
+                className={`relative flex-1 flex flex-col items-center gap-0.5 px-2 py-2 rounded-lg text-xs font-semibold transition-all ${
+                  !accessible ? lockedClass : isActive ? activeClass : inactiveClass
+                }`}
+              >
+                <div className="flex items-center gap-1.5">
+                  <Icon className="w-3.5 h-3.5 shrink-0" />
+                  <span className="text-[13px]">{label}</span>
+                  {!accessible && <Lock className="w-3 h-3" />}
+                </div>
+                <span className={`text-[12px] font-normal leading-tight text-center ${
+                  isActive ? 'text-current opacity-70' : 'text-muted-foreground'
+                }`}>
+                  {sublabel}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
       {/* ── Contenido ── */}
       <div className="flex-1">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 py-4 space-y-4">
+
           {/* Título + fecha */}
           <div>
             {loading ? (
@@ -326,10 +311,9 @@ export default function CheckinPage() {
             )}
           </div>
 
-          {/* ── Controles centralizados (solo estaciones 1 y 2) ── */}
+          {/* ── Controles centralizados (estaciones 1 y 2) ── */}
           {activeStation <= 2 && (
             <div className="bg-white rounded-xl border border-border p-3 space-y-3">
-              {/* Fila 1: Búsqueda */}
               <div className="flex items-center gap-2 flex-wrap">
                 <div className="relative flex-1 min-w-[140px]">
                   <User className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
@@ -337,9 +321,7 @@ export default function CheckinPage() {
                     type="text"
                     placeholder="Buscar por nombre…"
                     value={filterInput.name}
-                    onChange={(e) =>
-                      setFilterInput((f) => ({ ...f, name: e.target.value }))
-                    }
+                    onChange={(e) => setFilterInput((f) => ({ ...f, name: e.target.value }))}
                     onKeyDown={handleKeyDown}
                     className="h-9 pl-8 pr-3 rounded-md border border-border bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#234465]/30 w-full"
                   />
@@ -351,9 +333,7 @@ export default function CheckinPage() {
                     type="text"
                     placeholder="Cédula…"
                     value={filterInput.cedula}
-                    onChange={(e) =>
-                      setFilterInput((f) => ({ ...f, cedula: e.target.value }))
-                    }
+                    onChange={(e) => setFilterInput((f) => ({ ...f, cedula: e.target.value }))}
                     onKeyDown={handleKeyDown}
                     className="h-9 pl-8 pr-3 rounded-md border border-border bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#234465]/30 w-full"
                   />
@@ -379,26 +359,15 @@ export default function CheckinPage() {
                 )}
               </div>
 
-              {/* Separador */}
               <div className="border-t border-border" />
 
-              {/* Fila 2: Filtro de estado */}
               <div className="flex items-center gap-3 flex-wrap">
-                <span className="text-xs font-medium text-muted-foreground shrink-0">
-                  Estado:
-                </span>
+                <span className="text-xs font-medium text-muted-foreground shrink-0">Estado:</span>
                 <div className="flex gap-1.5">
-                  {[
-                    ['all', 'Todos'],
-                    ['pending', 'Pendientes'],
-                    ['done', 'Listos'],
-                  ].map(([val, lbl]) => (
+                  {[['all', 'Todos'], ['pending', 'Pendientes'], ['done', 'Listos']].map(([val, lbl]) => (
                     <button
                       key={val}
-                      onClick={() => {
-                        setStatusFilter(val);
-                        setCurrentPage(1);
-                      }}
+                      onClick={() => { setStatusFilter(val); setCurrentPage(1); }}
                       className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
                         statusFilter === val
                           ? 'bg-[#234465] text-white shadow-sm'
@@ -413,7 +382,7 @@ export default function CheckinPage() {
             </div>
           )}
 
-          {/* ── Tabs de contenido ── */}
+          {/* ── Station 1 ── */}
           {activeStation === 1 && (
             <Station1Tab
               collaborators={collaborators}
@@ -431,20 +400,14 @@ export default function CheckinPage() {
           {/* Paginación — solo estación 1 */}
           {activeStation === 1 && !loading && totalItems > 0 && (
             <div className="bg-white rounded-xl border border-border px-3 py-2.5 flex items-center justify-between gap-3 flex-wrap pb-4">
-              {/* Izquierda: filas por página + contador */}
               <div className="flex items-center gap-3 flex-wrap">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground font-medium shrink-0">
-                    Filas:
-                  </span>
+                  <span className="text-xs text-muted-foreground font-medium shrink-0">Filas:</span>
                   <div className="flex border border-border rounded-md overflow-hidden">
                     {PAGE_SIZE_OPTIONS.map((size) => (
                       <button
                         key={size}
-                        onClick={() => {
-                          setPageSize(size);
-                          setCurrentPage(1);
-                        }}
+                        onClick={() => { setPageSize(size); setCurrentPage(1); }}
                         className={`px-3 py-1.5 text-xs font-semibold transition ${
                           pageSize === size
                             ? 'bg-[#234465] text-white'
@@ -461,13 +424,10 @@ export default function CheckinPage() {
                     {startIdx + 1}–{Math.min(startIdx + pageSize, totalItems)}
                   </span>{' '}
                   de{' '}
-                  <span className="font-semibold text-foreground">
-                    {totalItems}
-                  </span>
+                  <span className="font-semibold text-foreground">{totalItems}</span>
                 </p>
               </div>
 
-              {/* Derecha: navegación de páginas */}
               <div className="flex items-center gap-1">
                 <button
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
@@ -477,13 +437,7 @@ export default function CheckinPage() {
                   <ChevronLeft className="w-4 h-4" />
                 </button>
                 {Array.from({ length: totalPages }, (_, i) => i + 1)
-                  .filter(
-                    (p) =>
-                      totalPages <= 7 ||
-                      p === 1 ||
-                      p === totalPages ||
-                      Math.abs(p - safePage) <= 1
-                  )
+                  .filter((p) => totalPages <= 7 || p === 1 || p === totalPages || Math.abs(p - safePage) <= 1)
                   .reduce((acc, p, idx, arr) => {
                     if (idx > 0 && p - arr[idx - 1] > 1) acc.push('...');
                     acc.push(p);
@@ -491,12 +445,7 @@ export default function CheckinPage() {
                   }, [])
                   .map((item, idx) =>
                     item === '...' ? (
-                      <span
-                        key={`e-${idx}`}
-                        className="px-1 text-xs text-muted-foreground"
-                      >
-                        …
-                      </span>
+                      <span key={`e-${idx}`} className="px-1 text-xs text-muted-foreground">…</span>
                     ) : (
                       <button
                         key={item}
@@ -512,9 +461,7 @@ export default function CheckinPage() {
                     )
                   )}
                 <button
-                  onClick={() =>
-                    setCurrentPage((p) => Math.min(totalPages, p + 1))
-                  }
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                   disabled={safePage === totalPages}
                   className="h-8 w-8 rounded-md border border-border flex items-center justify-center text-muted-foreground hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition"
                 >
@@ -524,6 +471,7 @@ export default function CheckinPage() {
             </div>
           )}
 
+          {/* ── Station 2 ── */}
           {activeStation === 2 && (
             <Station2Tab
               collaborators={collaborators}
@@ -533,19 +481,14 @@ export default function CheckinPage() {
             />
           )}
 
+          {/* ── Station 3 ── */}
           {activeStation === 3 && (
-            <div className="flex flex-col items-center justify-center py-20 text-center">
-              <div className="w-14 h-14 rounded-2xl bg-[#DD7419]/10 flex items-center justify-center mx-auto mb-4">
-                <Boxes className="w-7 h-7 text-[#DD7419]" />
-              </div>
-              <h3 className="text-base font-bold text-foreground">
-                Módulo de Insumos
-              </h3>
-              <p className="text-sm text-muted-foreground mt-1.5 max-w-xs">
-                Este módulo está en construcción. Pronto podrás gestionar el
-                inventario de insumos por evento.
-              </p>
-            </div>
+            <Station3Tab
+              collaborators={collaborators}
+              loading={loading}
+              filter={statusFilter}
+              onDotacionSaved={handleDotacionSaved}
+            />
           )}
         </div>
       </div>
