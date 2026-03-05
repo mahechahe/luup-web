@@ -62,9 +62,10 @@ function formatDateTime(iso) {
 
 /* ── Modal disponibilidad de inventario ──────────────────── */
 function InventoryAvailabilityModal({ inventory, allDotaciones, onClose }) {
-  const [search, setSearch] = useState('');
-  const [page, setPage]     = useState(1);
-  const PAGE_SIZE = 10;
+  const [search, setSearch]     = useState('');
+  const [page, setPage]         = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const PAGE_SIZE = pageSize;
 
   const usedMap = {};
   allDotaciones.forEach((dotacion) => {
@@ -210,16 +211,30 @@ function InventoryAvailabilityModal({ inventory, allDotaciones, onClose }) {
         </div>
 
         {/* Footer paginación */}
-        {totalPages > 1 && (
-          <div className="px-6 py-3 border-t border-border shrink-0 flex items-center justify-between gap-3">
-            <p className="text-xs text-muted-foreground">
-              Mostrando{' '}
-              <span className="font-semibold text-foreground">
-                {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, filtered.length)}
-              </span>{' '}
-              de <span className="font-semibold text-foreground">{filtered.length}</span>
-            </p>
-            <div className="flex items-center gap-1">
+        <div className="px-6 py-3 border-t border-border shrink-0 flex items-center justify-between gap-3 flex-wrap">
+          <p className="text-xs text-muted-foreground">
+            Mostrando{' '}
+            <span className="font-semibold text-foreground">
+              {filtered.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, filtered.length)}
+            </span>{' '}
+            de <span className="font-semibold text-foreground">{filtered.length}</span> registros
+          </p>
+          <div className="flex items-center gap-3">
+            {/* Selector páginas por página */}
+            <div className="relative">
+              <select
+                value={pageSize}
+                onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
+                className="appearance-none bg-background border border-border text-sm text-foreground rounded-lg px-3 py-1.5 pr-7 outline-none cursor-pointer hover:border-violet-500 focus:border-violet-500 transition-colors"
+              >
+                <option value={10}>10 / página</option>
+                <option value={25}>25 / página</option>
+                <option value={50}>50 / página</option>
+              </select>
+              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none w-3.5 h-3.5 text-muted-foreground" />
+            </div>
+            {/* Prev / indicador / Next */}
+            <div className="flex items-center gap-1.5">
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={safePage === 1}
@@ -227,21 +242,9 @@ function InventoryAvailabilityModal({ inventory, allDotaciones, onClose }) {
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1)
-                .filter((p) => p === 1 || p === totalPages || Math.abs(p - safePage) <= 1)
-                .reduce((acc, p, idx, arr) => { if (idx > 0 && p - arr[idx - 1] > 1) acc.push('...'); acc.push(p); return acc; }, [])
-                .map((p, idx) =>
-                  p === '...'
-                    ? <span key={`d${idx}`} className="text-xs text-muted-foreground px-1">…</span>
-                    : <button
-                        key={p}
-                        onClick={() => setPage(p)}
-                        className={`w-8 h-8 rounded-lg text-xs font-bold transition border ${
-                          p === safePage ? 'bg-violet-600 text-white border-violet-600' : 'bg-white border-border text-foreground hover:bg-muted'
-                        }`}
-                      >{p}</button>
-                )
-              }
+              <span className="text-xs text-muted-foreground px-2 min-w-[3rem] text-center tabular-nums">
+                {safePage} / {Math.max(totalPages, 1)}
+              </span>
               <button
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={safePage === totalPages}
@@ -251,7 +254,7 @@ function InventoryAvailabilityModal({ inventory, allDotaciones, onClose }) {
               </button>
             </div>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
@@ -262,7 +265,7 @@ function DotacionModal({ inventory, existingCart, onConfirm, onClose, saving, gi
   const [search, setSearch]     = useState('');
   const [sortDir, setSortDir]   = useState('');
   const [page, setPage]         = useState(1);
-  const PAGE_SIZE = 8;
+  const [pageSize, setPageSize] = useState(10);
 
   // Inicializa el carrito con la dotación existente para edición
   const [cart, setCart] = useState(
@@ -283,9 +286,9 @@ function DotacionModal({ inventory, existingCart, onConfirm, onClose, saving, gi
     return i.nombre.toLowerCase().includes(q) || String(i.cantidad).includes(q);
   });
   const sorted   = [...filtered].sort((a, b) => sortDir === 'asc' ? a.cantidad - b.cantidad : sortDir === 'desc' ? b.cantidad - a.cantidad : 0);
-  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
   const safePage   = Math.min(page, totalPages);
-  const paginated  = sorted.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const paginated  = sorted.slice((safePage - 1) * pageSize, safePage * pageSize);
 
   const totalItems  = cart.reduce((s, c) => s + c.cantidad, 0);
   const hasError    = cart.some(({ item, cantidad }) => exceedsStock(item, cantidad));
@@ -428,9 +431,20 @@ function DotacionModal({ inventory, existingCart, onConfirm, onClose, saving, gi
           </div>
 
           {/* Paginación */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between pt-1">
-              <p className="text-xs text-muted-foreground">Pág. {safePage} / {totalPages}</p>
+          <div className="flex items-center justify-between pt-1 flex-wrap gap-2">
+            {/* Selector filas */}
+            <div className="flex border border-border rounded-md overflow-hidden shrink-0">
+              {[10, 25, 50].map((size) => (
+                <button
+                  key={size}
+                  onClick={() => { setPageSize(size); setPage(1); }}
+                  className={`px-2.5 py-1 text-xs font-semibold transition ${pageSize === size ? 'bg-[#234465] text-white' : 'bg-white text-foreground hover:bg-muted'}`}
+                >
+                  {size}
+                </button>
+              ))}
+            </div>
+            {totalPages > 1 && (
               <div className="flex items-center gap-1">
                 <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={safePage === 1}
                   className="w-7 h-7 rounded-lg border border-border flex items-center justify-center text-muted-foreground hover:bg-muted disabled:opacity-30 transition">
@@ -452,8 +466,8 @@ function DotacionModal({ inventory, existingCart, onConfirm, onClose, saving, gi
                   <ChevronRight className="w-3.5 h-3.5" />
                 </button>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         {/* Footer confirmar */}
