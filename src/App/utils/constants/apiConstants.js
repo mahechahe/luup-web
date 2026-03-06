@@ -11,6 +11,7 @@ export const constants = {
     USER: 'user',
     COLLABORATOR: 'collaborator',
     EVENTS: 'events',
+    INVENTORY: 'inventory',
     ADMIN: 'admin',
     SERVICE: 'service',
     APPOINTMENTS: 'appointments',

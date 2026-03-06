@@ -46,10 +46,18 @@ function SkeletonRow() {
         <div className="h-3.5 bg-muted rounded-full w-40 mb-1.5" />
         <div className="h-3 bg-muted rounded-full w-28" />
       </td>
-      <td className="px-4 py-3.5 hidden md:table-cell"><div className="h-3.5 bg-muted rounded-full w-20" /></td>
-      <td className="px-4 py-3.5 hidden md:table-cell"><div className="h-3.5 bg-muted rounded-full w-32" /></td>
-      <td className="px-4 py-3.5 hidden md:table-cell"><div className="h-3.5 bg-muted rounded-full w-44" /></td>
-      <td className="px-4 py-3.5 hidden md:table-cell"><div className="h-3.5 bg-muted rounded-full w-20" /></td>
+      <td className="px-4 py-3.5 hidden md:table-cell">
+        <div className="h-3.5 bg-muted rounded-full w-20" />
+      </td>
+      <td className="px-4 py-3.5 hidden md:table-cell">
+        <div className="h-3.5 bg-muted rounded-full w-32" />
+      </td>
+      <td className="px-4 py-3.5 hidden md:table-cell">
+        <div className="h-3.5 bg-muted rounded-full w-44" />
+      </td>
+      <td className="px-4 py-3.5 hidden md:table-cell">
+        <div className="h-3.5 bg-muted rounded-full w-20" />
+      </td>
       <td className="px-4 py-3.5">
         <div className="flex gap-2">
           <div className="h-8 w-8 bg-muted rounded-md" />
@@ -84,7 +92,6 @@ function EmptyState({ hasFilter }) {
     </tr>
   );
 }
-
 
 const DATE_TYPE_LABEL = {
   single_date: 'Fecha única',
@@ -171,7 +178,7 @@ function Pagination({ page, totalPages, total, limit, onPageChange }) {
 /* ── Vista principal ─────────────────────────────────────── */
 function EventosPage() {
   const navigate = useNavigate();
-  
+
   // --- CAMBIO: El usuario se obtiene DENTRO del componente ---
   const user = useUserStore((state) => state.user);
 
@@ -243,18 +250,6 @@ function EventosPage() {
   return (
     <div className="min-h-screen bg-background px-4 py-6">
       <div className="max-w-7xl mx-auto space-y-6">
-        
-        {/* ── Botón Volver (Nuevo cambio para navegación circular) ── */}
-        <Button
-          variant="ghost"
-          size="sm"
-          className="group gap-2 text-muted-foreground hover:text-brand -ml-2"
-          onClick={() => navigate('/eventos')}
-        >
-          <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
-          Volver a selección
-        </Button>
-
         {/* ── Header ──────────────────────────────────────── */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
@@ -354,12 +349,24 @@ function EventosPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-muted/40">
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b border-border">Nombre</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide whitespace-nowrap border-b border-border hidden md:table-cell">Tipo</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide whitespace-nowrap border-b border-border hidden md:table-cell">Fechas</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b border-border hidden md:table-cell">Ubicación</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide whitespace-nowrap border-b border-border hidden md:table-cell">Creado</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b border-border">Acciones</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b border-border">
+                      Nombre
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide whitespace-nowrap border-b border-border hidden md:table-cell">
+                      Tipo
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide whitespace-nowrap border-b border-border hidden md:table-cell">
+                      Fechas
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b border-border hidden md:table-cell">
+                      Ubicación
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide whitespace-nowrap border-b border-border hidden md:table-cell">
+                      Creado
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b border-border">
+                      Acciones
+                    </th>
                   </tr>
                 </thead>
 
@@ -378,7 +385,9 @@ function EventosPage() {
                       >
                         {/* Nombre — siempre visible; en móvil muestra fecha y ubicación como subtexto */}
                         <td className="px-4 py-3.5">
-                          <span className="font-semibold text-foreground block">{ev.name}</span>
+                          <span className="font-semibold text-foreground block">
+                            {ev.name}
+                          </span>
                           <span className="text-xs text-muted-foreground md:hidden block mt-0.5">
                             <EventDateCell ev={ev} />
                             {ev.location && <> · {ev.location}</>}
@@ -411,10 +420,15 @@ function EventosPage() {
                               variant="outline"
                               size="sm"
                               className="h-8 px-2 md:px-3 text-xs border-brand/40 text-brand hover:bg-brand/10 hover:border-brand"
-                              onClick={() => { setSelectedEvent(ev); setEditOpen(true); }}
+                              onClick={() => {
+                                setSelectedEvent(ev);
+                                setEditOpen(true);
+                              }}
                             >
                               <Pencil className="w-3.5 h-3.5" />
-                              <span className="hidden md:inline ml-1">Editar</span>
+                              <span className="hidden md:inline ml-1">
+                                Editar
+                              </span>
                             </Button>
                             <Button
                               variant="outline"
@@ -423,7 +437,9 @@ function EventosPage() {
                               onClick={() => navigate(`/eventos/${ev.eventId}`)}
                             >
                               <Eye className="w-3.5 h-3.5" />
-                              <span className="hidden md:inline ml-1">Ver detalle</span>
+                              <span className="hidden md:inline ml-1">
+                                Ver detalle
+                              </span>
                             </Button>
                           </div>
                         </td>

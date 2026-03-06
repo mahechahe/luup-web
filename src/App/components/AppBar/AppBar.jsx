@@ -6,7 +6,6 @@ import { useNavigate } from 'react-router-dom';
 export const AppBar = ({ children }) => {
   const navigate = useNavigate();
   const { user } = useUserStore();
-console.log('user', user);
 
   const handleLogout = () => {
     closeSesion();

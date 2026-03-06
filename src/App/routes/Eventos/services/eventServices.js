@@ -283,7 +283,11 @@ export const getWasteSignedUrlService = async (zoneId, logId) => {
 
 export const updateDeliveryService = async ({ attendanceId, type, received, snackDetail }) => {
   try {
-    const body = { attendanceId, type, received };
+    const today = new Date();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    const yyyy = today.getFullYear();
+    const body = { attendanceId, type, received, dateRegister: `${mm}-${dd}-${yyyy}` };
     if (type === 'snack' && snackDetail) body.snackDetail = snackDetail;
     const { data } = await axios.patch(`${EVENTS_URL}/attendance/delivery`, body);
     return { status: true, data: data?.data, errors: null };
@@ -298,7 +302,14 @@ export const updateDeliveryService = async ({ attendanceId, type, received, snac
 
 export const upsertAttendanceService = async (body) => {
   try {
-    const { data } = await axios.put(`${EVENTS_URL}/attendance/upsert`, body);
+    const today = new Date();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    const yyyy = today.getFullYear();
+    const { data } = await axios.put(`${EVENTS_URL}/attendance/upsert`, {
+      ...body,
+      dateRegister: `${mm}-${dd}-${yyyy}`,
+    });
     return { status: true, data: data?.data, errors: null };
   } catch (error) {
     return {
@@ -360,9 +371,35 @@ export const getWorkerEventHistoryService = async ({
   }
 };
 
+export const getAttendanceRecordsService = async (eventId, filters = {}) => {
+  try {
+    const today = new Date();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    const yyyy = today.getFullYear();
+    const body = { eventId: Number(eventId), dateRegister: `${mm}-${dd}-${yyyy}` };
+    if (filters.name) body.name = filters.name;
+    if (filters.cedula) body.cedula = filters.cedula;
+    if (filters.page) body.page = filters.page;
+    if (filters.limit) body.limit = filters.limit;
+    const { data } = await axios.post(`${EVENTS_URL}/attendance/records`, body);
+    return { status: true, data: data?.data, errors: null };
+  } catch (error) {
+    return {
+      status: false,
+      data: null,
+      errors: error?.response?.data?.message || 'Error al obtener los registros de asistencia.',
+    };
+  }
+};
+
 export const getEventAttendanceService = async (eventId, filters = {}) => {
   try {
-    const body = { eventId: Number(eventId) };
+    const today = new Date();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    const yyyy = today.getFullYear();
+    const body = { eventId: Number(eventId), dateRegister: `${mm}-${dd}-${yyyy}` };
     if (filters.name) body.name = filters.name;
     if (filters.cedula) body.cedula = filters.cedula;
 
@@ -416,6 +453,58 @@ export const getWorkerAttendanceService = async (eventId) => {
       attendance: null,
       errors:
         error?.response?.data?.message || 'Error al obtener tu asistencia.',
+    };
+  }
+};
+
+export const getStation3RecordsService = async (eventId, filters = {}) => {
+  try {
+    const today = new Date();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    const yyyy = today.getFullYear();
+    const body = {
+      eventId: Number(eventId),
+      dateRegister: `${mm}-${dd}-${yyyy}`,
+      page: filters.page ?? 1,
+      limit: filters.limit ?? 25,
+    };
+    if (filters.name) body.name = filters.name;
+    if (filters.cedula) body.cedula = filters.cedula;
+    const { data } = await axios.post(`${EVENTS_URL}/attendance/station3`, body);
+    return { status: true, data: data?.data, errors: null };
+  } catch (error) {
+    return {
+      status: false,
+      data: null,
+      errors:
+        error?.response?.data?.message ||
+        'Error al obtener los registros de estación 3.',
+    };
+  }
+};
+
+export const checkoutService = async ({
+  attendanceId,
+  returnedUniform,
+  exitTime,
+  createdBy,
+  items,
+}) => {
+  try {
+    const body = { attendanceId, returnedUniform, exitTime, createdBy };
+    if (items && items.length > 0) body.items = items;
+    const { data } = await axios.patch(
+      `${EVENTS_URL}/attendance/checkout`,
+      body
+    );
+    return { status: true, data: data?.data?.data, errors: null };
+  } catch (error) {
+    return {
+      status: false,
+      data: null,
+      errors:
+        error?.response?.data?.message || 'Error al registrar el checkout.',
     };
   }
 };

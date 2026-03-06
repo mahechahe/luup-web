@@ -4,7 +4,6 @@ import {
   ChevronDown,
   ChevronUp,
   Clock,
-  LogOut,
   Loader2,
   Shirt,
   SquarePlus,
@@ -13,29 +12,6 @@ import {
 import { useState, useEffect } from 'react';
 
 const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
-
-const AVATAR_COLORS = [
-  'from-[#234465] to-[#3a6b9f]',
-  'from-[#DD7419] to-[#f59e0b]',
-  'from-[#059669] to-[#34d399]',
-  'from-[#7c3aed] to-[#a78bfa]',
-  'from-[#dc2626] to-[#f87171]',
-  'from-[#0891b2] to-[#67e8f9]',
-];
-
-function Avatar({ firstName }) {
-  const c =
-    AVATAR_COLORS[(firstName?.charCodeAt(0) ?? 0) % AVATAR_COLORS.length];
-  return (
-    <div
-      className={`w-10 h-10 rounded-xl bg-gradient-to-br ${c} flex items-center justify-center shrink-0`}
-    >
-      <span className="text-white font-bold text-sm">
-        {(firstName?.[0] ?? '?').toUpperCase()}
-      </span>
-    </div>
-  );
-}
 
 function formatTime(iso) {
   if (!iso) return null;
@@ -66,8 +42,6 @@ function CollabCard({
   onUniformSaved,
   onEdit,
 }) {
-  console.log('collab', collab);
-
   const [savingAttendance, setSavingAttendance] = useState(false);
   const [showUniform, setShowUniform] = useState(false);
   const [selectedSize, setSelectedSize] = useState(
@@ -82,7 +56,6 @@ function CollabCard({
 
   const attended = collab.attendance?.attended;
   const entryTime = formatTime(collab.attendance?.entryTime);
-  const exitTime = formatTime(collab.attendance?.exitTime);
   const notes = collab.attendance?.notes;
   // Uniforme puede venir al nivel del colaborador o anidado en attendance
   const uniformSize =
@@ -140,53 +113,63 @@ function CollabCard({
       }`}
     >
       <div className={`h-1 ${attended ? 'bg-emerald-500' : 'bg-muted'}`} />
-      <div className="p-3">
-        <div className="flex items-start gap-3">
-          <Avatar firstName={collab.firstName} />
+      <div className="p-4">
+        <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-foreground truncate">
+            <p className="text-base font-bold text-foreground">
               {collab.firstName} {collab.lastName}
             </p>
-            <p className="text-[11px] text-muted-foreground mt-0.5">
-              {collab.cedula} · {collab.phone ?? '—'}
-            </p>
-            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-              {collab.zones?.map((z, i) => (
-                <span
-                  key={i}
-                  className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-[#eff6ff] text-[#2563eb]"
-                >
-                  {z}
+            <div className="mt-2 space-y-2">
+              <p className="text-xs text-foreground">
+                <span className="text-muted-foreground">Cédula:</span>{' '}
+                <span className="font-semibold">{collab.cedula}</span>
+              </p>
+              <p className="text-xs text-foreground">
+                <span className="text-muted-foreground">Celular:</span>{' '}
+                <span className="font-semibold">{collab.phone ?? '—'}</span>
+              </p>
+              <p className="text-xs text-foreground">
+                <span className="text-muted-foreground">Zonas:</span>{' '}
+                <span className="font-semibold">
+                  {collab.zones?.join(', ') || '—'}
                 </span>
-              ))}
-              <span
-                className={`text-[10px] font-semibold px-2 py-0.5 rounded-md ${roleBadgeClass(
-                  collab.role
-                )}`}
-              >
-                {roleLabel(collab.role)}
-              </span>
+              </p>
+              <p className="text-xs text-foreground">
+                <span className="text-muted-foreground">Rol:</span>{' '}
+                <span
+                  className={`font-semibold text-[11px] px-2 py-0.5 rounded-md ${roleBadgeClass(
+                    collab.role
+                  )}`}
+                >
+                  {roleLabel(collab.role)}
+                </span>
+              </p>
             </div>
           </div>
-          <div className="shrink-0 flex flex-col items-end gap-1">
-            {entryTime && (
-              <div className="text-right">
-                <div className="flex items-center gap-1 text-xs text-emerald-600 font-semibold">
-                  <Clock className="w-3 h-3" />
-                  {entryTime}
+          <div className="shrink-0 flex flex-col items-end gap-2">
+            {attended ? (
+              entryTime ? (
+                <div className="flex flex-col items-center bg-emerald-50 border border-emerald-200 rounded-2xl px-3 py-2 min-w-[64px]">
+                  <Clock className="w-4 h-4 text-emerald-500 mb-1" />
+                  <span className="text-[13px] font-extrabold text-emerald-700 leading-none">
+                    {entryTime}
+                  </span>
+                  <span className="text-[9px] font-semibold uppercase tracking-widest text-emerald-500 mt-1">
+                    Check-in
+                  </span>
                 </div>
-                <p className="text-[10px] text-muted-foreground">entrada</p>
-              </div>
-            )}
-            {exitTime && (
-              <div className="text-right">
-                <div className="flex items-center gap-1 text-xs text-orange-500 font-semibold">
-                  <LogOut className="w-3 h-3" />
-                  {exitTime}
+              ) : (
+                <div className="flex flex-col items-center bg-amber-50 border border-amber-200 rounded-2xl px-3 py-2 min-w-[64px]">
+                  <Clock className="w-4 h-4 text-amber-500 mb-1" />
+                  <span className="text-[11px] font-bold text-amber-700 leading-tight text-center">
+                    Sin hora
+                  </span>
+                  <span className="text-[9px] font-semibold uppercase tracking-widest text-amber-500 mt-1">
+                    Check-in
+                  </span>
                 </div>
-                <p className="text-[10px] text-muted-foreground">salida</p>
-              </div>
-            )}
+              )
+            ) : null}
             <button
               type="button"
               onClick={() => onEdit(collab)}
@@ -208,16 +191,6 @@ function CollabCard({
           >
             <Check className="w-3 h-3" />
             Check-in
-          </div>
-          <div
-            className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold ${
-              exitTime
-                ? 'bg-orange-100 text-orange-700'
-                : 'bg-muted text-muted-foreground'
-            }`}
-          >
-            <LogOut className="w-3 h-3" />
-            Check-out
           </div>
           <div
             className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold ${
@@ -343,33 +316,8 @@ export function Station1Tab({
   const startIdx = (currentPage - 1) * pageSize;
   const paginated = filtered.slice(startIdx, startIdx + pageSize);
 
-  const stats = {
-    total: collaborators.length,
-    checked: collaborators.filter((c) => c.attendance?.attended).length,
-    uniform: collaborators.filter((c) => c.attendance?.uniformSize).length,
-  };
-
   return (
     <div className="space-y-4">
-      {!loading && (
-        <div className="grid grid-cols-3 gap-3">
-          <div className="bg-white rounded-xl border border-border p-3 text-center">
-            <p className="text-2xl font-bold text-foreground">{stats.total}</p>
-            <p className="text-[11px] text-muted-foreground mt-0.5">Total</p>
-          </div>
-          <div className="bg-emerald-50 rounded-xl border border-emerald-100 p-3 text-center">
-            <p className="text-2xl font-bold text-emerald-600">
-              {stats.checked}
-            </p>
-            <p className="text-[11px] text-emerald-600/70 mt-0.5">Check-in</p>
-          </div>
-          <div className="bg-blue-50 rounded-xl border border-blue-100 p-3 text-center">
-            <p className="text-2xl font-bold text-blue-600">{stats.uniform}</p>
-            <p className="text-[11px] text-blue-600/70 mt-0.5">Uniformes</p>
-          </div>
-        </div>
-      )}
-
       {loading ? (
         <div className="space-y-2">
           {Array.from({ length: 5 }).map((_, i) => (
@@ -377,12 +325,11 @@ export function Station1Tab({
               key={i}
               className="bg-white rounded-2xl border border-border p-3 animate-pulse space-y-2"
             >
-              <div className="flex gap-3">
-                <div className="w-10 h-10 rounded-xl bg-muted shrink-0" />
-                <div className="flex-1 space-y-2">
-                  <div className="h-3.5 bg-muted rounded-full w-36" />
-                  <div className="h-3 bg-muted rounded-full w-24" />
-                </div>
+              <div className="space-y-2">
+                <div className="h-4 bg-muted rounded-full w-40" />
+                <div className="h-3 bg-muted rounded-full w-28" />
+                <div className="h-3 bg-muted rounded-full w-24" />
+                <div className="h-3 bg-muted rounded-full w-20" />
               </div>
               <div className="flex gap-1.5">
                 <div className="flex-1 h-10 bg-muted rounded-xl" />
@@ -392,11 +339,21 @@ export function Station1Tab({
           ))}
         </div>
       ) : paginated.length === 0 ? (
-        <div className="text-center py-12">
-          <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-3">
+        <div className="border-2 border-dashed border-border rounded-2xl py-12 px-6 text-center">
+          <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
             <UserCheck className="w-6 h-6 text-muted-foreground" />
           </div>
-          <p className="text-sm font-medium text-foreground">Sin resultados</p>
+          <p className="text-base font-semibold text-foreground">
+            No hay registros de Check-in para esta fecha
+          </p>
+          <p className="text-sm text-muted-foreground mt-1 capitalize">
+            {new Date().toLocaleDateString('es-CO', {
+              weekday: 'long',
+              day: '2-digit',
+              month: 'long',
+              year: 'numeric',
+            })}
+          </p>
         </div>
       ) : (
         <div className="space-y-2">

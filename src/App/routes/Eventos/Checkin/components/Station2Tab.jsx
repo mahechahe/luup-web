@@ -10,29 +10,6 @@ import {
 } from 'lucide-react';
 import { updateDeliveryService } from '@/App/routes/Eventos/services/eventServices';
 
-const AVATAR_COLORS = [
-  'from-[#234465] to-[#3a6b9f]',
-  'from-[#DD7419] to-[#f59e0b]',
-  'from-[#059669] to-[#34d399]',
-  'from-[#7c3aed] to-[#a78bfa]',
-  'from-[#dc2626] to-[#f87171]',
-  'from-[#0891b2] to-[#67e8f9]',
-];
-
-function Avatar({ firstName }) {
-  const c =
-    AVATAR_COLORS[(firstName?.charCodeAt(0) ?? 0) % AVATAR_COLORS.length];
-  return (
-    <div
-      className={`w-10 h-10 rounded-xl bg-gradient-to-br ${c} flex items-center justify-center shrink-0`}
-    >
-      <span className="text-white font-bold text-sm">
-        {(firstName?.[0] ?? '?').toUpperCase()}
-      </span>
-    </div>
-  );
-}
-
 function roleBadgeClass(role) {
   if (role === 'supervisor') return 'bg-[#234465]/10 text-[#234465]';
   if (role === 'coordinador') return 'bg-[#DD7419]/10 text-[#DD7419]';
@@ -78,10 +55,10 @@ const ACTIONS = [
     Icon: Cookie,
     label: 'Refrigerio',
     labelDone: 'Refrigerio dado',
-    activeBg: 'bg-rose-500',
-    doneBg: 'bg-rose-50',
-    doneText: 'text-rose-700',
-    doneBorder: 'border-rose-200',
+    activeBg: 'bg-red-600',
+    doneBg: 'bg-red-50',
+    doneText: 'text-red-700',
+    doneBorder: 'border-red-300',
     requiresDetail: true,
   },
 ];
@@ -101,6 +78,7 @@ function CollabCard({ collab, onActionSaved }) {
   };
   const attendanceId = collab.attendance?.id ?? collab.attendance?.attendanceId;
   const allDone = !!station2.snack;
+  const notes = collab.attendance?.notes ?? collab.notes ?? null;
 
   const handleToggle = async (key, type) => {
     // Refrigerio sin marcar → pedir detalle primero
@@ -117,7 +95,7 @@ function CollabCard({ collab, onActionSaved }) {
       received: newReceived,
     });
     if (res.status) {
-      onActionSaved(collab.userId, { ...station2, [key]: newReceived });
+      onActionSaved(collab.userId, type, snackDetail.trim() || null);
     }
     setSaving(null);
   };
@@ -131,11 +109,7 @@ function CollabCard({ collab, onActionSaved }) {
       snackDetail: snackDetail.trim() || undefined,
     });
     if (res.status) {
-      onActionSaved(collab.userId, {
-        ...station2,
-        snack: true,
-        snackDetail: snackDetail.trim() || null,
-      });
+      onActionSaved(collab.userId, 'snack', snackDetail.trim() || null);
       setShowSnackDetail(false);
     }
     setSaving(null);
@@ -148,32 +122,37 @@ function CollabCard({ collab, onActionSaved }) {
       }`}
     >
       <div className={`h-1 ${allDone ? 'bg-emerald-500' : 'bg-muted'}`} />
-      <div className="p-3 space-y-3">
-        <div className="flex items-start gap-3">
-          <Avatar firstName={collab.firstName} />
+      <div className="p-4 space-y-3">
+        <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-foreground truncate">
+            <p className="text-base font-bold text-foreground">
               {collab.firstName} {collab.lastName}
             </p>
-            <p className="text-[11px] text-muted-foreground mt-0.5">
-              {collab.cedula} · {collab.phone ?? '—'}
-            </p>
-            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-              {collab.zones?.map((z, i) => (
-                <span
-                  key={i}
-                  className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-[#eff6ff] text-[#2563eb]"
-                >
-                  {z}
+            <div className="mt-2 space-y-2">
+              <p className="text-xs text-foreground">
+                <span className="text-muted-foreground">Cédula:</span>{' '}
+                <span className="font-semibold">{collab.cedula}</span>
+              </p>
+              <p className="text-xs text-foreground">
+                <span className="text-muted-foreground">Celular:</span>{' '}
+                <span className="font-semibold">{collab.phone ?? '—'}</span>
+              </p>
+              <p className="text-xs text-foreground">
+                <span className="text-muted-foreground">Zonas:</span>{' '}
+                <span className="font-semibold">
+                  {collab.zones?.join(', ') || '—'}
                 </span>
-              ))}
-              <span
-                className={`text-[10px] font-semibold px-2 py-0.5 rounded-md ${roleBadgeClass(
-                  collab.role
-                )}`}
-              >
-                {roleLabel(collab.role)}
-              </span>
+              </p>
+              <p className="text-xs text-foreground">
+                <span className="text-muted-foreground">Rol:</span>{' '}
+                <span
+                  className={`font-semibold text-[11px] px-2 py-0.5 rounded-md ${roleBadgeClass(
+                    collab.role
+                  )}`}
+                >
+                  {roleLabel(collab.role)}
+                </span>
+              </p>
             </div>
           </div>
           {allDone && (
@@ -211,7 +190,9 @@ function CollabCard({ collab, onActionSaved }) {
                   }`}
                 >
                   {requiresDetail && !done && (
-                    <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-rose-500" />
+                    <span className="absolute top-1 right-1 text-[9px] bg-red-600 text-white font-bold px-1.5 py-0.5 rounded-full leading-none tracking-wide">
+                      Obligatorio
+                    </span>
                   )}
                   {isSaving ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -231,13 +212,8 @@ function CollabCard({ collab, onActionSaved }) {
                           <Icon className="w-3.5 h-3.5 text-muted-foreground" />
                         )}
                       </div>
-                      <span>
-                        {done ? labelDone : label}{' '}
-                        {requiresDetail && !done && (
-                          <span className="text-[9px] text-rose-500 font-bold leading-none">
-                            (Obligatorio)
-                          </span>
-                        )}
+                      <span className="leading-tight text-center">
+                        {done ? labelDone : label}
                       </span>
                     </>
                   )}
@@ -247,6 +223,18 @@ function CollabCard({ collab, onActionSaved }) {
           )}
         </div>
 
+        {notes && (
+          <p
+            className="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 italic mb-2"
+            style={{
+              marginBottom: '10px',
+            }}
+          >
+            <span className="font-semibold not-italic">Nota: </span>
+            {notes}
+          </p>
+        )}
+
         {station2.snack && station2.snackDetail && (
           <p className="text-[11px] text-muted-foreground bg-muted/60 rounded-lg px-2.5 py-1.5 italic">
             Refrigerio: {station2.snackDetail}
@@ -255,9 +243,14 @@ function CollabCard({ collab, onActionSaved }) {
 
         {showSnackDetail && (
           <div className="pt-2 border-t border-border space-y-2">
-            <p className="text-xs font-semibold text-foreground">
+            <p className="text-xs font-semibold text-foreground ">
               Detalle del refrigerio{' '}
-              <span className="font-normal text-muted-foreground">
+              <span
+                className="font-normal text-muted-foreground"
+                style={{
+                  marginTop: '10px',
+                }}
+              >
                 (opcional)
               </span>
             </p>
@@ -278,7 +271,7 @@ function CollabCard({ collab, onActionSaved }) {
               <button
                 onClick={handleConfirmSnack}
                 disabled={saving === 'snack'}
-                className="flex-1 h-9 rounded-lg bg-rose-500 text-white text-sm font-semibold hover:bg-rose-600 transition flex items-center justify-center gap-1.5"
+                className="flex-1 h-9 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition flex items-center justify-center gap-1.5"
               >
                 {saving === 'snack' ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -294,37 +287,9 @@ function CollabCard({ collab, onActionSaved }) {
   );
 }
 
-export function Station2Tab({ collaborators, loading, filter, onActionSaved }) {
-  const eligible = collaborators.filter((c) => c.attendance?.attended);
-  const notCheckedIn = collaborators.length - eligible.length;
-
-  const isSnackDone = (c) => !!(c.station2?.snack ?? c.receivedSnack);
-
-  const filtered = eligible.filter((c) => {
-    if (filter === 'done') return isSnackDone(c);
-    if (filter === 'pending') return !isSnackDone(c);
-    return true;
-  });
-
-  const stats = {
-    total: eligible.length,
-    done: eligible.filter(isSnackDone).length,
-    pending: eligible.filter((c) => !isSnackDone(c)).length,
-  };
-
+export function Station2Tab({ collaborators, loading, onActionSaved }) {
   return (
     <div className="space-y-4">
-      {!loading && notCheckedIn > 0 && (
-        <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200">
-          <Lock className="w-4 h-4 text-amber-600 shrink-0" />
-          <p className="text-xs text-amber-700 font-medium">
-            <span className="font-bold">{notCheckedIn}</span>{' '}
-            {notCheckedIn === 1 ? 'persona no ha' : 'personas no han'}{' '}
-            completado el check-in en Estación 1.
-          </p>
-        </div>
-      )}
-
       {loading ? (
         <div className="space-y-2">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -332,12 +297,11 @@ export function Station2Tab({ collaborators, loading, filter, onActionSaved }) {
               key={i}
               className="bg-white rounded-2xl border p-3 animate-pulse space-y-3"
             >
-              <div className="flex gap-3">
-                <div className="w-10 h-10 rounded-xl bg-muted shrink-0" />
-                <div className="flex-1 space-y-2">
-                  <div className="h-3.5 bg-muted rounded-full w-36" />
-                  <div className="h-3 bg-muted rounded-full w-24" />
-                </div>
+              <div className="space-y-2">
+                <div className="h-4 bg-muted rounded-full w-40" />
+                <div className="h-3 bg-muted rounded-full w-28" />
+                <div className="h-3 bg-muted rounded-full w-24" />
+                <div className="h-3 bg-muted rounded-full w-20" />
               </div>
               <div className="grid grid-cols-3 gap-1.5">
                 {[0, 1, 2].map((j) => (
@@ -347,7 +311,7 @@ export function Station2Tab({ collaborators, loading, filter, onActionSaved }) {
             </div>
           ))}
         </div>
-      ) : eligible.length === 0 ? (
+      ) : collaborators.length === 0 ? (
         <div className="text-center py-12">
           <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-3">
             <UserCheck className="w-6 h-6 text-muted-foreground" />
@@ -359,15 +323,9 @@ export function Station2Tab({ collaborators, loading, filter, onActionSaved }) {
             Las personas aparecerán aquí una vez pasen por Estación 1.
           </p>
         </div>
-      ) : filtered.length === 0 ? (
-        <div className="text-center py-8">
-          <p className="text-sm text-muted-foreground">
-            Sin resultados para este filtro.
-          </p>
-        </div>
       ) : (
         <div className="space-y-2">
-          {filtered.map((collab) => (
+          {collaborators.map((collab) => (
             <CollabCard
               key={collab.userId}
               collab={collab}

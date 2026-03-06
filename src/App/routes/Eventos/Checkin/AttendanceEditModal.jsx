@@ -56,7 +56,6 @@ export default function AttendanceEditModal({
   const [form, setForm] = useState({
     attended: null,
     entryTime: '',
-    exitTime: '',
     notes: '',
     uniformSize: '',
   });
@@ -71,7 +70,6 @@ export default function AttendanceEditModal({
       setForm({
         attended: a?.attended ?? null,
         entryTime: isoToTime(a?.entryTime),
-        exitTime: isoToTime(a?.exitTime),
         notes: a?.notes ?? '',
         uniformSize: currentUniformSize,
       });
@@ -91,7 +89,6 @@ export default function AttendanceEditModal({
       userId: collaborator.userId,
       attended: form.attended,
       entryTime: timeToISO(form.entryTime) ?? null,
-      exitTime: timeToISO(form.exitTime) ?? null,
       notes: form.notes.trim() || null,
       uniform: !!form.uniformSize,
       uniformSize: form.uniformSize || null,
@@ -169,34 +166,19 @@ export default function AttendanceEditModal({
               </div>
             </div>
 
-            {/* Tiempos */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-foreground mb-1.5">
-                  Hora de entrada
-                </label>
-                <input
-                  type="time"
-                  value={form.entryTime}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, entryTime: e.target.value }))
-                  }
-                  className="w-full h-9 px-3 rounded-md border border-border bg-white text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-[#234465]/30"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-foreground mb-1.5">
-                  Hora de salida
-                </label>
-                <input
-                  type="time"
-                  value={form.exitTime}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, exitTime: e.target.value }))
-                  }
-                  className="w-full h-9 px-3 rounded-md border border-border bg-white text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-[#234465]/30"
-                />
-              </div>
+            {/* Hora de entrada */}
+            <div>
+              <label className="block text-xs font-medium text-foreground mb-1.5">
+                Hora de entrada
+              </label>
+              <input
+                type="time"
+                value={form.entryTime}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, entryTime: e.target.value }))
+                }
+                className="w-full h-9 px-3 rounded-md border border-border bg-white text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-[#234465]/30"
+              />
             </div>
 
             {/* Notas */}
