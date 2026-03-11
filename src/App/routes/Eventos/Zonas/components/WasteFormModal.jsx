@@ -1,6 +1,20 @@
 import { useState, useRef } from 'react';
-import { X, Loader2, Trash2, Minus, Plus, RotateCcw, Camera } from 'lucide-react';
+import {
+  Loader2,
+  Trash2,
+  Minus,
+  Plus,
+  RotateCcw,
+  Camera,
+  X,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { createWasteEntryService } from '../../services/eventServices';
 
 const QTY_PRESETS = [5, 10, 20, 50];
@@ -17,11 +31,15 @@ export function WasteFormModal({ open, onClose, zone, onSave }) {
 
   const cameraInputRef = useRef(null);
 
-  if (!open || !zone) return null;
+  console.log('form', form);
 
-  const isValid = form.quantity > 0;
+  const weightRequired = form.quantity > 0;
+  const isValid =
+    (form.quantity === 0 && imageFile !== null) ||
+    (form.quantity > 0 && form.weightKg !== '');
 
-  const addQty = (n) => setForm((f) => ({ ...f, quantity: Math.max(0, f.quantity + n) }));
+  const addQty = (n) =>
+    setForm((f) => ({ ...f, quantity: Math.max(0, f.quantity + n) }));
   const addKg = (n) =>
     setForm((f) => ({
       ...f,
@@ -79,38 +97,35 @@ export function WasteFormModal({ open, onClose, zone, onSave }) {
     form.weightKg !== '' ? `${parseFloat(form.weightKg).toFixed(1)} kg` : '—';
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/40" onClick={handleClose} />
-
-      <div className="relative z-10 w-full max-w-sm bg-card text-card-foreground rounded-xl shadow-xl mx-4 flex flex-col max-h-[90vh]">
+    <Dialog
+      open={open && !!zone}
+      onOpenChange={(isOpen) => !isOpen && handleClose()}
+    >
+      <DialogContent className="w-full max-w-sm p-0 gap-0 max-h-[90vh] flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="flex items-start justify-between px-5 pt-5 pb-4 shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-[#DD7419]/15 flex items-center justify-center shrink-0">
-              <Trash2 className="w-4 h-4 text-[#DD7419]" />
-            </div>
-            <div>
-              <h2 className="text-base font-bold text-foreground">Registrar basura</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">{zone.name}</p>
-            </div>
+        <DialogHeader className="flex-row items-center gap-3 px-5 pt-5 pb-4 shrink-0 space-y-0">
+          <div className="w-9 h-9 rounded-lg bg-[#DD7419]/15 flex items-center justify-center shrink-0">
+            <Trash2 className="w-4 h-4 text-[#DD7419]" />
           </div>
-          <button
-            type="button"
-            onClick={handleClose}
-            className="h-7 w-7 rounded-md flex items-center justify-center text-muted-foreground hover:bg-muted transition"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
+          <div className="flex-1 text-left">
+            <DialogTitle className="text-base font-bold leading-none">
+              Registrar basura
+            </DialogTitle>
+            <p className="text-xs text-muted-foreground mt-1">{zone?.name}</p>
+          </div>
+        </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-y-auto">
+        <form
+          onSubmit={handleSubmit}
+          className="flex flex-col flex-1 overflow-y-auto"
+        >
           <div className="px-5 space-y-5 pb-5">
-
             {/* ── Cantidad ── */}
             <div>
               <div className="flex items-center justify-between mb-3">
                 <p className="text-xs font-semibold text-foreground">
-                  Cantidad de basuras <span className="text-destructive">*</span>
+                  Cantidad de basuras{' '}
+                  <span className="text-destructive">*</span>
                 </p>
                 {form.quantity > 0 && (
                   <button
@@ -139,7 +154,9 @@ export function WasteFormModal({ open, onClose, zone, onSave }) {
                   <span className="text-6xl font-black text-[#DD7419] leading-none tabular-nums">
                     {form.quantity}
                   </span>
-                  <span className="text-xs text-muted-foreground mt-1">unidades</span>
+                  <span className="text-xs text-muted-foreground mt-1">
+                    unidades
+                  </span>
                 </div>
 
                 <button
@@ -173,7 +190,13 @@ export function WasteFormModal({ open, onClose, zone, onSave }) {
               <div className="flex items-center justify-between mb-3">
                 <p className="text-xs font-semibold text-foreground">
                   Peso{' '}
-                  <span className="font-normal text-muted-foreground">(opcional)</span>
+                  {weightRequired ? (
+                    <span className="text-destructive">*</span>
+                  ) : (
+                    <span className="font-normal text-muted-foreground">
+                      (opcional)
+                    </span>
+                  )}
                 </p>
                 {form.weightKg !== '' && (
                   <button
@@ -214,7 +237,9 @@ export function WasteFormModal({ open, onClose, zone, onSave }) {
                 min="0"
                 step="0.1"
                 value={form.weightKg}
-                onChange={(e) => setForm((f) => ({ ...f, weightKg: e.target.value }))}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, weightKg: e.target.value }))
+                }
                 placeholder="O escribe el valor exacto…"
                 className="w-full h-9 px-3 rounded-md border border-border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#234465]/30 focus:border-[#234465]"
               />
@@ -226,7 +251,9 @@ export function WasteFormModal({ open, onClose, zone, onSave }) {
             <div>
               <p className="text-xs font-semibold text-foreground mb-3">
                 Foto{' '}
-                <span className="font-normal text-muted-foreground">(opcional)</span>
+                <span className="font-normal text-muted-foreground">
+                  (opcional)
+                </span>
               </p>
 
               {imagePreview ? (
@@ -271,11 +298,15 @@ export function WasteFormModal({ open, onClose, zone, onSave }) {
             <div>
               <p className="text-xs font-semibold text-foreground mb-1.5">
                 Nota{' '}
-                <span className="font-normal text-muted-foreground">(opcional)</span>
+                <span className="font-normal text-muted-foreground">
+                  (opcional)
+                </span>
               </p>
               <textarea
                 value={form.note}
-                onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, note: e.target.value }))
+                }
                 rows={2}
                 placeholder="Observaciones adicionales…"
                 className="w-full px-3 py-2 rounded-md border border-border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#DD7419]/30 focus:border-[#DD7419] resize-none"
@@ -312,7 +343,7 @@ export function WasteFormModal({ open, onClose, zone, onSave }) {
             </Button>
           </div>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

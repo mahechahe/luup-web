@@ -281,21 +281,35 @@ export const getWasteSignedUrlService = async (zoneId, logId) => {
   }
 };
 
-export const updateDeliveryService = async ({ attendanceId, type, received, snackDetail }) => {
+export const updateDeliveryService = async ({
+  attendanceId,
+  type,
+  received,
+  snackDetail,
+}) => {
   try {
     const today = new Date();
     const mm = String(today.getMonth() + 1).padStart(2, '0');
     const dd = String(today.getDate()).padStart(2, '0');
     const yyyy = today.getFullYear();
-    const body = { attendanceId, type, received, dateRegister: `${mm}-${dd}-${yyyy}` };
+    const body = {
+      attendanceId,
+      type,
+      received,
+      dateRegister: `${mm}-${dd}-${yyyy}`,
+    };
     if (type === 'snack' && snackDetail) body.snackDetail = snackDetail;
-    const { data } = await axios.patch(`${EVENTS_URL}/attendance/delivery`, body);
+    const { data } = await axios.patch(
+      `${EVENTS_URL}/attendance/delivery`,
+      body
+    );
     return { status: true, data: data?.data, errors: null };
   } catch (error) {
     return {
       status: false,
       data: null,
-      errors: error?.response?.data?.message || 'Error al actualizar la entrega.',
+      errors:
+        error?.response?.data?.message || 'Error al actualizar la entrega.',
     };
   }
 };
@@ -377,7 +391,10 @@ export const getAttendanceRecordsService = async (eventId, filters = {}) => {
     const mm = String(today.getMonth() + 1).padStart(2, '0');
     const dd = String(today.getDate()).padStart(2, '0');
     const yyyy = today.getFullYear();
-    const body = { eventId: Number(eventId), dateRegister: `${mm}-${dd}-${yyyy}` };
+    const body = {
+      eventId: Number(eventId),
+      dateRegister: `${mm}-${dd}-${yyyy}`,
+    };
     if (filters.name) body.name = filters.name;
     if (filters.cedula) body.cedula = filters.cedula;
     if (filters.page) body.page = filters.page;
@@ -388,7 +405,9 @@ export const getAttendanceRecordsService = async (eventId, filters = {}) => {
     return {
       status: false,
       data: null,
-      errors: error?.response?.data?.message || 'Error al obtener los registros de asistencia.',
+      errors:
+        error?.response?.data?.message ||
+        'Error al obtener los registros de asistencia.',
     };
   }
 };
@@ -399,7 +418,10 @@ export const getEventAttendanceService = async (eventId, filters = {}) => {
     const mm = String(today.getMonth() + 1).padStart(2, '0');
     const dd = String(today.getDate()).padStart(2, '0');
     const yyyy = today.getFullYear();
-    const body = { eventId: Number(eventId), dateRegister: `${mm}-${dd}-${yyyy}` };
+    const body = {
+      eventId: Number(eventId),
+      dateRegister: `${mm}-${dd}-${yyyy}`,
+    };
     if (filters.name) body.name = filters.name;
     if (filters.cedula) body.cedula = filters.cedula;
 
@@ -471,7 +493,10 @@ export const getStation3RecordsService = async (eventId, filters = {}) => {
     };
     if (filters.name) body.name = filters.name;
     if (filters.cedula) body.cedula = filters.cedula;
-    const { data } = await axios.post(`${EVENTS_URL}/attendance/station3`, body);
+    const { data } = await axios.post(
+      `${EVENTS_URL}/attendance/station3`,
+      body
+    );
     return { status: true, data: data?.data, errors: null };
   } catch (error) {
     return {

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   Briefcase,
+  Calendar,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -23,7 +24,8 @@ import { CheckoutModal } from '../components/CheckoutModal';
 const PAGE_SIZE = 25;
 
 function roleBadgeClass(role) {
-  if (role === 'supervisor') return 'bg-[#234465]/10 text-[#234465] dark:bg-[#234465]/20 dark:text-[#7493B2]';
+  if (role === 'supervisor')
+    return 'bg-[#234465]/10 text-[#234465] dark:bg-[#234465]/20 dark:text-[#7493B2]';
   if (role === 'coordinador') return 'bg-[#DD7419]/10 text-[#DD7419]';
   return 'bg-[#7493B2]/10 text-[#7493B2]';
 }
@@ -83,7 +85,9 @@ function CollabCheckoutCard({ collab, onCheckout }) {
   return (
     <div
       className={`bg-card rounded-2xl border overflow-hidden transition-all ${
-        allReturned ? 'border-emerald-200 dark:border-emerald-800' : 'border-border'
+        allReturned
+          ? 'border-emerald-200 dark:border-emerald-800'
+          : 'border-border'
       }`}
     >
       <div
@@ -216,17 +220,21 @@ function CollabCheckoutCard({ collab, onCheckout }) {
                 <span className="text-[11px] font-semibold text-foreground">
                   {itemsExpanded ? 'Ocultar ítems' : 'Ver ítems'}
                 </span>
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                  allReturned
-                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
-                    : 'bg-[#DD7419]/10 text-[#DD7419]'
-                }`}>
+                <span
+                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                    allReturned
+                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
+                      : 'bg-[#DD7419]/10 text-[#DD7419]'
+                  }`}
+                >
                   {items.length} {items.length === 1 ? 'ítem' : 'ítems'}
                 </span>
               </div>
               <ChevronDown
                 className="w-3.5 h-3.5 text-muted-foreground transition-transform duration-200"
-                style={{ transform: itemsExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                style={{
+                  transform: itemsExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                }}
               />
             </button>
 
@@ -235,8 +243,9 @@ function CollabCheckoutCard({ collab, onCheckout }) {
                 {items.map((item) => {
                   const returned = item.returnedQuantity ?? 0;
                   const used = item.usedQuantity ?? 0;
+                  const damaged = item.damagedQuantity ?? 0;
                   const pending =
-                    item.pendingQuantity ?? item.quantity - returned - used;
+                    item.pendingQuantity ?? item.quantity - returned - used - damaged;
                   const complete = pending === 0;
                   return (
                     <div
@@ -248,9 +257,19 @@ function CollabCheckoutCard({ collab, onCheckout }) {
                           <div className="w-6 h-6 rounded-lg bg-[#DD7419]/10 flex items-center justify-center shrink-0">
                             <Package className="w-3 h-3 text-[#DD7419]" />
                           </div>
-                          <p className="text-[12px] font-semibold text-foreground truncate">
-                            {item.itemName}
-                          </p>
+                          <div className="min-w-0">
+                            <p className="text-[12px] font-semibold text-foreground truncate">
+                              {item.itemName}
+                            </p>
+                            {item.dateRegister && (
+                              <div className="flex items-center gap-1 mt-0.5">
+                                <Calendar className="w-2.5 h-2.5 text-muted-foreground shrink-0" />
+                                <p className="text-[10px] text-muted-foreground">
+                                  Fecha de registro: {item.dateRegister}
+                                </p>
+                              </div>
+                            )}
+                          </div>
                         </div>
                         <span
                           className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full ${
@@ -262,18 +281,46 @@ function CollabCheckoutCard({ collab, onCheckout }) {
                           {complete ? 'Completo' : 'Pendiente'}
                         </span>
                       </div>
-                      <div className="grid grid-cols-4 gap-1.5">
+                      <div className="grid grid-cols-5 gap-1.5">
                         {[
-                          { label: 'Asignado', value: item.quantity, color: 'text-foreground' },
-                          { label: 'Devuelto', value: returned, color: 'text-emerald-600' },
-                          { label: 'Usado', value: used, color: 'text-[#234465]' },
-                          { label: 'Pendiente', value: pending, color: complete ? 'text-emerald-600' : 'text-amber-600' },
+                          {
+                            label: 'Asignado',
+                            value: item.quantity,
+                            color: 'text-foreground',
+                          },
+                          {
+                            label: 'Devuelto',
+                            value: returned,
+                            color: 'text-emerald-600',
+                          },
+                          {
+                            label: 'Usado',
+                            value: used,
+                            color: 'text-[#234465] dark:text-[#7493B2]',
+                          },
+                          {
+                            label: 'Dañado',
+                            value: damaged,
+                            color: damaged > 0 ? 'text-destructive' : 'text-muted-foreground',
+                          },
+                          {
+                            label: 'Pendiente',
+                            value: pending,
+                            color: complete
+                              ? 'text-emerald-600'
+                              : 'text-amber-600',
+                          },
                         ].map(({ label, value, color }) => (
-                          <div key={label} className="bg-background rounded-lg py-2 text-center">
+                          <div
+                            key={label}
+                            className="bg-background rounded-lg py-2 text-center"
+                          >
                             <p className="text-[9px] text-muted-foreground uppercase tracking-wide leading-none mb-1">
                               {label}
                             </p>
-                            <p className={`text-base font-bold ${color}`}>{value}</p>
+                            <p className={`text-base font-bold ${color}`}>
+                              {value}
+                            </p>
                           </div>
                         ))}
                       </div>

@@ -23,7 +23,7 @@ export function TransferZoneModal({ open, onClose, person, currentZoneId, availa
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-[#234465]">
+          <DialogTitle className="flex items-center gap-2 text-[#234465] dark:text-[#7493B2]">
             <ArrowRightLeft className="w-5 h-5" />
             Trasladar a zona
           </DialogTitle>
@@ -58,8 +58,8 @@ export function TransferZoneModal({ open, onClose, person, currentZoneId, availa
                     onClick={() => setSelectedZoneId(zone.id)}
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 transition text-left ${
                       selectedZoneId === zone.id
-                        ? 'border-[#234465] bg-[#234465]/5'
-                        : 'border-border hover:border-[#234465]/40 hover:bg-muted/40'
+                        ? 'border-[#234465] dark:border-[#7493B2] bg-[#234465]/5 dark:bg-[#7493B2]/10'
+                        : 'border-border hover:border-[#234465]/40 dark:hover:border-[#7493B2]/50 hover:bg-muted/40'
                     }`}
                   >
                     <div
@@ -71,8 +71,8 @@ export function TransferZoneModal({ open, onClose, person, currentZoneId, availa
                       <p className="text-xs text-muted-foreground capitalize">{zone.category}</p>
                     </div>
                     {selectedZoneId === zone.id && (
-                      <div className="ml-auto w-4 h-4 rounded-full bg-[#234465] flex items-center justify-center">
-                        <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                      <div className="ml-auto w-4 h-4 rounded-full bg-[#234465] dark:bg-[#7493B2] flex items-center justify-center">
+                        <div className="w-1.5 h-1.5 rounded-full bg-white dark:bg-card" />
                       </div>
                     )}
                   </button>

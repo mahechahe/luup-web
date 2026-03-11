@@ -47,7 +47,7 @@ export function WasteHistoryModal({ open, onClose, zone, entries = [] }) {
       <div className="fixed inset-0 z-[200] flex items-center justify-center">
         <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
-        <div className="relative z-10 w-full max-w-lg bg-white rounded-xl shadow-xl mx-4 flex flex-col max-h-[85vh]">
+        <div className="relative z-10 w-full max-w-lg bg-card rounded-xl shadow-xl mx-4 flex flex-col max-h-[85vh]">
           {/* Header */}
           <div className="flex items-start justify-between px-6 pt-5 pb-4 shrink-0">
             <div className="flex items-center gap-3">
@@ -134,7 +134,7 @@ export function WasteHistoryModal({ open, onClose, zone, entries = [] }) {
                         <button
                           type="button"
                           onClick={() => handleViewPhoto(entry)}
-                          className="flex items-center gap-1 text-[11px] font-semibold text-[#234465] hover:text-[#234465]/70 transition shrink-0"
+                          className="flex items-center gap-1 text-[11px] font-semibold text-[#234465] dark:text-[#7493B2] hover:opacity-70 transition shrink-0"
                         >
                           <ImageIcon className="w-3 h-3" />
                           Ver foto

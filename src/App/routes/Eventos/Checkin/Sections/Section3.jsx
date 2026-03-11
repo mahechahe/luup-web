@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   Boxes,
+  Calendar,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -171,8 +172,9 @@ function CollabCard({ collab, onAssign }) {
                 {items.map((item) => {
                   const returned = item.returnedQuantity ?? 0;
                   const used = item.usedQuantity ?? 0;
+                  const damaged = item.damagedQuantity ?? 0;
                   const pending =
-                    item.pendingQuantity ?? item.quantity - returned - used;
+                    item.pendingQuantity ?? item.quantity - returned - used - damaged;
                   const complete = pending === 0;
                   return (
                     <div
@@ -184,9 +186,19 @@ function CollabCard({ collab, onAssign }) {
                           <div className="w-6 h-6 rounded-lg bg-[#DD7419]/10 flex items-center justify-center shrink-0">
                             <Package className="w-3 h-3 text-[#DD7419]" />
                           </div>
-                          <p className="text-[12px] font-semibold text-foreground truncate">
-                            {item.itemName}
-                          </p>
+                          <div className="min-w-0">
+                            <p className="text-[12px] font-semibold text-foreground truncate">
+                              {item.itemName}
+                            </p>
+                            {item.dateRegister && (
+                              <div className="flex items-center gap-1 mt-0.5">
+                                <Calendar className="w-2.5 h-2.5 text-muted-foreground shrink-0" />
+                                <p className="text-[10px] text-muted-foreground">
+                                  Fecha de registro: {item.dateRegister}
+                                </p>
+                              </div>
+                            )}
+                          </div>
                         </div>
                         <span
                           className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full ${
@@ -198,7 +210,7 @@ function CollabCard({ collab, onAssign }) {
                           {complete ? 'Completo' : 'Pendiente'}
                         </span>
                       </div>
-                      <div className="grid grid-cols-4 gap-1.5">
+                      <div className="grid grid-cols-5 gap-1.5">
                         {[
                           {
                             label: 'Asignado',
@@ -213,7 +225,12 @@ function CollabCard({ collab, onAssign }) {
                           {
                             label: 'Usado',
                             value: used,
-                            color: 'text-[#234465]',
+                            color: 'text-[#234465] dark:text-[#7493B2]',
+                          },
+                          {
+                            label: 'Dañado',
+                            value: damaged,
+                            color: damaged > 0 ? 'text-destructive' : 'text-muted-foreground',
                           },
                           {
                             label: 'Pendiente',
