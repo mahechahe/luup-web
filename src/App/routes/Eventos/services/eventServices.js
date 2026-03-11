@@ -534,6 +534,23 @@ export const checkoutService = async ({
   }
 };
 
+export const confirmInventoryService = async (eventId) => {
+  try {
+    const { data } = await axios.patch(
+      `${EVENTS_URL}/worker/attendance/${eventId}/confirm-inventory`,
+      {}
+    );
+    return { status: true, data: data?.data, errors: null };
+  } catch (error) {
+    return {
+      status: false,
+      data: null,
+      errors:
+        error?.response?.data?.message || 'Error al confirmar el inventario.',
+    };
+  }
+};
+
 export const transferPersonZoneService = async ({
   userId,
   fromZoneId,

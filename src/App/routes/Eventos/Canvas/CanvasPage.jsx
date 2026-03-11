@@ -7,7 +7,9 @@ import {
   updateEventZonesService,
   uploadEventMapService,
 } from '../services/eventServices';
-import { generateId, IS_ADMIN } from './components/constants';
+import { generateId } from './components/constants';
+import { useUserStore } from '@/App/context/userStore';
+import { hasAdminAccess } from '@/App/utils/roles';
 import { DeleteZoneModal } from './components/DeleteZoneModal';
 import { ErrorState } from './components/ErrorState';
 import { EventoHeader } from './components/EventoHeader';
@@ -19,6 +21,8 @@ function CanvasPage() {
   const { eventId } = useParams();
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
+  const { user } = useUserStore();
+  const IS_ADMIN = hasAdminAccess(user?.roleId);
 
   /* Datos del evento */
   const [loading, setLoading] = useState(true);

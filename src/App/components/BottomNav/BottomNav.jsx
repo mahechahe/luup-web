@@ -1,4 +1,5 @@
 import { useUserStore } from '@/App/context/userStore';
+import { hasAdminAccess } from '@/App/utils/roles';
 import { Calendar, Home, Package, UserCheck } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 
@@ -11,9 +12,9 @@ const NAV_ITEMS = [
 
 export default function BottomNav() {
   const { user } = useUserStore();
-  const isAdmin = user?.roleId === 1;
+  const isStrictAdmin = user?.roleId === 1;
 
-  const visibleItems = NAV_ITEMS.filter(item => !item.adminOnly || isAdmin);
+  const visibleItems = NAV_ITEMS.filter(item => !item.adminOnly || isStrictAdmin);
 
   return (
     <nav

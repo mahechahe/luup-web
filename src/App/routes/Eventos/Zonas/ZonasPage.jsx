@@ -10,6 +10,7 @@ import {
   getZoneWasteHistoryService,
 } from '../services/eventServices';
 import { useUserStore } from '@/App/context/userStore';
+import { hasAdminAccess } from '@/App/utils/roles';
 import { EventoHeader } from '../Canvas/components/EventoHeader';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -29,7 +30,7 @@ export default function ZonasPage() {
   const navigate = useNavigate();
   const { user } = useUserStore();
 
-  const isAdmin = user?.roleId === 1;
+  const isAdmin = hasAdminAccess(user?.roleId);
   const [eventRole, setEventRole] = useState(null);
   const isCoordinator = eventRole === 'coordinator';
   const canTransfer = isAdmin || isCoordinator;

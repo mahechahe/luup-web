@@ -19,6 +19,7 @@ import { EditEventDrawer } from './components/EditEventDrawer';
 import { FilterEventDrawer } from './components/FilterEventDrawer';
 import { getEventosService } from './services/eventServices';
 import { useUserStore } from '@/App/context/userStore';
+import { hasAdminAccess } from '@/App/utils/roles';
 
 const PAGE_LIMIT = 10;
 const EMPTY_FILTERS = { name: '', location: '', dateFrom: '', dateTo: '' };
@@ -220,8 +221,8 @@ function EventosPage() {
   useEffect(() => {
     // VALIDACIÓN ANTES DE LA PETICIÓN
     if (user) {
-      if (user.roleId === 1) {
-        fetchData(1, EMPTY_FILTERS); // Si es Admin, carga normal
+      if (hasAdminAccess(user.roleId)) {
+        fetchData(1, EMPTY_FILTERS); // Si es Admin o SuperAdmin, carga normal
       } else {
         navigate('/eventos/mis-eventos'); // Si es trabajador, lo mandamos a su página
       }
@@ -244,7 +245,7 @@ function EventosPage() {
   }
 
   // Bloqueo de renderizado para no admin (mientras redirige)
-  if (user && user.roleId !== 1) return null;
+  if (user && !hasAdminAccess(user.roleId)) return null;
 
   return (
     <div className="min-h-screen bg-background px-4 py-6">

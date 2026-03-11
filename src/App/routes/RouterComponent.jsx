@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { useUserStore } from '../context/userStore';
+import { hasAdminAccess } from '../utils/roles';
 import AppLayout from '../components/AppLayout/AppLayout';
 import ProtectedRoute from './ProtectedRoute';
 import { routesAuth, routesNoAuth } from './routesConfig';
@@ -8,7 +9,7 @@ import { AppBar } from '../components/AppBar/AppBar';
 
 function RouterComponent() {
   const { userIsLogin, user } = useUserStore();
-  const isAdmin = user?.roleId === 1;
+  const isAdmin = hasAdminAccess(user?.roleId);
 
   // Filtra rutas de colaboradores si no es admin
   const filteredRoutesAuth = routesAuth.filter((route) => {

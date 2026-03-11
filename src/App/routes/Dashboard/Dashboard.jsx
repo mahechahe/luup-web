@@ -3,6 +3,7 @@ import { Calendar, Users, MapPin, ClipboardList, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useUserStore } from '@/App/context/userStore';
 import { getWorkerCurrentEventService } from '@/App/routes/Eventos/services/eventServices';
+import { hasAdminAccess, getRoleLabel } from '@/App/utils/roles';
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -11,10 +12,6 @@ function getGreeting() {
   return 'Buenas noches';
 }
 
-function getRoleLabel(roleId) {
-  if (roleId === 1) return 'Administrador';
-  return 'Colaborador';
-}
 
 // Etiqueta legible del rol asignado en el evento activo
 function getEventRoleLabel(eventRole) {
@@ -65,7 +62,7 @@ function Dashboard() {
   const { user } = useUserStore();
   const navigate = useNavigate();
 
-  const isAdmin = user?.roleId === 1;
+  const isAdmin = hasAdminAccess(user?.roleId);
 
   const [currentEvent, setCurrentEvent] = useState(null);
   const [eventRole, setEventRole] = useState(null); // 'coordinator' | 'supervisor' | 'worker'

@@ -2,12 +2,14 @@ import React, { useEffect, useState } from 'react';
 import {
   Boxes,
   Calendar,
+  CheckCircle2,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   Clock,
   DoorOpen,
   IdCard,
+  Loader2,
   Package,
   PackageOpen,
   Plus,
@@ -16,7 +18,21 @@ import {
   X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { getStation3RecordsService } from '../../services/eventServices';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { toast } from 'sonner';
+import {
+  confirmInventoryService,
+  getStation3RecordsService,
+} from '../../services/eventServices';
 import { InventoryModal } from '../components/InventoryModal';
 
 const PAGE_SIZE = 25;
@@ -46,7 +62,7 @@ function roleLabel(role) {
   );
 }
 
-function CollabCard({ collab, onAssign }) {
+function CollabCard({ collab, onAssign, onRequestConfirm }) {
   const items = collab.inventoryItems ?? [];
   const hasItems = items.length > 0;
   const [itemsExpanded, setItemsExpanded] = useState(false);
@@ -55,22 +71,27 @@ function CollabCard({ collab, onAssign }) {
   const entryTime = formatTime(collab.attendance?.entryTime);
   const exitTime = formatTime(collab.attendance?.exitTime);
   const hasCheckout = !!collab.attendance?.exitTime;
+  const isConfirmed = collab.attendance?.confirmInventory;
 
   return (
     <div
       className={`bg-card rounded-2xl border overflow-hidden transition-all ${
-        allReturned
-          ? 'border-emerald-200 dark:border-emerald-800'
-          : 'border-border'
+        isConfirmed
+          ? 'border-[#234465]/30 dark:border-[#7493B2]/30'
+          : allReturned
+            ? 'border-emerald-200 dark:border-emerald-800'
+            : 'border-border'
       }`}
     >
       <div
         className={`h-1 ${
-          allReturned
-            ? 'bg-emerald-500'
-            : hasItems
-              ? 'bg-[#234465]'
-              : 'bg-muted'
+          isConfirmed
+            ? 'bg-[#234465] dark:bg-[#7493B2]'
+            : allReturned
+              ? 'bg-emerald-500'
+              : hasItems
+                ? 'bg-[#234465]'
+                : 'bg-muted'
         }`}
       />
       <div className="p-4 space-y-3">
@@ -174,7 +195,8 @@ function CollabCard({ collab, onAssign }) {
                   const used = item.usedQuantity ?? 0;
                   const damaged = item.damagedQuantity ?? 0;
                   const pending =
-                    item.pendingQuantity ?? item.quantity - returned - used - damaged;
+                    item.pendingQuantity ??
+                    item.quantity - returned - used - damaged;
                   const complete = pending === 0;
                   return (
                     <div
@@ -230,7 +252,10 @@ function CollabCard({ collab, onAssign }) {
                           {
                             label: 'Dañado',
                             value: damaged,
-                            color: damaged > 0 ? 'text-destructive' : 'text-muted-foreground',
+                            color:
+                              damaged > 0
+                                ? 'text-destructive'
+                                : 'text-muted-foreground',
                           },
                           {
                             label: 'Pendiente',
@@ -268,7 +293,7 @@ function CollabCard({ collab, onAssign }) {
           </div>
         )}
 
-        {/* Footer: check-out registrado o botón asignar */}
+        {/* Footer: check-out registrado o botones */}
         <div className="pt-1">
           {hasCheckout ? (
             <div className="flex items-center gap-3">
@@ -295,14 +320,37 @@ function CollabCard({ collab, onAssign }) {
                 </div>
               </div>
             </div>
+          ) : isConfirmed ? (
+            <div className="flex items-center justify-center gap-2 rounded-xl bg-[#234465]/8 dark:bg-[#7493B2]/10 border border-[#234465]/20 dark:border-[#7493B2]/25 px-4 py-2.5">
+              <CheckCircle2 className="w-4 h-4 text-[#234465] dark:text-[#7493B2] shrink-0" />
+              <div>
+                <p className="text-xs font-bold text-[#234465] dark:text-[#7493B2] leading-none">
+                  Asignación confirmada
+                </p>
+                <p className="text-[10px] text-[#234465]/60 dark:text-[#7493B2]/60 mt-0.5">
+                  No se pueden asignar más ítems
+                </p>
+              </div>
+            </div>
           ) : (
-            <button
-              onClick={() => onAssign(collab)}
-              className="w-full flex items-center justify-center gap-1.5 h-8 rounded-lg text-[11px] font-semibold text-[#DD7419] border border-[#DD7419]/25 hover:bg-[#DD7419]/5 transition"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Asignar inventario
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => onAssign(collab)}
+                className="flex-1 flex items-center justify-center gap-1.5 h-8 rounded-lg text-[11px] font-semibold text-[#DD7419] border border-[#DD7419]/25 hover:bg-[#DD7419]/5 transition"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Asignar inventario
+              </button>
+              {hasItems && (
+                <button
+                  onClick={() => onRequestConfirm(collab)}
+                  className="flex-1 flex items-center justify-center gap-1.5 h-8 rounded-lg text-[11px] font-semibold text-[#234465] dark:text-[#7493B2] border border-[#234465]/25 dark:border-[#7493B2]/30 hover:bg-[#234465]/5 transition"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  Confirmar asignación
+                </button>
+              )}
+            </div>
           )}
         </div>
       </div>
@@ -334,6 +382,8 @@ function CardSkeleton() {
 export const Section3 = ({ eventId }) => {
   const [showInventory, setShowInventory] = useState(false);
   const [assignCollab, setAssignCollab] = useState(null);
+  const [confirmTarget, setConfirmTarget] = useState(null);
+  const [confirming, setConfirming] = useState(false);
   const [filters, setFilters] = useState({ name: '', cedula: '' });
   const [filterInput, setFilterInput] = useState({ name: '', cedula: '' });
   const [loading, setLoading] = useState(true);
@@ -367,6 +417,26 @@ export const Section3 = ({ eventId }) => {
       })
     );
     setAssignCollab(null);
+  };
+
+  const handleConfirmInventory = async () => {
+    if (!confirmTarget) return;
+    setConfirming(true);
+    const res = await confirmInventoryService(confirmTarget.attendance?.id);
+    setConfirming(false);
+    if (res.status) {
+      toast.success('Inventario confirmado exitosamente');
+      setCollaborators((prev) =>
+        prev.map((c) =>
+          c.userId !== confirmTarget.userId
+            ? c
+            : { ...c, attendance: { ...c.attendance, confirmInventory: true } }
+        )
+      );
+      setConfirmTarget(null);
+    } else {
+      toast.error(res.errors ?? 'Error al confirmar el inventario');
+    }
   };
 
   const handleClearFilters = () => {
@@ -529,10 +599,77 @@ export const Section3 = ({ eventId }) => {
               key={collab.userId}
               collab={collab}
               onAssign={setAssignCollab}
+              onRequestConfirm={setConfirmTarget}
             />
           ))}
         </div>
       )}
+
+      {/* Confirmación de asignación */}
+      <AlertDialog
+        open={!!confirmTarget}
+        onOpenChange={(v) => {
+          if (!v) setConfirmTarget(null);
+        }}
+      >
+        <AlertDialogContent className="max-w-sm">
+          <AlertDialogHeader>
+            <div className="flex items-center gap-3 mb-1">
+              <div className="w-10 h-10 rounded-xl bg-[#234465]/10 dark:bg-[#7493B2]/15 flex items-center justify-center shrink-0">
+                <CheckCircle2 className="w-5 h-5 text-[#234465] dark:text-[#7493B2]" />
+              </div>
+              <AlertDialogTitle className="text-base leading-snug">
+                ¿Confirmar asignación de inventario?
+              </AlertDialogTitle>
+            </div>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Vas a confirmar el inventario asignado a{' '}
+                  <span className="font-semibold text-foreground">
+                    {confirmTarget?.firstName} {confirmTarget?.lastName}
+                  </span>
+                  .
+                </p>
+                <div className="flex items-start gap-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 px-3 py-2.5">
+                  <span className="text-amber-500 text-base leading-none mt-0.5">
+                    ⚠
+                  </span>
+                  <p className="text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
+                    <span className="font-semibold">
+                      Esta acción es irreversible.
+                    </span>{' '}
+                    Una vez confirmado, no podrás editar el inventario ni
+                    asignar nuevos ítems a este colaborador.
+                  </p>
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel disabled={confirming}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleConfirmInventory();
+              }}
+              disabled={confirming}
+              className="bg-[#234465] hover:bg-[#234465]/90 text-white dark:bg-[#7493B2] dark:hover:bg-[#7493B2]/90 dark:text-white"
+            >
+              {confirming ? (
+                <span className="flex items-center gap-1.5">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  Confirmando…
+                </span>
+              ) : (
+                'Sí, confirmar'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Modal inventario — solo navegación */}
       <InventoryModal open={showInventory} onOpenChange={setShowInventory} />

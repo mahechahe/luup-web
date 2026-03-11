@@ -144,8 +144,8 @@ export default function CheckinPage() {
       </header>
 
       {/* ── Tabs de estaciones ── */}
-      <div className="sticky top-[57px] z-20 bg-card border-b border-border px-2">
-        <div className="flex gap-1 py-1.5">
+      <div className="sticky top-[57px] z-20 bg-card border-b border-border px-2 sm:px-4">
+        <div className="flex gap-1 sm:gap-2 py-1.5 sm:py-2 max-w-7xl mx-auto">
           {STATIONS.map(
             ({
               id,
@@ -163,7 +163,7 @@ export default function CheckinPage() {
                   key={id}
                   onClick={() => accessible && handleStationChange(id)}
                   disabled={!accessible}
-                  className={`relative flex-1 flex flex-col items-center gap-0.5 px-1 py-1.5 rounded-lg font-semibold transition-all ${
+                  className={`relative flex-1 flex flex-col items-center gap-0.5 sm:gap-1 px-1 sm:px-3 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl font-semibold transition-all ${
                     !accessible
                       ? lockedClass
                       : isActive
@@ -171,13 +171,13 @@ export default function CheckinPage() {
                         : inactiveClass
                   }`}
                 >
-                  <div className="flex items-center gap-1">
-                    <Icon className="w-3 h-3 shrink-0" />
-                    <span className="text-[11px]">{label}</span>
-                    {!accessible && <Lock className="w-2.5 h-2.5" />}
+                  <div className="flex items-center gap-1 sm:gap-1.5">
+                    <Icon className="w-3 h-3 sm:w-4 sm:h-4 shrink-0" />
+                    <span className="text-[11px] sm:text-sm">{label}</span>
+                    {!accessible && <Lock className="w-2.5 h-2.5 sm:w-3 sm:h-3" />}
                   </div>
                   <span
-                    className={`text-[9px] font-normal leading-tight text-center ${
+                    className={`text-[9px] sm:text-xs font-normal leading-tight text-center ${
                       isActive
                         ? 'text-current opacity-70'
                         : 'text-muted-foreground'
