@@ -90,7 +90,7 @@ function LoginPage() {
     <div className="min-h-screen bg-linear-to-br from-brand/5 via-background to-brand/10 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Login Card */}
-        <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+        <div className="bg-card rounded-2xl shadow-xl p-8 border border-border">
           <div className="text-center mb-8">
             <div className="flex justify-center mb-4">
               <div className="w-16 h-16 rounded-2xl bg-brand flex items-center justify-center shadow-md">
@@ -244,7 +244,7 @@ function LoginPage() {
         </div>
 
         <div className="text-center mt-6">
-          <p className="text-xs ">Versión {version}</p>
+          <p className="text-xs text-muted-foreground">Versión {version}</p>
         </div>
       </div>
     </div>
