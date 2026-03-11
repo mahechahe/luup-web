@@ -82,7 +82,7 @@ export function WasteFormModal({ open, onClose, zone, onSave }) {
     <div className="fixed inset-0 z-[200] flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40" onClick={handleClose} />
 
-      <div className="relative z-10 w-full max-w-sm bg-white rounded-xl shadow-xl mx-4 flex flex-col max-h-[90vh]">
+      <div className="relative z-10 w-full max-w-sm bg-card text-card-foreground rounded-xl shadow-xl mx-4 flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="flex items-start justify-between px-5 pt-5 pb-4 shrink-0">
           <div className="flex items-center gap-3">
@@ -216,7 +216,7 @@ export function WasteFormModal({ open, onClose, zone, onSave }) {
                 value={form.weightKg}
                 onChange={(e) => setForm((f) => ({ ...f, weightKg: e.target.value }))}
                 placeholder="O escribe el valor exacto…"
-                className="w-full h-9 px-3 rounded-md border border-border bg-white text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#234465]/30 focus:border-[#234465]"
+                className="w-full h-9 px-3 rounded-md border border-border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#234465]/30 focus:border-[#234465]"
               />
             </div>
 
@@ -278,7 +278,7 @@ export function WasteFormModal({ open, onClose, zone, onSave }) {
                 onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))}
                 rows={2}
                 placeholder="Observaciones adicionales…"
-                className="w-full px-3 py-2 rounded-md border border-border bg-white text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#DD7419]/30 focus:border-[#DD7419] resize-none"
+                className="w-full px-3 py-2 rounded-md border border-border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#DD7419]/30 focus:border-[#DD7419] resize-none"
               />
             </div>
 

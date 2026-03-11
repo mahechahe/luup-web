@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   Briefcase,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Clock,
@@ -22,7 +23,7 @@ import { CheckoutModal } from '../components/CheckoutModal';
 const PAGE_SIZE = 25;
 
 function roleBadgeClass(role) {
-  if (role === 'supervisor') return 'bg-[#234465]/10 text-[#234465]';
+  if (role === 'supervisor') return 'bg-[#234465]/10 text-[#234465] dark:bg-[#234465]/20 dark:text-[#7493B2]';
   if (role === 'coordinador') return 'bg-[#DD7419]/10 text-[#DD7419]';
   return 'bg-[#7493B2]/10 text-[#7493B2]';
 }
@@ -51,7 +52,7 @@ function AttendancePill({ icon: Icon, label, received, detail }) {
     <div
       className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] font-semibold border ${
         active
-          ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+          ? 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-900/30 dark:border-emerald-800 dark:text-emerald-300'
           : 'bg-muted/50 border-border text-muted-foreground'
       }`}
     >
@@ -67,6 +68,7 @@ function AttendancePill({ icon: Icon, label, received, detail }) {
 function CollabCheckoutCard({ collab, onCheckout }) {
   const att = collab.attendance ?? {};
   const items = collab.inventoryItems ?? [];
+  const [itemsExpanded, setItemsExpanded] = useState(false);
   const entryTime = formatTime(att.entryTime);
   const exitTime = formatTime(att.exitTime);
   const isCheckedOut = !!att.exitTime;
@@ -80,12 +82,12 @@ function CollabCheckoutCard({ collab, onCheckout }) {
 
   return (
     <div
-      className={`bg-white rounded-2xl border overflow-hidden transition-all ${
-        allReturned ? 'border-emerald-200' : 'border-border'
+      className={`bg-card rounded-2xl border overflow-hidden transition-all ${
+        allReturned ? 'border-emerald-200 dark:border-emerald-800' : 'border-border'
       }`}
     >
       <div
-        className={`h-1 ${allReturned ? 'bg-emerald-500' : 'bg-[#234465]'}`}
+        className={`h-1 ${allReturned ? 'bg-emerald-500' : 'bg-[#DD7419]'}`}
       />
       <div className="p-4 space-y-3">
         {/* Cabecera */}
@@ -129,22 +131,22 @@ function CollabCheckoutCard({ collab, onCheckout }) {
           <div className="shrink-0">
             {att.attended ? (
               entryTime ? (
-                <div className="flex flex-col items-center bg-emerald-50 border border-emerald-200 rounded-2xl px-3 py-2 min-w-[64px]">
+                <div className="flex flex-col items-center bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-2xl px-3 py-2 min-w-[64px]">
                   <Clock className="w-4 h-4 text-emerald-500 mb-1" />
-                  <span className="text-[13px] font-extrabold text-emerald-700 leading-none">
+                  <span className="text-[13px] font-extrabold text-emerald-700 dark:text-emerald-300 leading-none">
                     {entryTime}
                   </span>
-                  <span className="text-[9px] font-semibold uppercase tracking-widest text-emerald-500 mt-1">
+                  <span className="text-[9px] font-semibold uppercase tracking-widest text-emerald-500 dark:text-emerald-400 mt-1">
                     Check-in
                   </span>
                 </div>
               ) : (
-                <div className="flex flex-col items-center bg-amber-50 border border-amber-200 rounded-2xl px-3 py-2 min-w-[64px]">
+                <div className="flex flex-col items-center bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-2xl px-3 py-2 min-w-[64px]">
                   <Clock className="w-4 h-4 text-amber-500 mb-1" />
-                  <span className="text-[11px] font-bold text-amber-700 leading-tight text-center">
+                  <span className="text-[11px] font-bold text-amber-700 dark:text-amber-300 leading-tight text-center">
                     Sin hora
                   </span>
-                  <span className="text-[9px] font-semibold uppercase tracking-widest text-amber-500 mt-1">
+                  <span className="text-[9px] font-semibold uppercase tracking-widest text-amber-500 dark:text-amber-400 mt-1">
                     Check-in
                   </span>
                 </div>
@@ -166,7 +168,7 @@ function CollabCheckoutCard({ collab, onCheckout }) {
         {/* Nota */}
         {(att.notes ?? collab.notes) && (
           <p
-            className="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 italic"
+            className="text-[11px] text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-lg px-2.5 py-1.5 italic"
             style={{
               marginBottom: '10px',
             }}
@@ -204,75 +206,82 @@ function CollabCheckoutCard({ collab, onCheckout }) {
 
         {/* Inventario */}
         {items.length > 0 ? (
-          <div className="space-y-2">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-              Inventario asignado
-            </p>
-            {items.map((item) => {
-              const returned = item.returnedQuantity ?? 0;
-              const used = item.usedQuantity ?? 0;
-              const pending =
-                item.pendingQuantity ?? item.quantity - returned - used;
-              const complete = pending === 0;
-              return (
-                <div
-                  key={item.id}
-                  className="rounded-xl bg-muted/40 px-3 py-3 space-y-2.5"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="w-6 h-6 rounded-lg bg-[#234465]/10 flex items-center justify-center shrink-0">
-                        <Package className="w-3 h-3 text-[#234465]" />
-                      </div>
-                      <p className="text-[12px] font-semibold text-foreground truncate">
-                        {item.itemName}
-                      </p>
-                    </div>
-                    <span
-                      className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        complete
-                          ? 'bg-emerald-100 text-emerald-700'
-                          : 'bg-amber-100 text-amber-700'
-                      }`}
+          <div>
+            <button
+              onClick={() => setItemsExpanded((v) => !v)}
+              className="w-full flex items-center justify-between gap-2 rounded-xl bg-muted/30 px-3 py-2.5 hover:bg-muted/50 transition"
+            >
+              <div className="flex items-center gap-2">
+                <Package className="w-3.5 h-3.5 text-[#DD7419] shrink-0" />
+                <span className="text-[11px] font-semibold text-foreground">
+                  {itemsExpanded ? 'Ocultar ítems' : 'Ver ítems'}
+                </span>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                  allReturned
+                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
+                    : 'bg-[#DD7419]/10 text-[#DD7419]'
+                }`}>
+                  {items.length} {items.length === 1 ? 'ítem' : 'ítems'}
+                </span>
+              </div>
+              <ChevronDown
+                className="w-3.5 h-3.5 text-muted-foreground transition-transform duration-200"
+                style={{ transform: itemsExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
+              />
+            </button>
+
+            {itemsExpanded && (
+              <div className="mt-2 space-y-2">
+                {items.map((item) => {
+                  const returned = item.returnedQuantity ?? 0;
+                  const used = item.usedQuantity ?? 0;
+                  const pending =
+                    item.pendingQuantity ?? item.quantity - returned - used;
+                  const complete = pending === 0;
+                  return (
+                    <div
+                      key={item.id}
+                      className="rounded-xl bg-muted/40 px-3 py-3 space-y-2.5"
                     >
-                      {complete ? 'Completo' : 'Pendiente'}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-4 gap-1.5">
-                    {[
-                      {
-                        label: 'Asignado',
-                        value: item.quantity,
-                        color: 'text-foreground',
-                      },
-                      {
-                        label: 'Devuelto',
-                        value: returned,
-                        color: 'text-emerald-600',
-                      },
-                      { label: 'Usado', value: used, color: 'text-[#234465]' },
-                      {
-                        label: 'Pendiente',
-                        value: pending,
-                        color: complete ? 'text-emerald-600' : 'text-amber-600',
-                      },
-                    ].map(({ label, value, color }) => (
-                      <div
-                        key={label}
-                        className="bg-white rounded-lg py-2 text-center"
-                      >
-                        <p className="text-[9px] text-muted-foreground uppercase tracking-wide leading-none mb-1">
-                          {label}
-                        </p>
-                        <p className={`text-base font-bold ${color}`}>
-                          {value}
-                        </p>
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="w-6 h-6 rounded-lg bg-[#DD7419]/10 flex items-center justify-center shrink-0">
+                            <Package className="w-3 h-3 text-[#DD7419]" />
+                          </div>
+                          <p className="text-[12px] font-semibold text-foreground truncate">
+                            {item.itemName}
+                          </p>
+                        </div>
+                        <span
+                          className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                            complete
+                              ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
+                              : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
+                          }`}
+                        >
+                          {complete ? 'Completo' : 'Pendiente'}
+                        </span>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
+                      <div className="grid grid-cols-4 gap-1.5">
+                        {[
+                          { label: 'Asignado', value: item.quantity, color: 'text-foreground' },
+                          { label: 'Devuelto', value: returned, color: 'text-emerald-600' },
+                          { label: 'Usado', value: used, color: 'text-[#234465]' },
+                          { label: 'Pendiente', value: pending, color: complete ? 'text-emerald-600' : 'text-amber-600' },
+                        ].map(({ label, value, color }) => (
+                          <div key={label} className="bg-background rounded-lg py-2 text-center">
+                            <p className="text-[9px] text-muted-foreground uppercase tracking-wide leading-none mb-1">
+                              {label}
+                            </p>
+                            <p className={`text-base font-bold ${color}`}>{value}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         ) : (
           <div className="flex items-center gap-2 rounded-xl bg-muted/30 px-3 py-2">
@@ -285,13 +294,13 @@ function CollabCheckoutCard({ collab, onCheckout }) {
 
         {/* Checkout */}
         {isCheckedOut ? (
-          <div className="flex items-center gap-2 rounded-xl bg-rose-50 border border-rose-200 px-3 py-2.5">
-            <DoorOpen className="w-4 h-4 text-rose-600 shrink-0" />
+          <div className="flex items-center gap-2 rounded-xl bg-rose-50 dark:bg-rose-900/30 border border-rose-200 dark:border-rose-800 px-3 py-2.5">
+            <DoorOpen className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
             <div className="flex-1 min-w-0">
-              <p className="text-[11px] font-semibold text-rose-700">
+              <p className="text-[11px] font-semibold text-rose-700 dark:text-rose-300">
                 Check-out registrado
               </p>
-              <p className="text-[10px] text-rose-600/70">
+              <p className="text-[10px] text-rose-600/70 dark:text-rose-400/70">
                 Salida: {exitTime}
                 {att.returnedUniform != null && (
                   <>
@@ -306,7 +315,7 @@ function CollabCheckoutCard({ collab, onCheckout }) {
         ) : (
           <button
             onClick={() => onCheckout(collab)}
-            className="w-full h-10 rounded-xl bg-[#234465] hover:bg-[#234465]/90 text-white text-sm font-semibold transition flex items-center justify-center gap-2"
+            className="w-full h-10 rounded-xl bg-[#DD7419] hover:bg-[#DD7419]/90 text-white text-sm font-semibold transition flex items-center justify-center gap-2"
           >
             <DoorOpen className="w-4 h-4" />
             Marcar Checkout
@@ -319,7 +328,7 @@ function CollabCheckoutCard({ collab, onCheckout }) {
 
 function CardSkeleton() {
   return (
-    <div className="bg-white rounded-2xl border p-4 animate-pulse space-y-3">
+    <div className="bg-card rounded-2xl border p-4 animate-pulse space-y-3">
       <div className="flex justify-between gap-3">
         <div className="flex-1 space-y-2">
           <div className="h-4 bg-muted rounded-full w-44" />
@@ -469,7 +478,7 @@ export const Section4 = ({ eventId }) => {
       </div>
 
       {/* Controles */}
-      <div className="bg-white rounded-xl border border-border p-3 space-y-3">
+      <div className="bg-card rounded-xl border border-border p-3 space-y-3">
         <div className="flex items-center gap-2 flex-wrap">
           <div className="relative flex-1 min-w-[140px]">
             <User className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
@@ -502,7 +511,7 @@ export const Section4 = ({ eventId }) => {
             disabled={
               (filterInput.name === '' && filterInput.cedula === '') || loading
             }
-            className="h-9 bg-[#234465] hover:bg-[#234465]/90 text-white gap-1.5 shrink-0"
+            className="h-9 bg-[#DD7419] hover:bg-[#DD7419]/90 text-white gap-1.5 shrink-0"
           >
             <Search className="w-3.5 h-3.5" />
             <span>Buscar</span>
@@ -555,7 +564,7 @@ export const Section4 = ({ eventId }) => {
 
       {/* Paginación */}
       {!loading && collaborators.length > 0 && (
-        <div className="bg-white rounded-xl border border-border px-3 py-2.5 flex items-center justify-between gap-3 flex-wrap pb-4">
+        <div className="bg-card rounded-xl border border-border px-3 py-2.5 flex items-center justify-between gap-3 flex-wrap pb-4">
           <div className="flex items-center gap-3">
             <p className="text-xs text-muted-foreground">
               <span className="font-semibold text-foreground">
@@ -600,7 +609,7 @@ export const Section4 = ({ eventId }) => {
                     onClick={() => setCurrentPage(item)}
                     className={`h-8 min-w-8 px-2 rounded-md text-xs font-semibold transition ${
                       safePage === item
-                        ? 'bg-[#234465] text-white'
+                        ? 'bg-[#DD7419] text-white'
                         : 'border border-border text-foreground hover:bg-muted'
                     }`}
                   >

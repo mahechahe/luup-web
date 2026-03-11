@@ -2,7 +2,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export function ZoneCardSkeleton() {
   return (
-    <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
+    <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
       <div className="h-1.5 bg-muted animate-pulse" />
       <div className="px-6 pt-5 pb-4">
         <div className="flex items-start justify-between gap-4">

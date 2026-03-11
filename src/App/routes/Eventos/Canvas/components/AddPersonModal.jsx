@@ -98,18 +98,18 @@ export function AddPersonModal({ zoneId, role, existingIds, onConfirm, onClose }
 
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl w-[640px] max-h-[85vh] flex flex-col">
+      <div className="bg-card rounded-2xl shadow-2xl w-[640px] max-h-[85vh] flex flex-col">
 
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-[#234465]/10 flex items-center justify-center">
-              <Users className="w-4 h-4 text-[#234465]" />
+            <div className="w-8 h-8 rounded-lg bg-[#234465]/10 dark:bg-[#234465]/30 flex items-center justify-center">
+              <Users className="w-4 h-4 text-[#234465] dark:text-[#7493B2]" />
             </div>
             <div>
               <h3 className="text-sm font-bold text-foreground">{modalTitle}</h3>
               {selected.size > 0 && (
-                <p className="text-[11px] text-[#234465] font-medium">
+                <p className="text-[11px] text-[#234465] dark:text-[#7493B2] font-medium">
                   {selected.size} seleccionado{selected.size !== 1 ? 's' : ''}
                 </p>
               )}
@@ -132,7 +132,7 @@ export function AddPersonModal({ zoneId, role, existingIds, onConfirm, onClose }
               value={searchFirst}
               onChange={(e) => setSearchFirst(e.target.value)}
               onKeyDown={handleKeyDown}
-              className="w-full pl-8 pr-3 py-1.5 text-xs border border-border rounded-lg outline-none focus:border-[#234465] bg-white"
+              className="w-full pl-8 pr-3 py-1.5 text-xs border border-border rounded-lg outline-none focus:border-[#DD7419] bg-background text-foreground"
             />
           </div>
           <div className="flex-1 relative">
@@ -142,12 +142,12 @@ export function AddPersonModal({ zoneId, role, existingIds, onConfirm, onClose }
               value={searchCedula}
               onChange={(e) => setSearchCedula(e.target.value)}
               onKeyDown={handleKeyDown}
-              className="w-full pl-8 pr-3 py-1.5 text-xs border border-border rounded-lg outline-none focus:border-[#234465] bg-white"
+              className="w-full pl-8 pr-3 py-1.5 text-xs border border-border rounded-lg outline-none focus:border-[#DD7419] bg-background text-foreground"
             />
           </div>
           <button
             onClick={applySearch}
-            className="px-4 py-1.5 bg-[#234465] text-white text-xs font-medium rounded-lg hover:bg-[#234465]/90 transition shrink-0"
+            className="px-4 py-1.5 bg-[#DD7419] text-white text-xs font-medium rounded-lg hover:bg-[#DD7419]/90 transition shrink-0"
           >
             Buscar
           </button>
@@ -166,7 +166,7 @@ export function AddPersonModal({ zoneId, role, existingIds, onConfirm, onClose }
         <div className="flex-1 overflow-y-auto">
           {loadingData ? (
             <div className="flex items-center justify-center py-16">
-              <Loader2 className="w-6 h-6 animate-spin text-[#234465]" />
+              <Loader2 className="w-6 h-6 animate-spin text-[#DD7419]" />
             </div>
           ) : collaborators.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-muted-foreground gap-2">
@@ -201,7 +201,7 @@ export function AddPersonModal({ zoneId, role, existingIds, onConfirm, onClose }
                         alreadyAdded
                           ? 'opacity-40 cursor-not-allowed bg-muted/10'
                           : isSelected
-                            ? 'bg-[#234465]/5 cursor-pointer'
+                            ? 'bg-[#DD7419]/5 cursor-pointer'
                             : 'hover:bg-muted/30 cursor-pointer'
                       }`}
                     >
@@ -209,8 +209,8 @@ export function AddPersonModal({ zoneId, role, existingIds, onConfirm, onClose }
                         <div
                           className={`w-4 h-4 rounded border-2 flex items-center justify-center transition ${
                             isSelected
-                              ? 'bg-[#234465] border-[#234465]'
-                              : 'border-border bg-white'
+                              ? 'bg-[#DD7419] border-[#DD7419]'
+                              : 'border-border bg-background'
                           }`}
                         >
                           {isSelected && <Check className="w-2.5 h-2.5 text-white" />}
@@ -271,7 +271,7 @@ export function AddPersonModal({ zoneId, role, existingIds, onConfirm, onClose }
           <button
             onClick={handleConfirm}
             disabled={selected.size === 0}
-            className="flex-1 py-2.5 text-sm font-medium bg-[#234465] text-white rounded-xl hover:bg-[#234465]/90 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 py-2.5 text-sm font-medium bg-[#DD7419] text-white rounded-xl hover:bg-[#DD7419]/90 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {selected.size > 0 ? `Agregar (${selected.size})` : 'Agregar'}
           </button>

@@ -13,8 +13,8 @@ import { CollaboratorCard } from './CollaboratorCard';
 import { WasteHistoryModal } from './WasteHistoryModal';
 
 const CATEGORY_STYLE = {
-  general: 'bg-[#234465]/10 text-[#234465]',
-  acopio: 'bg-[#DD7419]/10 text-[#DD7419]',
+  general: 'bg-[#234465]/10 text-[#234465] dark:bg-[#234465]/30 dark:text-[#7493B2]',
+  acopio: 'bg-[#DD7419]/10 text-[#DD7419] dark:bg-[#DD7419]/20 dark:text-[#DD7419]',
 };
 
 const CATEGORY_LABEL = {
@@ -87,7 +87,7 @@ export function ZoneCard({
   const hasWasteKg = wasteEntries.some((e) => e.weightKg != null);
 
   return (
-    <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden flex flex-col">
+    <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden flex flex-col">
       <div className="h-1.5 shrink-0" style={{ backgroundColor: zone.color }} />
 
       {/* Header — clickable para expandir/colapsar */}
@@ -265,25 +265,16 @@ export function ZoneCard({
             </>
           )}
 
-          {/* Personal */}
+          {/* Personal — jerarquía */}
           <div className="px-4 sm:px-6 py-5 flex-1 space-y-5">
-            {zone.supervisor && (
-              <div>
-                <RoleSectionLabel icon={Shield} label="Supervisor" colorClass="text-[#234465]" />
-                <SupervisorCard
-                  person={zone.supervisor}
-                  zoneColor={zone.color}
-                  incident={getLatest(zone.supervisor.userId)}
-                  onAddIncident={() => onAddIncident(zone.supervisor)}
-                  onViewHistory={() => onViewHistory(zone.supervisor)}
-                  onTransfer={onTransfer ? () => onTransfer(zone.supervisor, zone.id) : undefined}
-                />
-              </div>
-            )}
-
             {zone.coordinator && (
               <div>
-                <RoleSectionLabel icon={Crown} label="Coordinador" colorClass="text-[#DD7419]" />
+                <RoleSectionLabel
+                  icon={Crown}
+                  label="Coordinador"
+                  sublabel="Nivel superior · Supervisa múltiples zonas"
+                  colorClass="text-[#DD7419]"
+                />
                 <CoordinatorCard
                   person={zone.coordinator}
                   incident={getLatest(zone.coordinator.userId)}
@@ -298,11 +289,31 @@ export function ZoneCard({
               </div>
             )}
 
+            {zone.supervisor && (
+              <div>
+                <RoleSectionLabel
+                  icon={Shield}
+                  label="Supervisor de Zona"
+                  sublabel="Responsable únicamente de su zona asignada"
+                  colorClass="text-[#234465]"
+                />
+                <SupervisorCard
+                  person={zone.supervisor}
+                  zoneColor={zone.color}
+                  incident={getLatest(zone.supervisor.userId)}
+                  onAddIncident={() => onAddIncident(zone.supervisor)}
+                  onViewHistory={() => onViewHistory(zone.supervisor)}
+                  onTransfer={onTransfer ? () => onTransfer(zone.supervisor, zone.id) : undefined}
+                />
+              </div>
+            )}
+
             {zone.collaborators.length > 0 && (
               <div>
                 <RoleSectionLabel
                   icon={Users}
                   label="Colaboradores"
+                  sublabel="Personal operativo de la zona"
                   count={zone.collaborators.length}
                   colorClass="text-[#7493B2]"
                 />

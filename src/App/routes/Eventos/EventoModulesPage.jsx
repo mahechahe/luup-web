@@ -23,7 +23,7 @@ export default function EventoModulesPage() {
   const modules = [
     {
       id: 'canvas',
-      title: 'Canvas',
+      title: 'Layout',
       description:
         'Diseña y gestiona las zonas del evento sobre el plano del recinto. Asigna colaboradores, supervisores y coordinadores a cada zona.',
       icon: MapIcon,
@@ -73,7 +73,7 @@ export default function EventoModulesPage() {
             </>
           ) : (
             <>
-              <h2 className="text-3xl font-bold text-luup-blue-dark mb-3">
+              <h2 className="text-3xl font-bold text-foreground mb-3">
                 Selecciona un módulo
               </h2>
               <p className="text-muted-foreground">
@@ -91,7 +91,7 @@ export default function EventoModulesPage() {
               Array.from({ length: 3 }).map((_, i) => (
                 <div
                   key={i}
-                  className="bg-white rounded-2xl p-8 shadow-lg border-2 border-transparent"
+                  className="bg-card rounded-2xl p-8 shadow-lg border-2 border-transparent"
                 >
                   <Skeleton className="w-16 h-16 rounded-2xl mb-6" />
                   <Skeleton className="h-6 w-1/2 mb-3" />
@@ -105,7 +105,7 @@ export default function EventoModulesPage() {
                 <button
                   key={module.id}
                   onClick={() => navigate(module.path)}
-                  className="group relative bg-white rounded-2xl p-8 shadow-lg border-2 border-transparent hover:border-luup-blue-dark hover:shadow-2xl transition-all duration-300 text-left"
+                  className="group relative bg-card rounded-2xl p-8 shadow-lg border-2 border-transparent hover:border-border hover:shadow-2xl transition-all duration-300 text-left"
                 >
                   {/* Icono */}
                   <div
@@ -115,7 +115,7 @@ export default function EventoModulesPage() {
                   </div>
 
                   {/* Texto */}
-                  <h3 className="text-xl font-bold text-foreground mb-3 group-hover:text-luup-blue-dark transition-colors">
+                  <h3 className="text-xl font-bold text-foreground mb-3 transition-colors">
                     {module.title}
                   </h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">
@@ -124,8 +124,8 @@ export default function EventoModulesPage() {
 
                   {/* Indicador de hover (Flecha) */}
                   <div className="absolute top-6 right-6 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <div className="w-8 h-8 rounded-full bg-luup-blue-dark/10 flex items-center justify-center">
-                      <ArrowLeft className="w-4 h-4 text-luup-blue-dark rotate-180" />
+                    <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                      <ArrowLeft className="w-4 h-4 text-muted-foreground rotate-180" />
                     </div>
                   </div>
                 </button>

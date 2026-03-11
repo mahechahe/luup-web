@@ -99,7 +99,7 @@ export const Section2 = ({ eventId }) => {
       <div className="rounded-2xl bg-[#234465] px-6 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-md">
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest text-white/60 mb-1">
-            Estación 1
+            Estación 2
           </p>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-white leading-tight">
             Maleta · Almuerzo · Refrigerio
@@ -121,7 +121,7 @@ export const Section2 = ({ eventId }) => {
       </div>
 
       {/* Controles */}
-      <div className="bg-white rounded-xl border border-border p-3 space-y-3">
+      <div className="bg-card rounded-xl border border-border p-3 space-y-3">
         <div className="flex items-center gap-2 flex-wrap">
           <div className="relative flex-1 min-w-[140px]">
             <User className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
@@ -160,7 +160,7 @@ export const Section2 = ({ eventId }) => {
             disabled={
               (filterInput.name === '' && filterInput.cedula === '') || loading
             }
-            className="h-9 bg-[#234465] hover:bg-[#234465]/90 text-white gap-1.5 shrink-0"
+            className="h-9 bg-[#DD7419] hover:bg-[#DD7419]/90 text-white gap-1.5 shrink-0"
           >
             <Search className="w-3.5 h-3.5" />
             <span>Buscar</span>
@@ -181,9 +181,9 @@ export const Section2 = ({ eventId }) => {
       </div>
 
       {/* Alerta informativa */}
-      <div className="flex items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3">
-        <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-        <p className="text-xs text-amber-800 leading-relaxed">
+      <div className="flex items-start gap-3 rounded-xl border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/30 px-4 py-3">
+        <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+        <p className="text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
           <span className="font-semibold">Importante:</span> Para que los
           colaboradores se habiliten en la{' '}
           <span className="font-semibold">Estación 3</span>, deben tener marcada
@@ -199,7 +199,7 @@ export const Section2 = ({ eventId }) => {
         onActionSaved={handleActionSaved}
       />
 
-      <div className="bg-white rounded-xl border border-border px-3 py-2.5 flex items-center justify-between gap-3 flex-wrap pb-4">
+      <div className="bg-card rounded-xl border border-border px-3 py-2.5 flex items-center justify-between gap-3 flex-wrap pb-4">
         <div className="flex items-center gap-3 flex-wrap">
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground font-medium shrink-0">
@@ -215,8 +215,8 @@ export const Section2 = ({ eventId }) => {
                   }}
                   className={`px-3 py-1.5 text-xs font-semibold transition ${
                     pageSize === size
-                      ? 'bg-[#234465] text-white'
-                      : 'bg-white text-foreground hover:bg-muted'
+                      ? 'bg-[#DD7419] text-white'
+                      : 'bg-card text-foreground hover:bg-muted'
                   }`}
                 >
                   {size}
@@ -268,7 +268,7 @@ export const Section2 = ({ eventId }) => {
                   onClick={() => setCurrentPage(item)}
                   className={`h-8 min-w-8 px-2 rounded-md text-xs font-semibold transition ${
                     safePage === item
-                      ? 'bg-[#234465] text-white'
+                      ? 'bg-[#DD7419] text-white'
                       : 'border border-border text-foreground hover:bg-muted'
                   }`}
                 >

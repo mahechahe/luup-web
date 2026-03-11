@@ -1,11 +1,13 @@
 import { closeSesion } from '@/App/auth/services/authService';
 import { useUserStore } from '@/App/context/userStore';
-import { Bell, LogOut } from 'lucide-react';
+import { useTheme } from '@/App/context/themeStore.jsx';
+import { Bell, LogOut, Moon, Sun } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export const AppBar = ({ children }) => {
   const navigate = useNavigate();
   const { user } = useUserStore();
+  const { theme, toggleTheme } = useTheme();
 
   const handleLogout = () => {
     closeSesion();
@@ -51,15 +53,22 @@ export const AppBar = ({ children }) => {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Notification bell */}
+          {/* Theme toggle */}
           <button
             type="button"
-            className="relative w-9 h-9 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors cursor-pointer"
+            onClick={toggleTheme}
+            className="w-9 h-9 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors cursor-pointer"
+            title={
+              theme === 'dark'
+                ? 'Cambiar a modo claro'
+                : 'Cambiar a modo oscuro'
+            }
           >
-            <Bell className="w-5 h-5" />
-            <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-brand text-brand-foreground text-[10px] font-bold flex items-center justify-center">
-              2
-            </span>
+            {theme === 'dark' ? (
+              <Sun className="w-4 h-4" />
+            ) : (
+              <Moon className="w-4 h-4" />
+            )}
           </button>
 
           {/* Logout */}

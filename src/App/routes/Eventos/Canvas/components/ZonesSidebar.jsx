@@ -74,7 +74,7 @@ export function ZonesSidebar({
       )}
 
       <aside
-        className={`shrink-0 flex flex-col border-l border-border bg-white transition-all duration-300 ease-in-out overflow-hidden w-full ${
+        className={`shrink-0 flex flex-col border-l border-border bg-card transition-all duration-300 ease-in-out overflow-hidden w-full ${
           isOpen ? 'md:w-80' : 'md:w-0'
         }`}
       >
@@ -82,8 +82,8 @@ export function ZonesSidebar({
         {/* Título */}
         <div className="px-5 py-4 border-b border-border shrink-0">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-[#234465]/10 flex items-center justify-center">
-              <Layers className="w-3.5 h-3.5 text-[#234465]" />
+            <div className="w-7 h-7 rounded-lg bg-[#DD7419]/10 flex items-center justify-center">
+              <Layers className="w-3.5 h-3.5 text-[#DD7419]" />
             </div>
             <h2 className="text-sm font-bold text-foreground">Panel de control de zonas</h2>
           </div>
@@ -107,8 +107,8 @@ export function ZonesSidebar({
                   !hasPlan
                     ? 'opacity-40 cursor-not-allowed border-border bg-muted/20 text-muted-foreground'
                     : tool === id
-                    ? 'bg-[#234465]/10 border-[#234465]/50 text-[#234465]'
-                    : 'border-border bg-muted/40 hover:bg-[#234465]/5 hover:border-[#234465]/30 text-muted-foreground'
+                    ? 'bg-[#DD7419]/10 border-[#DD7419]/50 text-[#DD7419]'
+                    : 'border-border bg-muted/40 hover:bg-[#DD7419]/5 hover:border-[#DD7419]/30 text-muted-foreground'
                 }`}
               >
                 <Icon className="w-5 h-5" />
@@ -128,15 +128,15 @@ export function ZonesSidebar({
 
           {/* Finalizar polígono */}
           {isAdmin && tool === 'poly' && polyPoints.length > 0 && (
-            <div className="rounded-xl bg-[#234465]/5 border border-[#234465]/20 p-3 space-y-2">
+            <div className="rounded-xl bg-[#DD7419]/5 border border-[#DD7419]/20 p-3 space-y-2">
               <button
                 onClick={onFinishPolygon}
-                className="w-full bg-[#234465] text-white text-sm py-2 rounded-lg font-medium hover:bg-[#234465]/90 transition"
+                className="w-full bg-[#DD7419] text-white text-sm py-2 rounded-lg font-medium hover:bg-[#DD7419]/90 transition"
               >
                 Finalizar polígono ({polyPoints.length} pts)
               </button>
-              <p className="text-[10px] text-center text-[#234465]/60">
-                O doble clic en el canvas para cerrar
+              <p className="text-[10px] text-center text-[#DD7419]/60">
+                O doble clic en el layout para cerrar
               </p>
             </div>
           )}
@@ -158,7 +158,7 @@ export function ZonesSidebar({
           <ZoneSection
             title="Zonas generales"
             count={zones.length}
-            color="#234465"
+            color="#DD7419"
             icon={<MapPin className="w-3 h-3 text-white" />}
             emptyLabel="Sin zonas registradas"
           >

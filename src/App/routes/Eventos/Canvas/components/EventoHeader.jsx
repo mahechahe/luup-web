@@ -9,7 +9,7 @@ export function EventoHeader({ loading, event, onBack, onSave }) {
   const user = useUserStore((state) => state.user);
   const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || '—';
   return (
-    <header className="shrink-0 px-5 py-3 border-b border-border bg-white">
+    <header className="shrink-0 px-5 py-3 border-b border-border bg-card text-card-foreground">
       {/* Fila principal: flecha + info + botón (desktop) */}
       <div className="flex items-center gap-3">
         <Button
@@ -36,7 +36,7 @@ export function EventoHeader({ loading, event, onBack, onSave }) {
               <Badge
                 className={`text-xs border-0 shrink-0 ${
                   event.isActive
-                    ? 'bg-emerald-100 text-emerald-700'
+                    ? 'bg-emerald-500/15 text-emerald-500'
                     : 'bg-muted text-muted-foreground'
                 }`}
               >

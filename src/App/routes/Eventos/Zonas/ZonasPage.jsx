@@ -186,27 +186,34 @@ export default function ZonasPage() {
 
       <div className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-5">
 
-        {/* Título + Actualizar */}
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            {loading ? (
-              <><Skeleton className="h-8 w-44 mb-1.5" /><Skeleton className="h-4 w-52" /></>
-            ) : (
-              <>
-                <h2 className="text-2xl font-bold text-[#234465]">
-                  {isAdmin ? 'Zonas del evento' : 'Mis Zonas'}
-                </h2>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {zones.length} zona{zones.length !== 1 ? 's' : ''} configurada{zones.length !== 1 ? 's' : ''}
-                </p>
-              </>
-            )}
+        {/* Header */}
+        <div className="rounded-2xl bg-[#234465] px-6 py-5 shadow-md flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
+              <Layers className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-white/60 mb-0.5">
+                Gestión de zonas
+              </p>
+              {loading ? (
+                <><Skeleton className="h-7 w-40 mb-1.5 bg-white/20" /><Skeleton className="h-3.5 w-32 bg-white/15" /></>
+              ) : (
+                <>
+                  <h2 className="text-2xl font-extrabold text-white leading-tight">
+                    {isAdmin ? 'Zonas del evento' : 'Mis Zonas'}
+                  </h2>
+                  <p className="text-sm text-white/60 mt-0.5">
+                    {zones.length} zona{zones.length !== 1 ? 's' : ''} configurada{zones.length !== 1 ? 's' : ''}
+                  </p>
+                </>
+              )}
+            </div>
           </div>
           <Button
-            variant="outline"
             onClick={handleRefresh}
             disabled={loading || refreshing}
-            className="shrink-0 gap-2 h-9"
+            className="shrink-0 gap-2 h-9 bg-white/10 border border-white/20 text-white hover:bg-white/20 hover:text-white"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
             Actualizar
@@ -222,7 +229,7 @@ export default function ZonasPage() {
               placeholder="Buscar persona o zona…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-9 pl-9 pr-8 rounded-lg border border-border bg-white text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#234465]/30 transition"
+              className="w-full h-9 pl-9 pr-8 rounded-lg border border-border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#234465]/30 transition"
             />
             {searchQuery && (
               <button

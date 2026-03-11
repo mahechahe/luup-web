@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   Boxes,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Clock,
@@ -29,7 +30,8 @@ function formatTime(isoString) {
 }
 
 function roleBadgeClass(role) {
-  if (role === 'supervisor') return 'bg-[#234465]/10 text-[#234465]';
+  if (role === 'supervisor')
+    return 'bg-[#234465]/10 text-[#234465] dark:bg-[#234465]/20 dark:text-[#7493B2]';
   if (role === 'coordinador') return 'bg-[#DD7419]/10 text-[#DD7419]';
   return 'bg-[#7493B2]/10 text-[#7493B2]';
 }
@@ -46,6 +48,7 @@ function roleLabel(role) {
 function CollabCard({ collab, onAssign }) {
   const items = collab.inventoryItems ?? [];
   const hasItems = items.length > 0;
+  const [itemsExpanded, setItemsExpanded] = useState(false);
   const allReturned =
     hasItems && items.every((i) => i.returnedQuantity >= i.quantity);
   const entryTime = formatTime(collab.attendance?.entryTime);
@@ -54,8 +57,10 @@ function CollabCard({ collab, onAssign }) {
 
   return (
     <div
-      className={`bg-white rounded-2xl border overflow-hidden transition-all ${
-        allReturned ? 'border-emerald-200' : 'border-border'
+      className={`bg-card rounded-2xl border overflow-hidden transition-all ${
+        allReturned
+          ? 'border-emerald-200 dark:border-emerald-800'
+          : 'border-border'
       }`}
     >
       <div
@@ -109,8 +114,8 @@ function CollabCard({ collab, onAssign }) {
             className={`shrink-0 text-[11px] font-bold px-2 py-1 rounded-lg ${
               hasItems
                 ? allReturned
-                  ? 'bg-emerald-100 text-emerald-700'
-                  : 'bg-[#234465]/10 text-[#234465]'
+                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
+                  : 'bg-[#DD7419]/10 text-[#DD7419]'
                 : 'bg-muted text-muted-foreground'
             }`}
           >
@@ -121,7 +126,7 @@ function CollabCard({ collab, onAssign }) {
         {/* Nota */}
         {(collab.attendance?.notes ?? collab.notes) && (
           <p
-            className="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 italic"
+            className="text-[11px] text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-lg px-2.5 py-1.5 italic"
             style={{
               marginBottom: '10px',
             }}
@@ -133,72 +138,109 @@ function CollabCard({ collab, onAssign }) {
 
         {/* Inventario */}
         {hasItems ? (
-          <div className="space-y-2">
-            {items.map((item) => {
-              const returned = item.returnedQuantity ?? 0;
-              const used = item.usedQuantity ?? 0;
-              const pending =
-                item.pendingQuantity ?? item.quantity - returned - used;
-              const complete = pending === 0;
-              return (
-                <div
-                  key={item.id}
-                  className="rounded-xl bg-muted/40 px-3 py-3 space-y-2.5"
+          <div>
+            <button
+              onClick={() => setItemsExpanded((v) => !v)}
+              className="w-full flex items-center justify-between gap-2 rounded-xl bg-muted/30 px-3 py-2.5 hover:bg-muted/50 transition"
+            >
+              <div className="flex items-center gap-2">
+                <Package className="w-3.5 h-3.5 text-[#DD7419] shrink-0" />
+                <span className="text-[11px] font-semibold text-foreground">
+                  {itemsExpanded ? 'Ocultar ítems' : 'Ver ítems'}
+                </span>
+                <span
+                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                    allReturned
+                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
+                      : 'bg-[#DD7419]/10 text-[#DD7419]'
+                  }`}
                 >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="w-6 h-6 rounded-lg bg-[#234465]/10 flex items-center justify-center shrink-0">
-                        <Package className="w-3 h-3 text-[#234465]" />
-                      </div>
-                      <p className="text-[12px] font-semibold text-foreground truncate">
-                        {item.itemName}
-                      </p>
-                    </div>
-                    <span
-                      className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        complete
-                          ? 'bg-emerald-100 text-emerald-700'
-                          : 'bg-amber-100 text-amber-700'
-                      }`}
+                  {items.length} {items.length === 1 ? 'ítem' : 'ítems'}
+                </span>
+              </div>
+              <ChevronDown
+                className="w-3.5 h-3.5 text-muted-foreground transition-transform duration-200"
+                style={{
+                  transform: itemsExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                }}
+              />
+            </button>
+
+            {itemsExpanded && (
+              <div className="mt-2 space-y-2">
+                {items.map((item) => {
+                  const returned = item.returnedQuantity ?? 0;
+                  const used = item.usedQuantity ?? 0;
+                  const pending =
+                    item.pendingQuantity ?? item.quantity - returned - used;
+                  const complete = pending === 0;
+                  return (
+                    <div
+                      key={item.id}
+                      className="rounded-xl bg-muted/40 px-3 py-3 space-y-2.5"
                     >
-                      {complete ? 'Completo' : 'Pendiente'}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-4 gap-1.5">
-                    {[
-                      {
-                        label: 'Asignado',
-                        value: item.quantity,
-                        color: 'text-foreground',
-                      },
-                      {
-                        label: 'Devuelto',
-                        value: returned,
-                        color: 'text-emerald-600',
-                      },
-                      { label: 'Usado', value: used, color: 'text-[#234465]' },
-                      {
-                        label: 'Pendiente',
-                        value: pending,
-                        color: complete ? 'text-emerald-600' : 'text-amber-600',
-                      },
-                    ].map(({ label, value, color }) => (
-                      <div
-                        key={label}
-                        className="bg-white rounded-lg py-2 text-center"
-                      >
-                        <p className="text-[9px] text-muted-foreground uppercase tracking-wide leading-none mb-1">
-                          {label}
-                        </p>
-                        <p className={`text-base font-bold ${color}`}>
-                          {value}
-                        </p>
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="w-6 h-6 rounded-lg bg-[#DD7419]/10 flex items-center justify-center shrink-0">
+                            <Package className="w-3 h-3 text-[#DD7419]" />
+                          </div>
+                          <p className="text-[12px] font-semibold text-foreground truncate">
+                            {item.itemName}
+                          </p>
+                        </div>
+                        <span
+                          className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                            complete
+                              ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
+                              : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
+                          }`}
+                        >
+                          {complete ? 'Completo' : 'Pendiente'}
+                        </span>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
+                      <div className="grid grid-cols-4 gap-1.5">
+                        {[
+                          {
+                            label: 'Asignado',
+                            value: item.quantity,
+                            color: 'text-foreground',
+                          },
+                          {
+                            label: 'Devuelto',
+                            value: returned,
+                            color: 'text-emerald-600',
+                          },
+                          {
+                            label: 'Usado',
+                            value: used,
+                            color: 'text-[#234465]',
+                          },
+                          {
+                            label: 'Pendiente',
+                            value: pending,
+                            color: complete
+                              ? 'text-emerald-600'
+                              : 'text-amber-600',
+                          },
+                        ].map(({ label, value, color }) => (
+                          <div
+                            key={label}
+                            className="bg-background rounded-lg py-2 text-center"
+                          >
+                            <p className="text-[9px] text-muted-foreground uppercase tracking-wide leading-none mb-1">
+                              {label}
+                            </p>
+                            <p className={`text-base font-bold ${color}`}>
+                              {value}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         ) : (
           <div className="flex items-center gap-2 rounded-xl bg-muted/30 px-3 py-2.5">
@@ -210,27 +252,27 @@ function CollabCard({ collab, onAssign }) {
         )}
 
         {/* Footer: check-out registrado o botón asignar */}
-        <div className="pt-1 border-t border-border">
+        <div className="pt-1">
           {hasCheckout ? (
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1.5 flex-1 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
-                <Clock className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              <div className="flex items-center gap-1.5 flex-1 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-lg px-3 py-2">
+                <Clock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                 <div>
-                  <p className="text-[9px] text-emerald-600/70 uppercase tracking-wide font-semibold leading-none">
+                  <p className="text-[9px] text-emerald-600/70 dark:text-emerald-400/70 uppercase tracking-wide font-semibold leading-none">
                     Check-in
                   </p>
-                  <p className="text-[12px] font-bold text-emerald-700">
+                  <p className="text-[12px] font-bold text-emerald-700 dark:text-emerald-300">
                     {entryTime ?? '—'}
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-1.5 flex-1 bg-[#234465]/5 border border-[#234465]/20 rounded-lg px-3 py-2">
-                <DoorOpen className="w-3.5 h-3.5 text-[#234465] shrink-0" />
+              <div className="flex items-center gap-1.5 flex-1 bg-[#DD7419]/5 border border-[#DD7419]/20 rounded-lg px-3 py-2">
+                <DoorOpen className="w-3.5 h-3.5 text-[#DD7419] shrink-0" />
                 <div>
-                  <p className="text-[9px] text-[#234465]/60 uppercase tracking-wide font-semibold leading-none">
+                  <p className="text-[9px] text-[#DD7419]/60 uppercase tracking-wide font-semibold leading-none">
                     Check-out
                   </p>
-                  <p className="text-[12px] font-bold text-[#234465]">
+                  <p className="text-[12px] font-bold text-[#DD7419]">
                     {exitTime}
                   </p>
                 </div>
@@ -239,7 +281,7 @@ function CollabCard({ collab, onAssign }) {
           ) : (
             <button
               onClick={() => onAssign(collab)}
-              className="w-full flex items-center justify-center gap-1.5 h-8 rounded-lg text-[11px] font-semibold text-[#234465] border border-[#234465]/25 hover:bg-[#234465]/5 transition"
+              className="w-full flex items-center justify-center gap-1.5 h-8 rounded-lg text-[11px] font-semibold text-[#DD7419] border border-[#DD7419]/25 hover:bg-[#DD7419]/5 transition"
             >
               <Plus className="w-3.5 h-3.5" />
               Asignar inventario
@@ -253,7 +295,7 @@ function CollabCard({ collab, onAssign }) {
 
 function CardSkeleton() {
   return (
-    <div className="bg-white rounded-2xl border p-4 animate-pulse space-y-3">
+    <div className="bg-card rounded-2xl border p-4 animate-pulse space-y-3">
       <div className="flex justify-between gap-3">
         <div className="flex-1 space-y-2">
           <div className="h-4 bg-muted rounded-full w-44" />
@@ -371,19 +413,19 @@ export const Section3 = ({ eventId }) => {
       </div>
 
       {/* Alerta inventario */}
-      <div className="flex items-center justify-between gap-4 rounded-xl border border-[#234465]/20 bg-[#234465]/5 px-4 py-3">
+      <div className="flex items-center justify-between gap-4 rounded-xl border border-[#DD7419]/20 bg-[#DD7419]/5 px-4 py-3">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-8 h-8 rounded-lg bg-[#234465]/15 flex items-center justify-center shrink-0">
-            <Boxes className="w-4 h-4 text-[#234465]" />
+          <div className="w-8 h-8 rounded-lg bg-[#DD7419]/15 flex items-center justify-center shrink-0">
+            <Boxes className="w-4 h-4 text-[#DD7419]" />
           </div>
-          <p className="text-xs text-[#234465] leading-relaxed">
+          <p className="text-xs text-[#DD7419] leading-relaxed">
             Puedes ver el inventario disponible y filtrarlo por nombre antes de
             asignarlo a un colaborador.
           </p>
         </div>
         <Button
           onClick={() => setShowInventory(true)}
-          className="shrink-0 h-9 bg-[#234465] hover:bg-[#234465]/90 text-white gap-2 text-xs font-semibold"
+          className="shrink-0 h-9 bg-[#DD7419] hover:bg-[#DD7419]/90 text-white gap-2 text-xs font-semibold"
         >
           <Boxes className="w-3.5 h-3.5" />
           Ver inventario
@@ -391,7 +433,7 @@ export const Section3 = ({ eventId }) => {
       </div>
 
       {/* Controles */}
-      <div className="bg-white rounded-xl border border-border p-3 space-y-3">
+      <div className="bg-card rounded-xl border border-border p-3 space-y-3">
         <div className="flex items-center gap-2 flex-wrap">
           <div className="relative flex-1 min-w-[140px]">
             <User className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
@@ -424,7 +466,7 @@ export const Section3 = ({ eventId }) => {
             disabled={
               (filterInput.name === '' && filterInput.cedula === '') || loading
             }
-            className="h-9 bg-[#234465] hover:bg-[#234465]/90 text-white gap-1.5 shrink-0"
+            className="h-9 bg-[#DD7419] hover:bg-[#DD7419]/90 text-white gap-1.5 shrink-0"
           >
             <Search className="w-3.5 h-3.5" />
             <span>Buscar</span>
@@ -491,7 +533,7 @@ export const Section3 = ({ eventId }) => {
 
       {/* Paginación */}
       {!loading && collaborators.length > 0 && (
-        <div className="bg-white rounded-xl border border-border px-3 py-2.5 flex items-center justify-between gap-3 flex-wrap pb-4">
+        <div className="bg-card rounded-xl border border-border px-3 py-2.5 flex items-center justify-between gap-3 flex-wrap pb-4">
           <div className="flex items-center gap-3">
             <p className="text-xs text-muted-foreground">
               <span className="font-semibold text-foreground">
@@ -536,7 +578,7 @@ export const Section3 = ({ eventId }) => {
                     onClick={() => setCurrentPage(item)}
                     className={`h-8 min-w-8 px-2 rounded-md text-xs font-semibold transition ${
                       safePage === item
-                        ? 'bg-[#234465] text-white'
+                        ? 'bg-[#DD7419] text-white'
                         : 'border border-border text-foreground hover:bg-muted'
                     }`}
                   >

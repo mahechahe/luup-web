@@ -123,8 +123,8 @@ export function InventoryModal({
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-[#234465]/10 flex items-center justify-center shrink-0">
-              <Boxes className="w-5 h-5 text-[#234465]" />
+            <div className="w-9 h-9 rounded-xl bg-[#DD7419]/10 flex items-center justify-center shrink-0">
+              <Boxes className="w-5 h-5 text-[#DD7419]" />
             </div>
             <DialogHeader className="gap-0.5 text-left">
               <DialogTitle className="text-base font-bold leading-tight">
@@ -160,13 +160,13 @@ export function InventoryModal({
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                className="h-9 pl-8 pr-3 rounded-lg border border-border bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#234465]/30 w-full"
+                className="h-9 pl-8 pr-3 rounded-lg border border-border bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#DD7419]/30 w-full"
               />
             </div>
             <Button
               onClick={handleSearch}
               disabled={loading}
-              className="h-9 bg-[#234465] hover:bg-[#234465]/90 text-white gap-1.5 shrink-0"
+              className="h-9 bg-[#DD7419] hover:bg-[#DD7419]/90 text-white gap-1.5 shrink-0"
             >
               <Search className="w-3.5 h-3.5" />
               <span>Buscar</span>
@@ -275,7 +275,7 @@ export function InventoryModal({
                       {item.descripcion || '—'}
                     </td>
                     <td className="px-3 py-1.5 text-center">
-                      <span className="inline-block font-bold text-[#234465] bg-[#234465]/10 px-2 py-0.5 rounded-full">
+                      <span className="inline-block font-bold text-[#DD7419] bg-[#DD7419]/10 px-2 py-0.5 rounded-full">
                         {item.cantidad}
                       </span>
                     </td>
@@ -291,8 +291,8 @@ export function InventoryModal({
                           }}
                           className={`w-7 h-7 rounded-lg flex items-center justify-center transition shrink-0 ${
                             selectedItem?.id === item.id
-                              ? 'bg-[#234465] text-white'
-                              : 'bg-[#234465]/10 text-[#234465] hover:bg-[#234465]/20'
+                              ? 'bg-[#DD7419] text-white'
+                              : 'bg-[#DD7419]/10 text-[#DD7419] hover:bg-[#DD7419]/20'
                           }`}
                         >
                           <Plus className="w-3.5 h-3.5" />
@@ -308,10 +308,10 @@ export function InventoryModal({
 
         {/* Panel de confirmación de asignación */}
         {mode === 'assign' && selectedItem && (
-          <div className="border-t-2 border-[#234465]/20 bg-[#234465]/5 px-5 py-3 shrink-0 space-y-3">
+          <div className="border-t-2 border-[#DD7419]/20 bg-[#DD7419]/5 px-5 py-3 shrink-0 space-y-3">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-[#234465]/15 flex items-center justify-center shrink-0">
-                <Package className="w-4 h-4 text-[#234465]" />
+              <div className="w-8 h-8 rounded-lg bg-[#DD7419]/15 flex items-center justify-center shrink-0">
+                <Package className="w-4 h-4 text-[#DD7419]" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-bold text-foreground truncate">
@@ -319,7 +319,7 @@ export function InventoryModal({
                 </p>
                 <p className="text-[10px] text-muted-foreground">
                   Stock disponible:{' '}
-                  <span className="font-semibold text-[#234465]">
+                  <span className="font-semibold text-[#DD7419]">
                     {selectedItem.cantidad}
                   </span>
                 </p>
@@ -328,11 +328,11 @@ export function InventoryModal({
                 <span className="text-xs font-semibold text-foreground">
                   Cantidad:
                 </span>
-                <div className="flex items-center border border-[#234465]/30 rounded-xl overflow-hidden">
+                <div className="flex items-center border border-[#DD7419]/30 rounded-xl overflow-hidden">
                   <button
                     onClick={() => setQuantity((q) => Math.max(1, q - 1))}
                     disabled={quantity <= 1}
-                    className="w-10 h-10 flex items-center justify-center text-[#234465] font-bold text-lg hover:bg-[#234465]/10 disabled:opacity-30 disabled:cursor-not-allowed transition active:scale-95"
+                    className="w-10 h-10 flex items-center justify-center text-[#DD7419] font-bold text-lg hover:bg-[#DD7419]/10 disabled:opacity-30 disabled:cursor-not-allowed transition active:scale-95"
                   >
                     −
                   </button>
@@ -344,7 +344,7 @@ export function InventoryModal({
                       setQuantity((q) => Math.min(selectedItem.cantidad, q + 1))
                     }
                     disabled={quantity >= selectedItem.cantidad}
-                    className="w-10 h-10 flex items-center justify-center text-[#234465] font-bold text-lg hover:bg-[#234465]/10 disabled:opacity-30 disabled:cursor-not-allowed transition active:scale-95"
+                    className="w-10 h-10 flex items-center justify-center text-[#DD7419] font-bold text-lg hover:bg-[#DD7419]/10 disabled:opacity-30 disabled:cursor-not-allowed transition active:scale-95"
                   >
                     +
                   </button>
@@ -364,7 +364,7 @@ export function InventoryModal({
               <button
                 onClick={handleConfirmAssign}
                 disabled={saving}
-                className="flex-1 h-8 rounded-lg bg-[#234465] text-white text-xs font-semibold hover:bg-[#234465]/90 transition flex items-center justify-center gap-1.5 disabled:opacity-70"
+                className="flex-1 h-8 rounded-lg bg-[#DD7419] text-white text-xs font-semibold hover:bg-[#DD7419]/90 transition flex items-center justify-center gap-1.5 disabled:opacity-70"
               >
                 {saving ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -428,7 +428,7 @@ export function InventoryModal({
                     disabled={loading}
                     className={`h-7 min-w-7 px-1.5 rounded-md text-xs font-semibold transition ${
                       safePage === pg
-                        ? 'bg-[#234465] text-white'
+                        ? 'bg-[#DD7419] text-white'
                         : 'border border-border text-foreground hover:bg-muted'
                     }`}
                   >

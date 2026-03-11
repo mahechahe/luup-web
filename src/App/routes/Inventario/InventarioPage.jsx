@@ -5,24 +5,33 @@ import {
   ChevronLeft,
   ChevronRight,
   Edit2,
+  Filter,
   Loader2,
   Package,
   Plus,
-  Search,
   Trash2,
   X,
 } from 'lucide-react';
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import {
   getInventoryItemsService,
   createInventoryItemService,
   updateInventoryItemService,
   deleteInventoryItemService,
 } from './services/Inventoryservices';
+import { FilterDrawer } from './components/FilterDrawer';
 
 /* ── Helpers ─────────────────────────────────────────────── */
 const fmt = (n) =>
@@ -55,42 +64,40 @@ function SkeletonRow() {
 
 /* ── Modal confirmar eliminación ─────────────────────────── */
 function DeleteConfirmModal({ item, onConfirm, onCancel, loading }) {
-  if (!item) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onCancel} />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 flex flex-col items-center text-center gap-4 animate-in fade-in zoom-in-95 duration-200">
-        <div className="w-14 h-14 rounded-full bg-red-100 flex items-center justify-center">
-          <AlertTriangle className="w-7 h-7 text-red-500" />
-        </div>
-        <div>
-          <h3 className="text-lg font-bold text-foreground">¿Eliminar ítem?</h3>
-          <p className="text-sm text-muted-foreground mt-1">
+    <Dialog open={!!item} onOpenChange={(open) => { if (!open) onCancel(); }}>
+      <DialogContent className="max-w-sm text-center" showCloseButton={false}>
+        <DialogHeader className="items-center">
+          <div className="w-14 h-14 rounded-full bg-destructive/10 flex items-center justify-center mb-1">
+            <AlertTriangle className="w-7 h-7 text-destructive" />
+          </div>
+          <DialogTitle>¿Eliminar ítem?</DialogTitle>
+          <DialogDescription>
             Estás a punto de eliminar{' '}
-            <span className="font-semibold text-foreground">"{item.nombre}"</span>.
+            <span className="font-semibold text-foreground">"{item?.nombre}"</span>.
             Esta acción no se puede deshacer.
-          </p>
-        </div>
-        <div className="flex gap-3 w-full mt-1">
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="sm:flex-row gap-2 mt-1">
           <Button variant="outline" className="flex-1" onClick={onCancel} disabled={loading}>
             Cancelar
           </Button>
           <Button
-            className="flex-1 bg-red-500 hover:bg-red-600 text-white border-0"
+            className="flex-1 bg-destructive hover:bg-destructive/90 text-white border-0"
             onClick={onConfirm}
             disabled={loading}
           >
             {loading && <Loader2 className="w-4 h-4 animate-spin mr-1.5" />}
             {loading ? 'Eliminando...' : 'Sí, eliminar'}
           </Button>
-        </div>
-      </div>
-    </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
 /* ── Modal agregar / editar ──────────────────────────────── */
-function ItemModal({ item, onSave, onClose }) {
+function ItemModal({ open, item, onSave, onClose }) {
   const isEdit = !!item;
   const [form, setForm] = useState({
     nombre:         item?.nombre         ?? '',
@@ -116,39 +123,28 @@ function ItemModal({ item, onSave, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div
-        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md animate-in fade-in zoom-in-95 duration-200"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-xl bg-brand/10 flex items-center justify-center">
               <Package className="w-4 h-4 text-brand" />
             </div>
-            <h2 className="text-base font-semibold text-foreground">
-              {isEdit ? 'Editar ítem' : 'Nuevo ítem'}
-            </h2>
+            <DialogTitle>{isEdit ? 'Editar ítem' : 'Nuevo ítem'}</DialogTitle>
           </div>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+        </DialogHeader>
 
-        {/* Body */}
-        <div className="px-6 py-5 space-y-4">
+        <div className="space-y-4 py-1">
           <div>
             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide block mb-1.5">
-              Nombre <span className="text-red-500">*</span>
+              Nombre <span className="text-destructive">*</span>
             </label>
             <input
               autoFocus
               value={form.nombre}
               onChange={(e) => set('nombre', e.target.value)}
               placeholder="ej. Trapero industrial"
-              className="w-full border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 transition bg-background"
+              className="w-full border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 transition bg-background text-foreground"
             />
           </div>
 
@@ -160,21 +156,21 @@ function ItemModal({ item, onSave, onClose }) {
               value={form.descripcion}
               onChange={(e) => set('descripcion', e.target.value)}
               placeholder="ej. Para limpieza de pisos, color azul…"
-              className="w-full border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 transition bg-background"
+              className="w-full border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 transition bg-background text-foreground"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide block mb-1.5">
-                Cantidad <span className="text-red-500">*</span>
+                Cantidad <span className="text-destructive">*</span>
               </label>
               <input
                 type="number" min="0"
                 value={form.cantidad}
                 onChange={(e) => set('cantidad', e.target.value)}
                 placeholder="0"
-                className="w-full border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 transition bg-background"
+                className="w-full border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 transition bg-background text-foreground"
               />
             </div>
             <div>
@@ -186,74 +182,81 @@ function ItemModal({ item, onSave, onClose }) {
                 value={form.precioUnitario}
                 onChange={(e) => set('precioUnitario', e.target.value)}
                 placeholder="0"
-                className="w-full border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 transition bg-background"
+                className="w-full border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 transition bg-background text-foreground"
               />
             </div>
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="flex gap-3 px-6 py-4 border-t border-border">
-          <Button variant="outline" className="flex-1" onClick={onClose} disabled={saving}>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={saving}>
             Cancelar
           </Button>
           <Button
-            className="flex-1 bg-brand text-brand-foreground hover:bg-brand/90"
+            className="bg-brand text-brand-foreground hover:bg-brand/90"
             onClick={handleSubmit}
             disabled={!form.nombre.trim() || !form.cantidad || saving}
           >
             {saving && <Loader2 className="w-4 h-4 animate-spin mr-1.5" />}
             {isEdit ? 'Guardar cambios' : 'Agregar ítem'}
           </Button>
-        </div>
-      </div>
-    </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
 /* ── Página principal ────────────────────────────────────── */
 export default function InventarioPage() {
+  const EMPTY_FILTERS = { nombre: '', descripcion: '' };
+
   const [items, setItems]               = useState([]);
   const [loading, setLoading]           = useState(true);
-  const [search, setSearch]             = useState('');
+  const [filters, setFilters]           = useState(EMPTY_FILTERS);
+  const [drawerOpen, setDrawerOpen]     = useState(false);
   const [sortDir, setSortDir]           = useState('');
   const [pageSize, setPageSize]         = useState(10);
   const [page, setPage]                 = useState(1);
-  const [modalItem, setModalItem]       = useState(undefined); // undefined=cerrado, null=nuevo, obj=editar
+  const [pagination, setPagination]     = useState({ page: 1, limit: 10, total: 0, totalPages: 1 });
+  const [modalItem, setModalItem]       = useState(undefined);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
+  const hasActiveFilter = Object.values(filters).some((v) => v !== '');
+
   /* ── Fetch ───────────────────────────────────────────── */
-  const fetchItems = useCallback(async () => {
+  const doFetch = async ({ p = page, limit = pageSize, f = filters } = {}) => {
     setLoading(true);
-    const res = await getInventoryItemsService();
-    if (res.status) setItems(res.items);
-    else toast.error(res.errors ?? 'Error al cargar el inventario.');
-    setLoading(false);
-  }, []);
-
-  useEffect(() => { fetchItems(); }, [fetchItems]);
-
-  /* ── Filtros + sort ──────────────────────────────────── */
-  const filtered = useMemo(() => {
-    let list = [...items];
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      list = list.filter((i) =>
-        i.nombre.toLowerCase().includes(q) || String(i.cantidad).includes(q)
-      );
+    const res = await getInventoryItemsService({
+      page: p,
+      limit,
+      nombre: f.nombre || undefined,
+      descripcion: f.descripcion || undefined,
+    });
+    if (res.status) {
+      setItems(res.items);
+      setPagination(res.pagination);
+    } else {
+      toast.error(res.errors ?? 'Error al cargar el inventario.');
     }
-    if (sortDir === 'asc')  list.sort((a, b) => a.cantidad - b.cantidad);
-    if (sortDir === 'desc') list.sort((a, b) => b.cantidad - a.cantidad);
-    return list;
-  }, [items, search, sortDir]);
+    setLoading(false);
+  };
 
-  /* ── Paginación ──────────────────────────────────────── */
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
-  const safePage   = Math.min(page, totalPages);
-  const paginated  = filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
+  useEffect(() => {
+    doFetch({ p: page, limit: pageSize, f: filters });
+  }, [page, pageSize, filters]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleSearch   = (v) => { setSearch(v); setPage(1); };
+  /* ── Sort (client-side sobre la página actual) ───────── */
+  const sorted = sortDir === 'asc'
+    ? [...items].sort((a, b) => a.cantidad - b.cantidad)
+    : sortDir === 'desc'
+      ? [...items].sort((a, b) => b.cantidad - a.cantidad)
+      : items;
+
+  const totalPages = pagination.totalPages;
+  const safePage   = Math.min(page, Math.max(1, totalPages));
+
+  const handleApplyFilters = (newFilters) => { setFilters(newFilters); setPage(1); };
   const handlePageSize = (s) => { setPageSize(s); setPage(1); };
 
   /* ── CRUD ────────────────────────────────────────────── */
@@ -264,7 +267,8 @@ export default function InventarioPage() {
       : await createInventoryItemService(data);
     if (res.status) {
       toast.success(isEdit ? 'Ítem actualizado.' : 'Ítem agregado.');
-      await fetchItems();
+      setPage(1);
+      doFetch({ p: 1, limit: pageSize, f: filters });
     } else {
       toast.error(res.errors ?? 'Error al guardar.');
     }
@@ -276,8 +280,8 @@ export default function InventarioPage() {
     const res = await deleteInventoryItemService(deleteTarget.id);
     if (res.status) {
       toast.success('Ítem eliminado.');
-      setItems((prev) => prev.filter((i) => i.id !== deleteTarget.id));
       setDeleteTarget(null);
+      doFetch({ p: page, limit: pageSize, f: filters });
     } else {
       toast.error(res.errors ?? 'Error al eliminar.');
     }
@@ -290,20 +294,40 @@ export default function InventarioPage() {
       <div className="max-w-7xl mx-auto space-y-6">
 
         {/* ── Header ───────────────────────────────────── */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <div className="w-8 h-8 rounded-xl bg-brand/10 flex items-center justify-center">
-                <Boxes className="w-4 h-4 text-brand" />
-              </div>
-              <h2 className="text-2xl font-semibold text-foreground tracking-tight">Inventario</h2>
+        <div className="rounded-2xl bg-[#234465] px-6 py-5 shadow-md flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
+              <Boxes className="w-6 h-6 text-white" />
             </div>
-            <p className="text-sm text-muted-foreground">Gestiona los ítems y recursos de LUUP.</p>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-white/60 mb-0.5">
+                Gestión de recursos
+              </p>
+              <h2 className="text-2xl font-extrabold text-white leading-tight">Inventario</h2>
+              <p className="text-sm text-white/60 mt-0.5">Gestiona los ítems y recursos de LUUP.</p>
+            </div>
           </div>
-
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2">
             <Button
-              className="bg-brand text-brand-foreground hover:bg-brand/90 gap-1.5 h-9"
+              variant="outline"
+              className={`gap-1.5 h-9 border-white/20 text-white hover:bg-white/20 hover:text-white ${
+                hasActiveFilter ? 'bg-[#DD7419]/30 border-[#DD7419]/60' : 'bg-white/10'
+              }`}
+              onClick={() => setDrawerOpen(true)}
+            >
+              <Filter className="w-4 h-4" /> Filtrar
+            </Button>
+            {hasActiveFilter && (
+              <Button
+                variant="ghost"
+                className="gap-1.5 h-9 text-white/70 hover:text-white hover:bg-white/10"
+                onClick={() => { setFilters(EMPTY_FILTERS); setPage(1); }}
+              >
+                <X className="w-4 h-4" /> Limpiar
+              </Button>
+            )}
+            <Button
+              className="bg-[#DD7419] hover:bg-[#DD7419]/90 text-white gap-1.5 h-9 font-semibold shadow-sm"
               onClick={() => setModalItem(null)}
             >
               <Plus className="w-4 h-4" /> Agregar ítem
@@ -313,41 +337,26 @@ export default function InventarioPage() {
 
         {/* ── Card tabla ───────────────────────────────── */}
         <Card className="border-border shadow-sm overflow-hidden p-0">
-          <CardHeader className="px-5 py-4 border-b">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              {/* Contador */}
-              <div className="flex items-center gap-2">
-                <Boxes className="w-4 h-4 text-muted-foreground" />
-                {loading ? (
-                  <div className="h-4 w-40 bg-muted rounded-full animate-pulse" />
-                ) : (
-                  <span className="text-sm text-muted-foreground">
-                    <span className="font-semibold text-foreground tabular-nums">{filtered.length}</span>{' '}
-                    inventario{filtered.length !== 1 ? 's' : ''} encontrado{filtered.length !== 1 ? 's' : ''}
-                  </span>
-                )}
+          <div className="flex items-center justify-between px-5 h-12 border-b border-border">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-md bg-[#234465]/10 dark:bg-white/10 flex items-center justify-center">
+                <Boxes className="w-3.5 h-3.5 text-[#234465] dark:text-white" />
               </div>
-
-              {/* Buscador */}
-              <div className="relative w-full sm:w-64">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
-                <input
-                  value={search}
-                  onChange={(e) => handleSearch(e.target.value)}
-                  placeholder="Buscar por nombre o cantidad…"
-                  className="w-full h-9 pl-9 pr-8 rounded-lg border border-border bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 transition"
-                />
-                {search && (
-                  <button
-                    onClick={() => handleSearch('')}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
+              {loading ? (
+                <div className="h-4 w-40 bg-muted rounded-full animate-pulse" />
+              ) : (
+                <span className="text-sm text-muted-foreground">
+                  <span className="font-bold text-foreground tabular-nums">{pagination.total}</span>{' '}
+                  ítem{pagination.total !== 1 ? 's' : ''} encontrado{pagination.total !== 1 ? 's' : ''}
+                </span>
+              )}
             </div>
-          </CardHeader>
+            {hasActiveFilter && (
+              <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-[#DD7419]/10 text-[#DD7419]">
+                Filtros activos
+              </span>
+            )}
+          </div>
 
           <CardContent className="p-0">
             <div className="overflow-x-auto">
@@ -380,14 +389,14 @@ export default function InventarioPage() {
                 <tbody>
                   {loading ? (
                     Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
-                  ) : paginated.length === 0 ? (
+                  ) : sorted.length === 0 ? (
                     <tr>
                       <td colSpan={5} className="py-20 text-center text-muted-foreground">
-                        {search ? 'No se encontraron resultados.' : 'No hay ítems registrados.'}
+                        {hasActiveFilter ? 'No se encontraron resultados.' : 'No hay ítems registrados.'}
                       </td>
                     </tr>
                   ) : (
-                    paginated.map((item) => (
+                    sorted.map((item) => (
                       <tr key={item.id} className="border-b border-border hover:bg-muted/30">
                         {/* Nombre */}
                         <td className="px-4 py-3.5">
@@ -452,11 +461,11 @@ export default function InventarioPage() {
                 <span className="text-xs text-muted-foreground">
                   Mostrando{' '}
                   <span className="font-medium text-foreground">
-                    {filtered.length === 0 ? 0 : (safePage - 1) * pageSize + 1}
-                    –{Math.min(safePage * pageSize, filtered.length)}
+                    {pagination.total === 0 ? 0 : (safePage - 1) * pageSize + 1}
+                    –{Math.min(safePage * pageSize, pagination.total)}
                   </span>{' '}
                   de{' '}
-                  <span className="font-medium text-foreground">{filtered.length}</span>{' '}
+                  <span className="font-medium text-foreground">{pagination.total}</span>{' '}
                   registros
                 </span>
 
@@ -487,7 +496,7 @@ export default function InventarioPage() {
                       <ChevronLeft className="w-4 h-4" />
                     </Button>
                     <span className="text-xs text-muted-foreground px-2 min-w-[4rem] text-center tabular-nums">
-                      {safePage} / {Math.max(totalPages, 1)}
+                      {safePage} / {Math.max(pagination.totalPages, 1)}
                     </span>
                     <Button
                       variant="outline"
@@ -506,14 +515,20 @@ export default function InventarioPage() {
         </Card>
       </div>
 
+      <FilterDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        onApply={handleApplyFilters}
+        activeFilters={filters}
+      />
+
       {/* ── Modales ───────────────────────────────────────── */}
-      {modalItem !== undefined && (
-        <ItemModal
-          item={modalItem}
-          onSave={handleSave}
-          onClose={() => setModalItem(undefined)}
-        />
-      )}
+      <ItemModal
+        open={modalItem !== undefined}
+        item={modalItem}
+        onSave={handleSave}
+        onClose={() => setModalItem(undefined)}
+      />
 
       <DeleteConfirmModal
         item={deleteTarget}

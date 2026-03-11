@@ -9,7 +9,7 @@ export function DeleteZoneModal({ deleteId, isDeleting, onConfirm, onCancel }) {
       onClick={isDeleting ? undefined : onCancel}
     >
       <div
-        className="bg-white rounded-2xl shadow-2xl p-8 w-[420px]"
+        className="bg-card rounded-2xl shadow-2xl p-8 w-[420px]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="w-14 h-14 rounded-2xl bg-destructive/10 flex items-center justify-center mb-6">

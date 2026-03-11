@@ -81,7 +81,7 @@ export function IncidentFormModal({ open, onClose, person, eventId, onSave }) {
     <div className="fixed inset-0 z-[200] flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40" onClick={handleClose} />
 
-      <div className="relative z-10 w-full max-w-md bg-white rounded-xl shadow-xl p-6 mx-4">
+      <div className="relative z-10 w-full max-w-md bg-card text-card-foreground rounded-xl shadow-xl p-6 mx-4">
         {/* Header */}
         <div className="flex items-start justify-between mb-5">
           <div>
@@ -116,7 +116,7 @@ export function IncidentFormModal({ open, onClose, person, eventId, onSave }) {
                     className={`relative flex flex-col items-center justify-center gap-2 py-4 rounded-xl border-2 font-semibold text-sm transition-all active:scale-95 ${
                       active
                         ? `${activeBg} ${activeBorder} text-white shadow-sm`
-                        : `bg-white border-border hover:border-gray-300 hover:bg-muted/40`
+                        : `bg-muted/30 border-border hover:border-muted-foreground/30 hover:bg-muted/50`
                     }`}
                   >
                     {/* Checkmark cuando está activo */}
@@ -147,7 +147,7 @@ export function IncidentFormModal({ open, onClose, person, eventId, onSave }) {
               type="time"
               value={form.time}
               onChange={(e) => setForm((f) => ({ ...f, time: e.target.value }))}
-              className="w-full h-9 px-3 rounded-md border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#234465]/30"
+              className="w-full h-9 px-3 rounded-md border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-[#234465]/30"
             />
           </div>
 
@@ -161,7 +161,7 @@ export function IncidentFormModal({ open, onClose, person, eventId, onSave }) {
               onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))}
               rows={3}
               placeholder="Observaciones adicionales…"
-              className="w-full px-3 py-2 rounded-md border border-border bg-white text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#234465]/30 resize-none"
+              className="w-full px-3 py-2 rounded-md border border-border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#234465]/30 resize-none"
             />
           </div>
 

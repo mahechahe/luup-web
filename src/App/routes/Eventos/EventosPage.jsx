@@ -7,14 +7,13 @@ import {
   Pencil,
   Plus,
   X,
-  ArrowLeft, // Importado para el botón de volver
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { CreateEventDrawer } from './components/CreateEventDrawer';
 import { EditEventDrawer } from './components/EditEventDrawer';
 import { FilterEventDrawer } from './components/FilterEventDrawer';
@@ -251,98 +250,70 @@ function EventosPage() {
     <div className="min-h-screen bg-background px-4 py-6">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* ── Header ──────────────────────────────────────── */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <div className="w-8 h-8 rounded-xl bg-brand/10 flex items-center justify-center">
-                <Calendar className="w-4 h-4 text-brand" />
-              </div>
-              <h2 className="text-2xl font-semibold text-foreground tracking-tight">
-                Eventos
-              </h2>
+        <div className="rounded-2xl bg-[#234465] px-6 py-5 shadow-md flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
+              <Calendar className="w-6 h-6 text-white" />
             </div>
-            <p className="text-sm text-muted-foreground">
-              Gestiona los eventos de LUUP.
-            </p>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-white/60 mb-0.5">
+                Gestión de eventos
+              </p>
+              <h2 className="text-2xl font-extrabold text-white leading-tight">Eventos</h2>
+              <p className="text-sm text-white/60 mt-0.5">Gestiona los eventos de LUUP.</p>
+            </div>
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
             <Button
-              className="bg-brand text-brand-foreground hover:bg-brand/90 gap-1.5 h-9"
+              className="bg-[#DD7419] hover:bg-[#DD7419]/90 text-white gap-1.5 h-9 font-semibold shadow-sm"
               onClick={() => setCreateOpen(true)}
             >
-              <Plus className="w-4 h-4" />
-              Crear evento
+              <Plus className="w-4 h-4" /> Crear evento
             </Button>
-
             <Button
               variant="outline"
-              className={`gap-1.5 h-9 ${
-                filterOpen || hasActiveFilter
-                  ? 'border-brand text-brand bg-brand/5'
-                  : ''
+              className={`gap-1.5 h-9 border-white/20 text-white hover:bg-white/20 hover:text-white ${
+                hasActiveFilter ? 'bg-[#DD7419]/30 border-[#DD7419]/60' : 'bg-white/10'
               }`}
               onClick={() => setFilterOpen(true)}
             >
-              <Filter className="w-4 h-4" />
-              Filtrar
-              {hasActiveFilter && (
-                <span className="ml-1 w-2 h-2 rounded-full bg-brand" />
-              )}
+              <Filter className="w-4 h-4" /> Filtrar
             </Button>
-
-            <Button
-              variant="ghost"
-              className="gap-1.5 h-9 text-muted-foreground"
-              disabled={!hasActiveFilter}
-              onClick={handleClearFilters}
-            >
-              <X className="w-4 h-4" />
-              Limpiar filtros
-            </Button>
+            {hasActiveFilter && (
+              <Button
+                variant="ghost"
+                className="gap-1.5 h-9 text-white/70 hover:text-white hover:bg-white/10"
+                onClick={handleClearFilters}
+              >
+                <X className="w-4 h-4" /> Limpiar
+              </Button>
+            )}
           </div>
         </div>
 
-        {/* ── Stats ───────────────────────────────────────── */}
-        {!loading && (
-          <div className="flex items-center gap-3 flex-wrap">
-            <Badge
-              variant="secondary"
-              className="gap-1.5 px-3 py-1 text-xs font-medium"
-            >
-              <Calendar className="w-3.5 h-3.5" />
-              {pagination.total} total
-            </Badge>
-            {hasActiveFilter && (
-              <Badge className="gap-1.5 px-3 py-1 text-xs font-medium bg-brand/10 text-brand hover:bg-brand/10 border-0">
-                Filtros activos
-              </Badge>
-            )}
-          </div>
-        )}
-
         {/* ── Tabla ───────────────────────────────────────── */}
         <Card className="border-border shadow-sm overflow-hidden p-0">
-          <CardHeader className="px-5 py-4">
-            <CardTitle className="text-sm font-semibold text-foreground">
+          <div className="flex items-center justify-between px-5 h-12 border-b border-border">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-md bg-[#234465]/10 dark:bg-white/10 flex items-center justify-center">
+                <Calendar className="w-3.5 h-3.5 text-[#234465] dark:text-white" />
+              </div>
               {loading ? (
-                <span className="text-muted-foreground animate-pulse">
-                  Cargando eventos...
-                </span>
-              ) : hasActiveFilter ? (
-                <>
-                  <span className="text-muted-foreground">Mostrando </span>
-                  <span className="text-brand font-bold">{events.length}</span>
-                  <span className="text-muted-foreground">
-                    {' '}
-                    de {pagination.total} eventos
-                  </span>
-                </>
+                <div className="h-4 w-36 bg-muted rounded-full animate-pulse" />
               ) : (
-                `${pagination.total} evento${pagination.total !== 1 ? 's' : ''}`
+                <span className="text-sm text-muted-foreground">
+                  <span className="font-bold text-foreground tabular-nums">{pagination.total}</span>{' '}
+                  evento{pagination.total !== 1 ? 's' : ''} encontrado{pagination.total !== 1 ? 's' : ''}
+                </span>
               )}
-            </CardTitle>
-          </CardHeader>
+            </div>
+            {hasActiveFilter && (
+              <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-[#DD7419]/10 text-[#DD7419]">
+                Filtros activos
+              </span>
+            )}
+          </div>
 
           <CardContent className="p-0">
             <div className="overflow-x-auto">

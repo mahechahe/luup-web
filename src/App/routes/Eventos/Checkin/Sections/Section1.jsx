@@ -98,7 +98,7 @@ export const Section1 = ({ eventId }) => {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-border p-3 space-y-3">
+      <div className="bg-card rounded-xl border border-border p-3 space-y-3">
         <div className="flex items-center gap-2 flex-wrap">
           <div className="relative flex-1 min-w-[140px]">
             <User className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
@@ -110,7 +110,7 @@ export const Section1 = ({ eventId }) => {
                 setFilterInput((f) => ({ ...f, name: e.target.value }))
               }
               onKeyDown={handleKeyDown}
-              className="h-9 pl-8 pr-3 rounded-md border border-border bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#234465]/30 w-full"
+              className="h-9 pl-8 pr-3 rounded-md border border-border bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#DD7419]/30 w-full"
             />
           </div>
 
@@ -124,7 +124,7 @@ export const Section1 = ({ eventId }) => {
                 setFilterInput((f) => ({ ...f, cedula: e.target.value }))
               }
               onKeyDown={handleKeyDown}
-              className="h-9 pl-8 pr-3 rounded-md border border-border bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#234465]/30 w-full"
+              className="h-9 pl-8 pr-3 rounded-md border border-border bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#DD7419]/30 w-full"
             />
           </div>
 
@@ -133,7 +133,7 @@ export const Section1 = ({ eventId }) => {
             disabled={
               (filterInput.name === '' && filterInput.cedula === '') || loading
             }
-            className="h-9 bg-[#234465] hover:bg-[#234465]/90 text-white gap-1.5 shrink-0"
+            className="h-9 bg-[#DD7419] hover:bg-[#DD7419]/90 text-white gap-1.5 shrink-0"
           >
             <Search className="w-3.5 h-3.5" />
             <span>Buscar</span>
@@ -164,7 +164,7 @@ export const Section1 = ({ eventId }) => {
         onEdit={setEditTarget}
       />
 
-      <div className="bg-white rounded-xl border border-border px-3 py-2.5 flex items-center justify-between gap-3 flex-wrap pb-4">
+      <div className="bg-card rounded-xl border border-border px-3 py-2.5 flex items-center justify-between gap-3 flex-wrap pb-4">
         <div className="flex items-center gap-3">
           <p className="text-xs text-muted-foreground">
             <span className="font-semibold text-foreground">
@@ -210,7 +210,7 @@ export const Section1 = ({ eventId }) => {
                   onClick={() => setCurrentPage(item)}
                   className={`h-8 min-w-8 px-2 rounded-md text-xs font-semibold transition ${
                     safePage === item
-                      ? 'bg-[#234465] text-white'
+                      ? 'bg-[#DD7419] text-white'
                       : 'border border-border text-foreground hover:bg-muted'
                   }`}
                 >

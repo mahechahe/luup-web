@@ -11,7 +11,7 @@ import {
 import { updateDeliveryService } from '@/App/routes/Eventos/services/eventServices';
 
 function roleBadgeClass(role) {
-  if (role === 'supervisor') return 'bg-[#234465]/10 text-[#234465]';
+  if (role === 'supervisor') return 'bg-[#234465]/10 text-[#234465] dark:bg-[#234465]/20 dark:text-[#7493B2]';
   if (role === 'coordinador') return 'bg-[#DD7419]/10 text-[#DD7419]';
   return 'bg-[#7493B2]/10 text-[#7493B2]';
 }
@@ -34,9 +34,9 @@ const ACTIONS = [
     label: 'Maleta',
     labelDone: 'Maleta recibida',
     activeBg: 'bg-indigo-500',
-    doneBg: 'bg-indigo-50',
-    doneText: 'text-indigo-700',
-    doneBorder: 'border-indigo-200',
+    doneBg: 'bg-indigo-50 dark:bg-indigo-900/30',
+    doneText: 'text-indigo-700 dark:text-indigo-300',
+    doneBorder: 'border-indigo-200 dark:border-indigo-800',
   },
   {
     key: 'lunch',
@@ -45,9 +45,9 @@ const ACTIONS = [
     label: 'Almuerzo',
     labelDone: 'Almuerzo recibido',
     activeBg: 'bg-amber-500',
-    doneBg: 'bg-amber-50',
-    doneText: 'text-amber-700',
-    doneBorder: 'border-amber-200',
+    doneBg: 'bg-amber-50 dark:bg-amber-900/30',
+    doneText: 'text-amber-700 dark:text-amber-300',
+    doneBorder: 'border-amber-200 dark:border-amber-800',
   },
   {
     key: 'snack',
@@ -56,9 +56,9 @@ const ACTIONS = [
     label: 'Refrigerio',
     labelDone: 'Refrigerio dado',
     activeBg: 'bg-red-600',
-    doneBg: 'bg-red-50',
-    doneText: 'text-red-700',
-    doneBorder: 'border-red-300',
+    doneBg: 'bg-red-50 dark:bg-red-900/30',
+    doneText: 'text-red-700 dark:text-red-300',
+    doneBorder: 'border-red-300 dark:border-red-800',
     requiresDetail: true,
   },
 ];
@@ -117,8 +117,8 @@ function CollabCard({ collab, onActionSaved }) {
 
   return (
     <div
-      className={`bg-white rounded-2xl border overflow-hidden transition-all ${
-        allDone ? 'border-emerald-200' : 'border-border'
+      className={`bg-card rounded-2xl border overflow-hidden transition-all ${
+        allDone ? 'border-emerald-200 dark:border-emerald-800' : 'border-border'
       }`}
     >
       <div className={`h-1 ${allDone ? 'bg-emerald-500' : 'bg-muted'}`} />
@@ -186,7 +186,7 @@ function CollabCard({ collab, onActionSaved }) {
                   className={`relative flex flex-col items-center justify-center gap-1.5 h-16 rounded-xl border-2 font-semibold text-[11px] transition-all ${
                     done
                       ? `${doneBg} ${doneText} ${doneBorder} cursor-default opacity-80`
-                      : 'bg-white border-border text-muted-foreground hover:bg-muted active:scale-95'
+                      : 'bg-card border-border text-muted-foreground hover:bg-muted active:scale-95'
                   }`}
                 >
                   {requiresDetail && !done && (
@@ -225,7 +225,7 @@ function CollabCard({ collab, onActionSaved }) {
 
         {notes && (
           <p
-            className="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 italic mb-2"
+            className="text-[11px] text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-lg px-2.5 py-1.5 italic mb-2"
             style={{
               marginBottom: '10px',
             }}
@@ -259,7 +259,7 @@ function CollabCard({ collab, onActionSaved }) {
               placeholder="Ej: jugo + galletas…"
               value={snackDetail}
               onChange={(e) => setSnackDetail(e.target.value)}
-              className="w-full h-9 px-3 rounded-lg border border-border text-sm focus:outline-none focus:ring-2 focus:ring-[#234465]/30"
+              className="w-full h-9 px-3 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-[#DD7419]/30"
             />
             <div className="flex gap-2">
               <button
@@ -295,7 +295,7 @@ export function Station2Tab({ collaborators, loading, onActionSaved }) {
           {Array.from({ length: 4 }).map((_, i) => (
             <div
               key={i}
-              className="bg-white rounded-2xl border p-3 animate-pulse space-y-3"
+              className="bg-card rounded-2xl border p-3 animate-pulse space-y-3"
             >
               <div className="space-y-2">
                 <div className="h-4 bg-muted rounded-full w-40" />

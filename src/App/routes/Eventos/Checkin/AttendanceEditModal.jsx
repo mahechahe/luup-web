@@ -34,12 +34,12 @@ const ATTENDED_OPTIONS = [
   {
     value: true,
     label: 'Sí',
-    activeClass: 'bg-emerald-100 border-emerald-400 text-emerald-700',
+    activeClass: 'bg-emerald-100 border-emerald-400 text-emerald-700 dark:bg-emerald-900/40 dark:border-emerald-600 dark:text-emerald-300',
   },
   {
     value: false,
     label: 'No',
-    activeClass: 'bg-red-100 border-red-400 text-red-700',
+    activeClass: 'bg-red-100 border-red-400 text-red-700 dark:bg-red-900/40 dark:border-red-600 dark:text-red-300',
   },
 ];
 
@@ -121,7 +121,7 @@ export default function AttendanceEditModal({
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
       {/* Panel */}
-      <div className="relative z-10 w-full max-w-md bg-white rounded-t-2xl sm:rounded-xl shadow-xl mx-0 sm:mx-4 max-h-[90dvh] overflow-y-auto">
+      <div className="relative z-10 w-full max-w-md bg-card rounded-t-2xl sm:rounded-xl shadow-xl mx-0 sm:mx-4 max-h-[90dvh] overflow-y-auto">
         <div className="p-5">
           {/* Header */}
           <div className="flex items-start justify-between mb-5">
@@ -157,7 +157,7 @@ export default function AttendanceEditModal({
                     className={`flex-1 py-2 rounded-md text-xs font-medium border transition ${
                       form.attended === value
                         ? activeClass
-                        : 'bg-white border-border text-muted-foreground hover:bg-muted'
+                        : 'bg-card border-border text-muted-foreground hover:bg-muted'
                     }`}
                   >
                     {label}
@@ -177,7 +177,7 @@ export default function AttendanceEditModal({
                 onChange={(e) =>
                   setForm((f) => ({ ...f, entryTime: e.target.value }))
                 }
-                className="w-full h-9 px-3 rounded-md border border-border bg-white text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-[#234465]/30"
+                className="w-full h-9 px-3 rounded-md border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-[#DD7419]/30"
               />
             </div>
 
@@ -193,7 +193,7 @@ export default function AttendanceEditModal({
                 }
                 rows={2}
                 placeholder="Observaciones opcionales…"
-                className="w-full px-3 py-2 rounded-md border border-border bg-white text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#234465]/30 resize-none"
+                className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#DD7419]/30 resize-none"
               />
             </div>
 
@@ -219,7 +219,7 @@ export default function AttendanceEditModal({
                       collaborator.uniform || collaborator.attendance?.uniform
                     ) && !!assignedSize;
                   return isAssigned ? (
-                    <span className="text-[10px] font-semibold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <span className="text-[10px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 px-2 py-0.5 rounded-full flex items-center gap-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
                       Ya asignado · Talla {assignedSize}
                     </span>
@@ -253,8 +253,8 @@ export default function AttendanceEditModal({
                     }
                     className={`h-9 rounded-lg text-xs font-bold transition-all border-2 ${
                       form.uniformSize === size
-                        ? 'bg-[#234465] border-[#234465] text-white'
-                        : 'bg-white border-border text-foreground hover:border-[#234465]/50'
+                        ? 'bg-[#DD7419] border-[#DD7419] text-white'
+                        : 'bg-card border-border text-foreground hover:border-[#DD7419]/50'
                     }`}
                   >
                     {size}
@@ -278,7 +278,7 @@ export default function AttendanceEditModal({
               </Button>
               <Button
                 type="submit"
-                className="flex-1 bg-[#234465] hover:bg-[#234465]/90"
+                className="flex-1 bg-[#DD7419] hover:bg-[#DD7419]/90"
                 disabled={saving}
               >
                 {saving ? (

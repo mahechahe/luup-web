@@ -123,7 +123,7 @@ function Dashboard() {
           <p className="text-xs font-semibold uppercase tracking-widest text-[#DD7419]">
             {getGreeting()}
           </p>
-          <h1 className="text-2xl font-black text-[#234465] leading-tight">
+          <h1 className="text-2xl font-black text-[#234465] dark:text-foreground leading-tight">
             {fullName}
           </h1>
         </section>
@@ -157,7 +157,7 @@ function Dashboard() {
         </section>
 
         {/* Mensaje de bienvenida */}
-        <section className="rounded-2xl border border-border bg-white px-5 py-5 space-y-1.5 shadow-sm">
+        <section className="rounded-2xl border border-border bg-card px-5 py-5 space-y-1.5 shadow-sm">
           <p className="text-sm font-bold text-foreground">
             Bienvenido a LUUP
           </p>
@@ -177,7 +177,7 @@ function Dashboard() {
             {FEATURES.map(({ icon: Icon, title, description }) => (
               <div
                 key={title}
-                className="rounded-xl border border-border bg-white px-4 py-4 space-y-2 shadow-sm"
+                className="rounded-xl border border-border bg-card px-4 py-4 space-y-2 shadow-sm"
               >
                 <div className="w-8 h-8 rounded-lg bg-[#DD7419]/10 flex items-center justify-center">
                   <Icon className="w-4 h-4 text-[#DD7419]" />

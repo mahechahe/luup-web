@@ -21,7 +21,7 @@ function formatTime(iso) {
 }
 
 function roleBadgeClass(role) {
-  if (role === 'supervisor') return 'bg-[#234465]/10 text-[#234465]';
+  if (role === 'supervisor') return 'bg-[#234465]/10 text-[#234465] dark:bg-[#234465]/20 dark:text-[#7493B2]';
   if (role === 'coordinador') return 'bg-[#DD7419]/10 text-[#DD7419]';
   return 'bg-[#7493B2]/10 text-[#7493B2]';
 }
@@ -108,8 +108,8 @@ function CollabCard({
 
   return (
     <div
-      className={`bg-white rounded-2xl border overflow-hidden transition-all ${
-        attended ? 'border-emerald-200' : 'border-border'
+      className={`bg-card rounded-2xl border overflow-hidden transition-all ${
+        attended ? 'border-emerald-200 dark:border-emerald-800' : 'border-border'
       }`}
     >
       <div className={`h-1 ${attended ? 'bg-emerald-500' : 'bg-muted'}`} />
@@ -149,22 +149,22 @@ function CollabCard({
           <div className="shrink-0 flex flex-col items-end gap-2">
             {attended ? (
               entryTime ? (
-                <div className="flex flex-col items-center bg-emerald-50 border border-emerald-200 rounded-2xl px-3 py-2 min-w-[64px]">
+                <div className="flex flex-col items-center bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-2xl px-3 py-2 min-w-[64px]">
                   <Clock className="w-4 h-4 text-emerald-500 mb-1" />
-                  <span className="text-[13px] font-extrabold text-emerald-700 leading-none">
+                  <span className="text-[13px] font-extrabold text-emerald-700 dark:text-emerald-300 leading-none">
                     {entryTime}
                   </span>
-                  <span className="text-[9px] font-semibold uppercase tracking-widest text-emerald-500 mt-1">
+                  <span className="text-[9px] font-semibold uppercase tracking-widest text-emerald-500 dark:text-emerald-400 mt-1">
                     Check-in
                   </span>
                 </div>
               ) : (
-                <div className="flex flex-col items-center bg-amber-50 border border-amber-200 rounded-2xl px-3 py-2 min-w-[64px]">
+                <div className="flex flex-col items-center bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-2xl px-3 py-2 min-w-[64px]">
                   <Clock className="w-4 h-4 text-amber-500 mb-1" />
-                  <span className="text-[11px] font-bold text-amber-700 leading-tight text-center">
+                  <span className="text-[11px] font-bold text-amber-700 dark:text-amber-300 leading-tight text-center">
                     Sin hora
                   </span>
-                  <span className="text-[9px] font-semibold uppercase tracking-widest text-amber-500 mt-1">
+                  <span className="text-[9px] font-semibold uppercase tracking-widest text-amber-500 dark:text-amber-400 mt-1">
                     Check-in
                   </span>
                 </div>
@@ -185,7 +185,7 @@ function CollabCard({
           <div
             className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold ${
               attended
-                ? 'bg-emerald-100 text-emerald-700'
+                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
                 : 'bg-muted text-muted-foreground'
             }`}
           >
@@ -195,7 +195,7 @@ function CollabCard({
           <div
             className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold ${
               uniformDone
-                ? 'bg-blue-100 text-blue-700'
+                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
                 : 'bg-muted text-muted-foreground'
             }`}
           >
@@ -243,8 +243,8 @@ function CollabCard({
             onClick={() => setShowUniform((v) => !v)}
             className={`flex-1 flex items-center justify-center gap-2 h-10 rounded-xl font-semibold text-sm transition-all border ${
               uniformDone
-                ? 'bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100'
-                : 'bg-white border-border text-muted-foreground hover:bg-muted'
+                ? 'bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-300 dark:hover:bg-blue-900/50'
+                : 'bg-card border-border text-muted-foreground hover:bg-muted'
             }`}
           >
             <Shirt className="w-4 h-4" />
@@ -269,8 +269,8 @@ function CollabCard({
                   onClick={() => setSelectedSize(size)}
                   className={`h-9 rounded-lg text-xs font-bold transition-all border-2 ${
                     selectedSize === size
-                      ? 'bg-[#234465] border-[#234465] text-white'
-                      : 'bg-white border-border text-foreground hover:border-[#234465]/50'
+                      ? 'bg-[#DD7419] border-[#DD7419] text-white'
+                      : 'bg-card border-border text-foreground hover:border-[#DD7419]/50'
                   }`}
                 >
                   {size}
@@ -280,7 +280,7 @@ function CollabCard({
             <button
               onClick={handleSaveUniform}
               disabled={!selectedSize || savingUniform}
-              className="w-full h-9 rounded-xl bg-[#234465] text-white text-sm font-semibold hover:bg-[#234465]/90 disabled:opacity-40 transition flex items-center justify-center gap-2"
+              className="w-full h-9 rounded-xl bg-[#DD7419] text-white text-sm font-semibold hover:bg-[#DD7419]/90 disabled:opacity-40 transition flex items-center justify-center gap-2"
             >
               {savingUniform ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -323,7 +323,7 @@ export function Station1Tab({
           {Array.from({ length: 5 }).map((_, i) => (
             <div
               key={i}
-              className="bg-white rounded-2xl border border-border p-3 animate-pulse space-y-2"
+              className="bg-card rounded-2xl border border-border p-3 animate-pulse space-y-2"
             >
               <div className="space-y-2">
                 <div className="h-4 bg-muted rounded-full w-40" />

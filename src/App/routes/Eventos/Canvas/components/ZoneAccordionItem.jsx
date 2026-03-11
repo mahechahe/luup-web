@@ -10,7 +10,7 @@ export function ZoneAccordionItem({
   return (
     <div
       onClick={() => onSelect(zone.id)}
-      className={`rounded-lg border bg-white overflow-hidden transition-all duration-200 cursor-pointer ${
+      className={`rounded-lg border bg-card overflow-hidden transition-all duration-200 cursor-pointer ${
         isSelected
           ? 'ring-2 ring-[#234465] shadow-md'
           : 'border-border shadow-sm hover:shadow-md hover:border-[#234465]/30'

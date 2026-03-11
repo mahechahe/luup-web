@@ -23,7 +23,7 @@ const ZonasPage = () => {
         <MenuCard 
           icon={<MapIcon size={36}/>} 
           title="Eventos" 
-          badge="VALIDAR EVENTOS Y CANVAS" 
+          badge="VALIDAR EVENTOS Y LAYOUT"
           desc="Acceso a georreferenciación a estados de producción." 
           color="orange" 
           onClick={() => navigate(isAdmin ? '/eventos/listado' : '/eventos/mis-eventos')}

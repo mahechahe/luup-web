@@ -138,7 +138,7 @@ export function CheckoutModal({ open, onOpenChange, collab, onCheckedOut }) {
               type="time"
               value={exitTime}
               onChange={(e) => setExitTime(e.target.value)}
-              className="h-10 px-3 rounded-xl border border-border text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#234465]/30 w-full"
+              className="h-10 px-3 rounded-xl border border-border bg-background text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#DD7419]/30 w-full"
             />
           </div>
 
@@ -154,7 +154,7 @@ export function CheckoutModal({ open, onOpenChange, collab, onCheckedOut }) {
                 className={`h-11 rounded-xl font-semibold text-sm border-2 transition-all ${
                   returnedUniform === true
                     ? 'bg-emerald-500 border-emerald-500 text-white'
-                    : 'bg-white border-border text-muted-foreground hover:bg-muted'
+                    : 'bg-card border-border text-muted-foreground hover:bg-muted'
                 }`}
               >
                 Sí
@@ -164,7 +164,7 @@ export function CheckoutModal({ open, onOpenChange, collab, onCheckedOut }) {
                 className={`h-11 rounded-xl font-semibold text-sm border-2 transition-all ${
                   returnedUniform === false
                     ? 'bg-red-500 border-red-500 text-white'
-                    : 'bg-white border-border text-muted-foreground hover:bg-muted'
+                    : 'bg-card border-border text-muted-foreground hover:bg-muted'
                 }`}
               >
                 No
@@ -243,7 +243,7 @@ export function CheckoutModal({ open, onOpenChange, collab, onCheckedOut }) {
           <button
             onClick={handleConfirm}
             disabled={saving}
-            className="flex-1 h-11 rounded-xl bg-[#234465] hover:bg-[#234465]/90 text-white text-sm font-semibold transition flex items-center justify-center gap-2 disabled:opacity-50"
+            className="flex-1 h-11 rounded-xl bg-[#DD7419] hover:bg-[#DD7419]/90 text-white text-sm font-semibold transition flex items-center justify-center gap-2 disabled:opacity-50"
           >
             {saving ? (
               <Loader2 className="w-4 h-4 animate-spin" />

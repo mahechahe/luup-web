@@ -5,17 +5,26 @@ const { BASE_URL } = constants;
 const INVENTORY_URL = `${BASE_URL}/inventory`;
 
 /**
- * GET /inventory
- * Retorna: { status, items: [{ id, nombre, cantidad, precioUnitario }] }
+ * GET /inventory?nombre=...&descripcion=...&page=1&limit=10
+ * Retorna: { status, items, pagination, errors }
  */
-export const getInventoryItemsService = async () => {
+export const getInventoryItemsService = async ({ page = 1, limit = 10, nombre, descripcion } = {}) => {
   try {
-    const { data } = await axios.get(INVENTORY_URL);
-    return { status: true, items: data?.data ?? [], errors: null };
+    const params = { page, limit };
+    if (nombre) params.nombre = nombre;
+    if (descripcion) params.descripcion = descripcion;
+    const { data } = await axios.get(INVENTORY_URL, { params });
+    return {
+      status: true,
+      items: data?.data?.items ?? [],
+      pagination: data?.data?.pagination ?? { page: 1, limit, total: 0, totalPages: 1 },
+      errors: null,
+    };
   } catch (error) {
     return {
       status: false,
       items: [],
+      pagination: { page: 1, limit, total: 0, totalPages: 1 },
       errors: error?.response?.data?.message || 'Error al obtener el inventario.',
     };
   }

@@ -2,7 +2,9 @@ import {
   ChevronLeft,
   ChevronRight,
   ImageOff,
+  Lock,
   Maximize,
+  Unlock,
   Upload,
   ZoomIn,
   ZoomOut,
@@ -37,6 +39,7 @@ export function ZonesCanvas({
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentRect, setCurrentRect] = useState(null);
   const [dragInfo, setDragInfo] = useState(null);
+  const [freeMove, setFreeMove] = useState(false);
 
   /* ── Helpers ─────────────────────────────────────────── */
   const getMousePos = (e) => {
@@ -61,7 +64,7 @@ export function ZonesCanvas({
   /* ── Handlers SVG ────────────────────────────────────── */
   const handleMouseDown = (e) => {
     const pos = getMousePos(e);
-    if (tool === 'move' || e.button === 1) {
+    if (tool === 'move' || (e.button === 1 && freeMove)) {
       setIsPanning(true);
       setStartPan({ x: e.clientX, y: e.clientY });
       return;
@@ -168,9 +171,10 @@ export function ZonesCanvas({
     }
   };
 
-  /* Wheel zoom con passive:false */
+  /* Wheel zoom con passive:false — solo si freeMove está activo */
   handleWheelRef.current = (e) => {
     e.preventDefault();
+    if (!freeMove) return;
     const factor = e.deltaY > 0 ? 1.1 : 0.9;
     const pos = getMousePos(e);
     setViewBox((prev) => ({
@@ -201,7 +205,7 @@ export function ZonesCanvas({
       }`}
     >
       {/* Controles de zoom flotantes */}
-      <div className="absolute top-4 left-4 z-10 bg-white rounded-lg shadow-md border border-border p-1 flex flex-col gap-1">
+      <div className="absolute top-4 left-4 z-10 bg-card rounded-lg shadow-md border border-border p-1 flex flex-col gap-1">
         <button
           onClick={() => handleZoom(0.8)}
           className="p-1.5 hover:bg-muted rounded text-muted-foreground hover:text-foreground transition"
@@ -222,6 +226,25 @@ export function ZonesCanvas({
           title="Zoom out"
         >
           <ZoomOut className="w-4 h-4" />
+        </button>
+
+        {/* Separador */}
+        <div className="h-px bg-border mx-1" />
+
+        {/* Toggle movimiento libre */}
+        <button
+          onClick={() => setFreeMove((v) => !v)}
+          className={`p-1.5 rounded transition flex flex-col items-center gap-0.5 ${
+            freeMove
+              ? 'bg-[#DD7419]/10 text-[#DD7419] hover:bg-[#DD7419]/20'
+              : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+          }`}
+          title={freeMove ? 'Bloquear movimiento' : 'Habilitar movimiento libre'}
+        >
+          {freeMove ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+          <span className="text-[8px] font-semibold leading-none">
+            {freeMove ? 'Libre' : 'Bloq.'}
+          </span>
         </button>
       </div>
 

@@ -24,7 +24,7 @@ const STATIONS = [
     label: 'Estación 1',
     sublabel: 'Check-in · Uniforme',
     Icon: ClipboardCheck,
-    activeClass: 'bg-emerald-100 text-emerald-800 shadow-sm',
+    activeClass: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 shadow-sm',
     inactiveClass: 'text-foreground hover:bg-muted',
     lockedClass: 'text-muted-foreground/40 cursor-not-allowed',
   },
@@ -33,7 +33,7 @@ const STATIONS = [
     label: 'Estación 2',
     sublabel: 'Maleta · Almuerzo · Refrigerio',
     Icon: Package,
-    activeClass: 'bg-indigo-100 text-indigo-800 shadow-sm',
+    activeClass: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300 shadow-sm',
     inactiveClass: 'text-foreground hover:bg-muted',
     lockedClass: 'text-muted-foreground/40 cursor-not-allowed',
   },
@@ -42,7 +42,7 @@ const STATIONS = [
     label: 'Estación 3',
     sublabel: 'Dotación · Insumos',
     Icon: Boxes,
-    activeClass: 'bg-violet-100 text-violet-800 shadow-sm',
+    activeClass: 'bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-300 shadow-sm',
     inactiveClass: 'text-foreground hover:bg-muted',
     lockedClass: 'text-muted-foreground/40 cursor-not-allowed',
   },
@@ -51,7 +51,7 @@ const STATIONS = [
     label: 'Estación 4',
     sublabel: 'Check-out',
     Icon: DoorOpen,
-    activeClass: 'bg-rose-100 text-rose-800 shadow-sm',
+    activeClass: 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300 shadow-sm',
     inactiveClass: 'text-foreground hover:bg-muted',
     lockedClass: 'text-muted-foreground/40 cursor-not-allowed',
   },
@@ -99,7 +99,7 @@ export default function CheckinPage() {
           </h2>
           <Button
             onClick={() => navigate('/eventos/listado')}
-            className="bg-[#234465] hover:bg-[#234465]/90"
+            className="bg-[#DD7419] hover:bg-[#DD7419]/90"
           >
             Ir al listado
           </Button>
@@ -111,7 +111,7 @@ export default function CheckinPage() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       {/* ── Header ── */}
-      <header className="sticky top-0 z-30 border-b border-border bg-white px-4 py-3">
+      <header className="sticky top-0 z-30 border-b border-border bg-card px-4 py-3">
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate(`/eventos/${eventId}`)}
@@ -131,7 +131,7 @@ export default function CheckinPage() {
                 <Badge
                   className={`text-[10px] border-0 shrink-0 ${
                     event.isActive
-                      ? 'bg-emerald-100 text-emerald-700'
+                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
                       : 'bg-muted text-muted-foreground'
                   }`}
                 >
@@ -144,7 +144,7 @@ export default function CheckinPage() {
       </header>
 
       {/* ── Tabs de estaciones ── */}
-      <div className="sticky top-[57px] z-20 bg-white border-b border-border px-2">
+      <div className="sticky top-[57px] z-20 bg-card border-b border-border px-2">
         <div className="flex gap-1 py-1.5">
           {STATIONS.map(
             ({

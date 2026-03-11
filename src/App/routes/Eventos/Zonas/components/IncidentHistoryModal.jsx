@@ -51,7 +51,7 @@ export function IncidentHistoryModal({ open, onClose, person, incidents }) {
     <div className="fixed inset-0 z-[200] flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
-      <div className="relative z-10 w-full max-w-md bg-white rounded-xl shadow-xl mx-4 flex flex-col max-h-[80vh]">
+      <div className="relative z-10 w-full max-w-md bg-card text-card-foreground rounded-xl shadow-xl mx-4 flex flex-col max-h-[80vh]">
 
         {/* Header */}
         <div className="flex items-start justify-between px-6 pt-6 pb-4 border-b border-border shrink-0">
@@ -102,7 +102,7 @@ export function IncidentHistoryModal({ open, onClose, person, incidents }) {
                     return (
                       <li key={inc.id ?? i} className="ml-5">
                         <span
-                          className={`absolute -left-[5px] mt-1 w-2.5 h-2.5 rounded-full border-2 border-white ${style.dot}`}
+                          className={`absolute -left-[5px] mt-1 w-2.5 h-2.5 rounded-full border-2 border-card ${style.dot}`}
                         />
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex-1 min-w-0">
