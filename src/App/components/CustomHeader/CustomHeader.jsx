@@ -6,7 +6,10 @@ import { Separator } from '@/components/ui/separator';
 
 export function CustomHeader({ toReturn, title }) {
   return (
-    <header className="border-b border-gray-100 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
+    <header
+      className="border-b border-gray-100 bg-white/80 backdrop-blur-sm sticky top-0 z-10"
+      style={{ paddingTop: 'env(safe-area-inset-top)' }}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-1">

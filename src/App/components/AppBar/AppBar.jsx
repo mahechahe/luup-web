@@ -17,7 +17,13 @@ export const AppBar = ({ children }) => {
   return (
     <div className="min-h-screen bg-background">
       {/* Top bar */}
-      <header className="sticky top-0 z-10 bg-card border-b border-border px-4 py-3 flex items-center justify-between shadow-sm">
+      <header
+        className="sticky top-0 z-10 bg-card border-b border-border px-4 flex items-center justify-between shadow-sm"
+        style={{
+          paddingTop: 'calc(env(safe-area-inset-top) + 0.75rem)',
+          paddingBottom: '0.75rem',
+        }}
+      >
         <div className="flex items-center gap-4">
           {/* Logo */}
           <div className="flex items-center gap-2.5">
