@@ -18,20 +18,18 @@ export const AppBar = ({ children }) => {
     <div className="min-h-screen bg-background">
       {/* Top bar */}
       <header
-        className="sticky top-0 z-10 bg-card border-b border-border px-4 flex items-center justify-between shadow-sm"
-        style={{
-          paddingTop: 'calc(env(safe-area-inset-top) + 0.75rem)',
-          paddingBottom: '0.75rem',
-        }}
+        className="sticky top-0 z-10 bg-card border-b border-border shadow-sm"
+        style={{ paddingTop: 'env(safe-area-inset-top)' }}
       >
+      <div className="px-4 h-12 flex items-center justify-between">
         <div className="flex items-center gap-4">
           {/* Logo */}
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-brand flex items-center justify-center">
-              <span className="text-brand-foreground font-black text-base select-none">
-                L
-              </span>
-            </div>
+            <img
+              src="/logo.png"
+              alt="LUUP"
+              className="w-8 h-8 rounded-lg object-contain"
+            />
             <div className="flex flex-col">
               <span className="font-semibold text-foreground tracking-tight">
                 LUUP
@@ -86,6 +84,7 @@ export const AppBar = ({ children }) => {
             <LogOut className="w-4 h-4" />
           </button>
         </div>
+      </div>
       </header>
 
       {/* Main content */}

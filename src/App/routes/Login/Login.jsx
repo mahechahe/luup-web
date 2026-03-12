@@ -93,15 +93,12 @@ function LoginPage() {
         <div className="bg-card rounded-2xl shadow-xl p-8 border border-border">
           <div className="text-center mb-8">
             <div className="flex justify-center mb-4">
-              <div className="w-16 h-16 rounded-2xl bg-brand flex items-center justify-center shadow-md">
-                <span className="text-brand-foreground font-semibold text-3xl tracking-tight select-none">
-                  L
-                </span>
-              </div>
+              <img
+                src="/logo.png"
+                alt="LUUP"
+                className="w-20 h-20 rounded-2xl shadow-md object-contain"
+              />
             </div>
-            <h1 className="text-3xl font-semibold text-foreground tracking-tight mb-1">
-              LUUP
-            </h1>
             <p className="text-xs font-semibold tracking-widest uppercase text-brand mb-3">
               Logística &amp; Control de Eventos
             </p>
