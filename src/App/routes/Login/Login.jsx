@@ -87,7 +87,7 @@ function LoginPage() {
   });
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-brand/5 via-background to-brand/10 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Login Card */}
         <div className="bg-card rounded-2xl shadow-xl p-8 border border-border">
@@ -96,7 +96,7 @@ function LoginPage() {
               <img
                 src="/logo.png"
                 alt="LUUP"
-                className="w-20 h-20 rounded-2xl shadow-md object-contain"
+                className="w-20 h-20 object-contain drop-shadow-md"
               />
             </div>
             <p className="text-xs font-semibold tracking-widest uppercase text-brand mb-3">
