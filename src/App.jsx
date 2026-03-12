@@ -11,11 +11,13 @@ function App() {
     <ThemeProvider>
       <TooltipProvider>
         <Auth>
-          <BrowserRouter>
-            <RouterComponent />
-            <Toaster richColors expand position="top-center" />
-            <PWAUpdatePrompt />
-          </BrowserRouter>
+          <div className="safe-area">
+            <BrowserRouter>
+              <RouterComponent />
+              <Toaster richColors expand position="top-center" />
+              <PWAUpdatePrompt />
+            </BrowserRouter>
+          </div>
         </Auth>
       </TooltipProvider>
     </ThemeProvider>

@@ -17,7 +17,7 @@ export const AppBar = ({ children }) => {
   return (
     <div className="min-h-screen bg-background">
       {/* Top bar */}
-      <header className="sticky top-0 z-10 bg-card border-b border-border px-4 pb-3 pt-[calc(var(--safe-area-top)+0.75rem)] flex items-center justify-between shadow-sm">
+      <header className="sticky top-0 z-10 bg-card border-b border-border px-4 py-3 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-4">
           {/* Logo */}
           <div className="flex items-center gap-2.5">

@@ -31,6 +31,19 @@ body {
   min-height: 100vh;
 }
 
+/* Safe-area helpers (iOS PWA) */
+.safe-area {
+  padding-top: var(--safe-area-top);
+  padding-bottom: var(--safe-area-bottom);
+  min-height: 100vh;
+}
+
+/* Apply safe area to sheet sidebars (Radix Sheet via shadcn) */
+[data-slot='sheet-content'] {
+  padding-top: var(--safe-area-top);
+  padding-bottom: var(--safe-area-bottom);
+}
+
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
