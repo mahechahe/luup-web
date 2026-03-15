@@ -1,6 +1,5 @@
 export const constants = {
-  BASE_URL: import.meta.env.VITE_APP_BACK_API,
-  KEY_PUBLIC_WOMPI: import.meta.env.VITE_KEY_PUBLIC_WOMPI,
+  BASE_URL: '/api/v1',
   ENDPOINTS: {
     COMPANY: 'company',
     SHARED: 'shared',
