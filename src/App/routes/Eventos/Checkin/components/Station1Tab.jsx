@@ -218,7 +218,7 @@ function CollabCard({
 
         <div className="flex items-center gap-1.5">
           <button
-            onClick={handleAttendance}
+            onClick={attended ? handleAttendance : () => onEdit(collab)}
             disabled={savingAttendance}
             className={`flex-1 flex items-center justify-center gap-2 h-10 rounded-xl font-semibold text-sm transition-all active:scale-95 ${
               attended

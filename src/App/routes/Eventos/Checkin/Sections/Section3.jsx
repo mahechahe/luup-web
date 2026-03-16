@@ -13,6 +13,7 @@ import {
   Package,
   PackageOpen,
   Plus,
+  RefreshCw,
   Search,
   User,
   X,
@@ -445,11 +446,11 @@ export const Section3 = ({ eventId }) => {
     setCurrentPage(1);
   };
 
-  useEffect(() => {
+  const fetchData = (currentFilters = filters, page = currentPage) => {
     setLoading(true);
     getStation3RecordsService(eventId, {
-      ...filters,
-      page: currentPage,
+      ...currentFilters,
+      page,
       limit: pageSize,
     }).then((res) => {
       if (res.status && res.data) {
@@ -465,7 +466,11 @@ export const Section3 = ({ eventId }) => {
       }
       setLoading(false);
     });
-  }, [eventId, filters, currentPage, pageSize]);
+  };
+
+  useEffect(() => {
+    fetchData(filters, currentPage);
+  }, [eventId, filters, currentPage, pageSize]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const hasActiveFilters = filterInput.name !== '' || filterInput.cedula !== '';
   const { total, totalPages } = pagination;
@@ -484,18 +489,29 @@ export const Section3 = ({ eventId }) => {
             Dotación · Insumos
           </h2>
         </div>
-        <div className="text-right">
-          <p className="text-sm font-medium text-white/60 uppercase tracking-wide mb-0.5">
-            Fecha de hoy
-          </p>
-          <p className="text-xl sm:text-2xl font-bold text-[#DD7419] capitalize leading-snug">
-            {new Date().toLocaleDateString('es-CO', {
-              weekday: 'long',
-              day: '2-digit',
-              month: 'long',
-              year: 'numeric',
-            })}
-          </p>
+        <div className="flex flex-col sm:items-end gap-2">
+          <div className="text-right">
+            <p className="text-sm font-medium text-white/60 uppercase tracking-wide mb-0.5">
+              Fecha de hoy
+            </p>
+            <p className="text-xl sm:text-2xl font-bold text-[#DD7419] capitalize leading-snug">
+              {new Date().toLocaleDateString('es-CO', {
+                weekday: 'long',
+                day: '2-digit',
+                month: 'long',
+                year: 'numeric',
+              })}
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            className="gap-1.5 h-9 bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white self-start sm:self-auto"
+            onClick={() => fetchData(filters, currentPage)}
+            disabled={loading}
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            Actualizar
+          </Button>
         </div>
       </div>
 

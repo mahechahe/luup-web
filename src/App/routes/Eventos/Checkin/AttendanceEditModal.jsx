@@ -102,6 +102,10 @@ export default function AttendanceEditModal({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!form.entryTime) {
+      setError('La hora de entrada es obligatoria.');
+      return;
+    }
     setSaving(true);
     setError(null);
 
@@ -150,7 +154,7 @@ export default function AttendanceEditModal({
           {/* ¿Asistió? */}
           <div>
             <label className="block text-xs font-medium text-foreground mb-1.5">
-              ¿Asistió?
+              ¿Asistió? <span className="text-destructive">*</span>
             </label>
             <div className="flex gap-2">
               {ATTENDED_OPTIONS.map(({ value, label, activeClass }) => (
@@ -173,7 +177,7 @@ export default function AttendanceEditModal({
           {/* Hora de entrada */}
           <div>
             <label className="block text-xs font-medium text-foreground mb-1.5">
-              Hora de entrada
+              Hora de entrada <span className="text-destructive">*</span>
             </label>
             <div className="flex items-center gap-2">
               <Select

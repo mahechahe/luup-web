@@ -9,6 +9,7 @@ import {
   Loader2,
   Package,
   Plus,
+  RefreshCw,
   Trash2,
   X,
 } from 'lucide-react';
@@ -65,7 +66,12 @@ function SkeletonRow() {
 /* ── Modal confirmar eliminación ─────────────────────────── */
 function DeleteConfirmModal({ item, onConfirm, onCancel, loading }) {
   return (
-    <Dialog open={!!item} onOpenChange={(open) => { if (!open) onCancel(); }}>
+    <Dialog
+      open={!!item}
+      onOpenChange={(open) => {
+        if (!open) onCancel();
+      }}
+    >
       <DialogContent className="max-w-sm text-center" showCloseButton={false}>
         <DialogHeader className="items-center">
           <div className="w-14 h-14 rounded-full bg-destructive/10 flex items-center justify-center mb-1">
@@ -74,12 +80,19 @@ function DeleteConfirmModal({ item, onConfirm, onCancel, loading }) {
           <DialogTitle>¿Eliminar ítem?</DialogTitle>
           <DialogDescription>
             Estás a punto de eliminar{' '}
-            <span className="font-semibold text-foreground">"{item?.nombre}"</span>.
-            Esta acción no se puede deshacer.
+            <span className="font-semibold text-foreground">
+              "{item?.nombre}"
+            </span>
+            . Esta acción no se puede deshacer.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="sm:flex-row gap-2 mt-1">
-          <Button variant="outline" className="flex-1" onClick={onCancel} disabled={loading}>
+          <Button
+            variant="outline"
+            className="flex-1"
+            onClick={onCancel}
+            disabled={loading}
+          >
             Cancelar
           </Button>
           <Button
@@ -100,9 +113,9 @@ function DeleteConfirmModal({ item, onConfirm, onCancel, loading }) {
 function ItemModal({ open, item, onSave, onClose }) {
   const isEdit = !!item;
   const [form, setForm] = useState({
-    nombre:         item?.nombre         ?? '',
-    descripcion:    item?.descripcion    ?? '',
-    cantidad:       item?.cantidad       ?? '',
+    nombre: item?.nombre ?? '',
+    descripcion: item?.descripcion ?? '',
+    cantidad: item?.cantidad ?? '',
     precioUnitario: item?.precioUnitario ?? '',
   });
   const [saving, setSaving] = useState(false);
@@ -113,9 +126,9 @@ function ItemModal({ open, item, onSave, onClose }) {
     setSaving(true);
     await onSave({
       ...(isEdit ? { itemId: item.id } : {}),
-      nombre:         form.nombre.trim(),
-      descripcion:    form.descripcion.trim() || null,
-      cantidad:       parseInt(form.cantidad) || 0,
+      nombre: form.nombre.trim(),
+      descripcion: form.descripcion.trim() || null,
+      cantidad: parseInt(form.cantidad) || 0,
       precioUnitario: parseFloat(form.precioUnitario) || 0,
     });
     setSaving(false);
@@ -123,7 +136,12 @@ function ItemModal({ open, item, onSave, onClose }) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+    <Dialog
+      open={open}
+      onOpenChange={(o) => {
+        if (!o) onClose();
+      }}
+    >
       <DialogContent className="max-w-md">
         <DialogHeader>
           <div className="flex items-center gap-2">
@@ -150,7 +168,10 @@ function ItemModal({ open, item, onSave, onClose }) {
 
           <div>
             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide block mb-1.5">
-              Descripción <span className="text-muted-foreground font-normal normal-case">(opcional)</span>
+              Descripción{' '}
+              <span className="text-muted-foreground font-normal normal-case">
+                (opcional)
+              </span>
             </label>
             <input
               value={form.descripcion}
@@ -166,7 +187,8 @@ function ItemModal({ open, item, onSave, onClose }) {
                 Cantidad <span className="text-destructive">*</span>
               </label>
               <input
-                type="number" min="0"
+                type="number"
+                min="0"
                 value={form.cantidad}
                 onChange={(e) => set('cantidad', e.target.value)}
                 placeholder="0"
@@ -178,7 +200,8 @@ function ItemModal({ open, item, onSave, onClose }) {
                 Precio unitario
               </label>
               <input
-                type="number" min="0"
+                type="number"
+                min="0"
                 value={form.precioUnitario}
                 onChange={(e) => set('precioUnitario', e.target.value)}
                 placeholder="0"
@@ -210,15 +233,20 @@ function ItemModal({ open, item, onSave, onClose }) {
 export default function InventarioPage() {
   const EMPTY_FILTERS = { nombre: '', descripcion: '' };
 
-  const [items, setItems]               = useState([]);
-  const [loading, setLoading]           = useState(true);
-  const [filters, setFilters]           = useState(EMPTY_FILTERS);
-  const [drawerOpen, setDrawerOpen]     = useState(false);
-  const [sortDir, setSortDir]           = useState('');
-  const [pageSize, setPageSize]         = useState(10);
-  const [page, setPage]                 = useState(1);
-  const [pagination, setPagination]     = useState({ page: 1, limit: 10, total: 0, totalPages: 1 });
-  const [modalItem, setModalItem]       = useState(undefined);
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState(EMPTY_FILTERS);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [sortDir, setSortDir] = useState('');
+  const [pageSize, setPageSize] = useState(10);
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 1,
+  });
+  const [modalItem, setModalItem] = useState(undefined);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
@@ -247,17 +275,24 @@ export default function InventarioPage() {
   }, [page, pageSize, filters]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ── Sort (client-side sobre la página actual) ───────── */
-  const sorted = sortDir === 'asc'
-    ? [...items].sort((a, b) => a.cantidad - b.cantidad)
-    : sortDir === 'desc'
-      ? [...items].sort((a, b) => b.cantidad - a.cantidad)
-      : items;
+  const sorted =
+    sortDir === 'asc'
+      ? [...items].sort((a, b) => a.cantidad - b.cantidad)
+      : sortDir === 'desc'
+        ? [...items].sort((a, b) => b.cantidad - a.cantidad)
+        : items;
 
   const totalPages = pagination.totalPages;
-  const safePage   = Math.min(page, Math.max(1, totalPages));
+  const safePage = Math.min(page, Math.max(1, totalPages));
 
-  const handleApplyFilters = (newFilters) => { setFilters(newFilters); setPage(1); };
-  const handlePageSize = (s) => { setPageSize(s); setPage(1); };
+  const handleApplyFilters = (newFilters) => {
+    setFilters(newFilters);
+    setPage(1);
+  };
+  const handlePageSize = (s) => {
+    setPageSize(s);
+    setPage(1);
+  };
 
   /* ── CRUD ────────────────────────────────────────────── */
   const handleSave = async (data) => {
@@ -292,7 +327,6 @@ export default function InventarioPage() {
   return (
     <div className="min-h-screen bg-background px-4 py-6 pb-24">
       <div className="max-w-7xl mx-auto space-y-6">
-
         {/* ── Header ───────────────────────────────────── */}
         <div className="rounded-2xl bg-[#234465] px-6 py-5 shadow-md flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-4">
@@ -303,15 +337,21 @@ export default function InventarioPage() {
               <p className="text-xs font-semibold uppercase tracking-widest text-white/60 mb-0.5">
                 Gestión de recursos
               </p>
-              <h2 className="text-2xl font-extrabold text-white leading-tight">Inventario</h2>
-              <p className="text-sm text-white/60 mt-0.5">Gestiona los ítems y recursos de LUUP.</p>
+              <h2 className="text-2xl font-extrabold text-white leading-tight">
+                Inventario
+              </h2>
+              <p className="text-sm text-white/60 mt-0.5">
+                Gestiona los ítems y recursos de LUUP.
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
               className={`gap-1.5 h-9 border-white/20 text-white hover:bg-white/20 hover:text-white ${
-                hasActiveFilter ? 'bg-[#DD7419]/30 border-[#DD7419]/60' : 'bg-white/10'
+                hasActiveFilter
+                  ? 'bg-[#DD7419]/30 border-[#DD7419]/60'
+                  : 'bg-white/10'
               }`}
               onClick={() => setDrawerOpen(true)}
             >
@@ -321,11 +361,22 @@ export default function InventarioPage() {
               <Button
                 variant="ghost"
                 className="gap-1.5 h-9 text-white/70 hover:text-white hover:bg-white/10"
-                onClick={() => { setFilters(EMPTY_FILTERS); setPage(1); }}
+                onClick={() => {
+                  setFilters(EMPTY_FILTERS);
+                  setPage(1);
+                }}
               >
                 <X className="w-4 h-4" /> Limpiar
               </Button>
             )}
+            <Button
+              variant="outline"
+              className="gap-1.5 h-9 bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white"
+              onClick={() => doFetch({ p: page, limit: pageSize, f: filters })}
+              disabled={loading}
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Actualizar
+            </Button>
             <Button
               className="bg-[#DD7419] hover:bg-[#DD7419]/90 text-white gap-1.5 h-9 font-semibold shadow-sm"
               onClick={() => setModalItem(null)}
@@ -346,8 +397,11 @@ export default function InventarioPage() {
                 <div className="h-4 w-40 bg-muted rounded-full animate-pulse" />
               ) : (
                 <span className="text-sm text-muted-foreground">
-                  <span className="font-bold text-foreground tabular-nums">{pagination.total}</span>{' '}
-                  ítem{pagination.total !== 1 ? 's' : ''} encontrado{pagination.total !== 1 ? 's' : ''}
+                  <span className="font-bold text-foreground tabular-nums">
+                    {pagination.total}
+                  </span>{' '}
+                  ítem{pagination.total !== 1 ? 's' : ''} encontrado
+                  {pagination.total !== 1 ? 's' : ''}
                 </span>
               )}
             </div>
@@ -371,11 +425,19 @@ export default function InventarioPage() {
                     </th>
                     <th className="px-4 py-3 text-xs font-semibold text-muted-foreground uppercase border-b border-border">
                       <button
-                        onClick={() => setSortDir((p) => p === '' ? 'asc' : p === 'asc' ? 'desc' : '')}
+                        onClick={() =>
+                          setSortDir((p) =>
+                            p === '' ? 'asc' : p === 'asc' ? 'desc' : ''
+                          )
+                        }
                         className="flex items-center gap-1 hover:text-foreground transition"
                       >
                         Cantidad
-                        <ChevronDown className={`w-3.5 h-3.5 transition-transform ${sortDir === 'asc' ? 'rotate-180' : ''} ${sortDir === '' ? 'opacity-40' : ''}`} />
+                        <ChevronDown
+                          className={`w-3.5 h-3.5 transition-transform ${
+                            sortDir === 'asc' ? 'rotate-180' : ''
+                          } ${sortDir === '' ? 'opacity-40' : ''}`}
+                        />
                       </button>
                     </th>
                     <th className="px-4 py-3 text-xs font-semibold text-muted-foreground uppercase border-b border-border hidden md:table-cell">
@@ -388,19 +450,31 @@ export default function InventarioPage() {
                 </thead>
                 <tbody>
                   {loading ? (
-                    Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
+                    Array.from({ length: 5 }).map((_, i) => (
+                      <SkeletonRow key={i} />
+                    ))
                   ) : sorted.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="py-20 text-center text-muted-foreground">
-                        {hasActiveFilter ? 'No se encontraron resultados.' : 'No hay ítems registrados.'}
+                      <td
+                        colSpan={5}
+                        className="py-20 text-center text-muted-foreground"
+                      >
+                        {hasActiveFilter
+                          ? 'No se encontraron resultados.'
+                          : 'No hay ítems registrados.'}
                       </td>
                     </tr>
                   ) : (
                     sorted.map((item) => (
-                      <tr key={item.id} className="border-b border-border hover:bg-muted/30">
+                      <tr
+                        key={item.id}
+                        className="border-b border-border hover:bg-muted/30"
+                      >
                         {/* Nombre */}
                         <td className="px-4 py-3.5">
-                          <span className="font-semibold text-foreground block">{item.nombre}</span>
+                          <span className="font-semibold text-foreground block">
+                            {item.nombre}
+                          </span>
                           {item.descripcion && (
                             <span className="text-xs text-muted-foreground md:hidden block mt-0.5">
                               {item.descripcion}
@@ -415,7 +489,10 @@ export default function InventarioPage() {
 
                         {/* Cantidad */}
                         <td className="px-4 py-3.5">
-                          <Badge variant="outline" className="tabular-nums font-semibold">
+                          <Badge
+                            variant="outline"
+                            className="tabular-nums font-semibold"
+                          >
                             {item.cantidad.toLocaleString('es-CO')}
                           </Badge>
                         </td>
@@ -435,7 +512,9 @@ export default function InventarioPage() {
                               onClick={() => setModalItem(item)}
                             >
                               <Edit2 className="w-3.5 h-3.5" />
-                              <span className="hidden md:inline ml-1">Editar</span>
+                              <span className="hidden md:inline ml-1">
+                                Editar
+                              </span>
                             </Button>
                             <Button
                               variant="outline"
@@ -444,7 +523,9 @@ export default function InventarioPage() {
                               onClick={() => setDeleteTarget(item)}
                             >
                               <Trash2 className="w-3.5 h-3.5" />
-                              <span className="hidden md:inline ml-1">Eliminar</span>
+                              <span className="hidden md:inline ml-1">
+                                Eliminar
+                              </span>
                             </Button>
                           </div>
                         </td>
@@ -465,7 +546,9 @@ export default function InventarioPage() {
                     –{Math.min(safePage * pageSize, pagination.total)}
                   </span>{' '}
                   de{' '}
-                  <span className="font-medium text-foreground">{pagination.total}</span>{' '}
+                  <span className="font-medium text-foreground">
+                    {pagination.total}
+                  </span>{' '}
                   registros
                 </span>
 
@@ -503,7 +586,9 @@ export default function InventarioPage() {
                       size="icon"
                       className="h-8 w-8"
                       disabled={safePage === totalPages}
-                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                      onClick={() =>
+                        setPage((p) => Math.min(totalPages, p + 1))
+                      }
                     >
                       <ChevronRight className="w-4 h-4" />
                     </Button>

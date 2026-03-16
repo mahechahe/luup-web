@@ -32,6 +32,7 @@ const EMPTY_FILTERS = {
   phone: '',
   username: '',
   gender: '',
+  isActive: '',
 };
 
 /**
@@ -54,6 +55,7 @@ export function FilterDrawer({ open, onClose, onApply, activeFilters }) {
     const payload = Object.fromEntries(
       Object.entries(local).filter(([, v]) => v !== '')
     );
+    if (payload.isActive !== undefined) payload.isActive = Number(payload.isActive);
     onApply(payload);
     onClose();
   }
@@ -164,6 +166,25 @@ export function FilterDrawer({ open, onClose, onApply, activeFilters }) {
                     {opt.label}
                   </SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Estado */}
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium">Estado</Label>
+            <Select
+              value={local.isActive}
+              onValueChange={(val) =>
+                setLocal((prev) => ({ ...prev, isActive: val }))
+              }
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Todos los estados" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">Activo</SelectItem>
+                <SelectItem value="0">Inactivo</SelectItem>
               </SelectContent>
             </Select>
           </div>

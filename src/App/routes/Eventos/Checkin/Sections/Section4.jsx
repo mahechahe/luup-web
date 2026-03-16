@@ -12,6 +12,7 @@ import {
   IdCard,
   Package,
   PackageOpen,
+  RefreshCw,
   Search,
   Shirt,
   User,
@@ -470,11 +471,11 @@ export const Section4 = ({ eventId }) => {
     setCurrentPage(1);
   };
 
-  useEffect(() => {
+  const fetchData = (currentFilters = filters, page = currentPage) => {
     setLoading(true);
     getStation3RecordsService(eventId, {
-      ...filters,
-      page: currentPage,
+      ...currentFilters,
+      page,
       limit: pageSize,
     }).then((res) => {
       if (res.status && res.data) {
@@ -490,7 +491,11 @@ export const Section4 = ({ eventId }) => {
       }
       setLoading(false);
     });
-  }, [eventId, filters, currentPage, pageSize]);
+  };
+
+  useEffect(() => {
+    fetchData(filters, currentPage);
+  }, [eventId, filters, currentPage, pageSize]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const hasActiveFilters = filterInput.name !== '' || filterInput.cedula !== '';
   const { total, totalPages } = pagination;
@@ -535,13 +540,24 @@ export const Section4 = ({ eventId }) => {
               })}
             </p>
           </div>
-          <button
-            onClick={() => setHistoryOpen(true)}
-            className="flex items-center gap-1.5 self-end text-xs font-semibold text-white/80 hover:text-white bg-white/10 hover:bg-white/20 border border-white/20 px-3 py-1.5 rounded-lg transition"
-          >
-            <History className="w-3.5 h-3.5" />
-            Ver histórico de check-in
-          </button>
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <Button
+              variant="outline"
+              className="gap-1.5 h-9 bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white"
+              onClick={() => fetchData(filters, currentPage)}
+              disabled={loading}
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              Actualizar
+            </Button>
+            <button
+              onClick={() => setHistoryOpen(true)}
+              className="flex items-center gap-1.5 text-xs font-semibold text-white/80 hover:text-white bg-white/10 hover:bg-white/20 border border-white/20 px-3 py-1.5 rounded-lg transition h-9"
+            >
+              <History className="w-3.5 h-3.5" />
+              Ver histórico
+            </button>
+          </div>
         </div>
       </div>
 

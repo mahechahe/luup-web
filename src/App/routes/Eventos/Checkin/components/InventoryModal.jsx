@@ -7,6 +7,7 @@ import {
   Package,
   PackageOpen,
   Plus,
+  RefreshCw,
   Search,
   X,
 } from 'lucide-react';
@@ -86,20 +87,21 @@ export function InventoryModal({
     setSaving(false);
   };
 
-  useEffect(() => {
-    if (!open) return;
+  const fetchData = (page = currentPage, nombre = search) => {
     setLoading(true);
-    getInventoryListService({
-      page: currentPage,
-      nombre: search || undefined,
-    }).then((res) => {
+    getInventoryListService({ page, nombre: nombre || undefined }).then((res) => {
       if (res.status) {
         setItems(res.items);
         setPagination(res.pagination);
       }
       setLoading(false);
     });
-  }, [open, search, currentPage]);
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    fetchData(currentPage, search);
+  }, [open, search, currentPage]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSearch = () => {
     setSearch(searchInput);
@@ -140,12 +142,22 @@ export function InventoryModal({
               </p>
             </DialogHeader>
           </div>
-          <button
-            onClick={() => onOpenChange(false)}
-            className="w-8 h-8 rounded-lg hover:bg-muted flex items-center justify-center transition text-muted-foreground shrink-0"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => fetchData(currentPage, search)}
+              disabled={loading}
+              className="w-8 h-8 rounded-lg hover:bg-muted flex items-center justify-center transition text-muted-foreground shrink-0 disabled:opacity-50"
+              title="Actualizar"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            </button>
+            <button
+              onClick={() => onOpenChange(false)}
+              className="w-8 h-8 rounded-lg hover:bg-muted flex items-center justify-center transition text-muted-foreground shrink-0"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         {/* Buscador */}

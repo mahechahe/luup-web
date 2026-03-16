@@ -6,6 +6,7 @@ import {
   Filter,
   Pencil,
   Plus,
+  RefreshCw,
   X,
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
@@ -290,6 +291,14 @@ function EventosPage() {
                 <X className="w-4 h-4" /> Limpiar
               </Button>
             )}
+            <Button
+              variant="outline"
+              className="gap-1.5 h-9 bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white"
+              onClick={() => fetchData(pagination.page, activeFilters)}
+              disabled={loading}
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Actualizar
+            </Button>
           </div>
         </div>
 
