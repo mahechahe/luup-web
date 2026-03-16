@@ -393,7 +393,6 @@ export function AttendanceHistoryModal({ open, onClose, eventId }) {
       if (f.name) body.name = f.name;
       if (f.cedula) body.cedula = f.cedula;
       const res = await getAttendanceHistoryService(body);
-      console.log('res', res);
 
       if (res.status) {
         setCollaborators(res.data?.data?.collaborators ?? []);

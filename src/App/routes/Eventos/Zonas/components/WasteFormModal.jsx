@@ -31,8 +31,6 @@ export function WasteFormModal({ open, onClose, zone, onSave }) {
 
   const cameraInputRef = useRef(null);
 
-  console.log('form', form);
-
   const weightRequired = form.quantity > 0;
   const isValid =
     (form.quantity === 0 && imageFile !== null) ||
