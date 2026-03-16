@@ -578,3 +578,18 @@ export const transferPersonZoneService = async ({
     };
   }
 };
+
+export const getAttendanceHistoryService = async (body) => {
+  try {
+    const { data } = await axios.post(`${EVENTS_URL}/attendance/history`, body);
+    return { status: true, data: data?.data, errors: null };
+  } catch (error) {
+    return {
+      status: false,
+      data: null,
+      errors:
+        error?.response?.data?.message ||
+        'Error al obtener el histórico de asistencia.',
+    };
+  }
+};

@@ -33,6 +33,7 @@ import { CreateCollaboratorDrawer } from './components/CreateCollaboratorDrawer'
 import { EditCollaboratorDrawer } from './components/EditCollaboratorDrawer';
 import { FilterDrawer } from './components/FilterDrawer';
 
+import { getRoleLabel } from '@/App/utils/roles';
 import * as ColabServices from './services/collaboratorServices';
 
 const DEFAULT_LIMIT = 10;
@@ -68,24 +69,22 @@ function genderBadgeClass(gender) {
 function SkeletonRow() {
   return (
     <tr className="border-b border-border animate-pulse">
-      <td className="px-4 py-3.5">
-        <div className="h-3.5 bg-muted rounded-full w-24 mb-1.5" />
-        <div className="h-3 bg-muted rounded-full w-16" />
+      <td className="px-4 py-3.5 min-w-[200px]">
+        <div className="h-3.5 bg-muted rounded-full w-32 mb-1.5" />
+        <div className="h-3 bg-muted rounded-full w-20" />
       </td>
       <td className="px-4 py-3.5 hidden md:table-cell">
         <div className="h-3.5 bg-muted rounded-full w-24" />
       </td>
       <td className="px-4 py-3.5 hidden md:table-cell">
-        <div className="h-3.5 bg-muted rounded-full w-32" />
+        <div className="h-3.5 bg-muted rounded-full w-32 mb-1.5" />
+        <div className="h-3 bg-muted rounded-full w-24" />
       </td>
       <td className="px-4 py-3.5 hidden md:table-cell">
         <div className="h-3.5 bg-muted rounded-full w-8" />
       </td>
       <td className="px-4 py-3.5 hidden md:table-cell">
         <div className="h-3.5 bg-muted rounded-full w-16" />
-      </td>
-      <td className="px-4 py-3.5 hidden md:table-cell">
-        <div className="h-3.5 bg-muted rounded-full w-24" />
       </td>
       <td className="px-4 py-3.5 hidden md:table-cell">
         <div className="h-3.5 bg-muted rounded-full w-20" />
@@ -321,23 +320,20 @@ function ColaboradoresPage() {
               <table className="w-full text-sm text-left">
                 <thead className="bg-muted/40">
                   <tr>
-                    <th className="px-4 py-3 text-xs font-semibold text-muted-foreground uppercase border-b border-border">
+                    <th className="px-4 py-3 text-xs font-semibold text-muted-foreground uppercase border-b border-border min-w-[200px]">
                       Nombre
                     </th>
                     <th className="px-4 py-3 text-xs font-semibold text-muted-foreground uppercase border-b border-border hidden md:table-cell">
                       Documento
                     </th>
                     <th className="px-4 py-3 text-xs font-semibold text-muted-foreground uppercase border-b border-border hidden md:table-cell">
-                      Email
+                      Contacto
                     </th>
                     <th className="px-4 py-3 text-xs font-semibold text-muted-foreground uppercase border-b border-border hidden md:table-cell">
                       Edad
                     </th>
                     <th className="px-4 py-3 text-xs font-semibold text-muted-foreground uppercase border-b border-border hidden md:table-cell">
                       Género
-                    </th>
-                    <th className="px-4 py-3 text-xs font-semibold text-muted-foreground uppercase border-b border-border hidden md:table-cell">
-                      Celular
                     </th>
                     <th className="px-4 py-3 text-xs font-semibold text-muted-foreground uppercase border-b border-border hidden md:table-cell">
                       Fecha Creación
@@ -355,7 +351,7 @@ function ColaboradoresPage() {
                   ) : users.length === 0 ? (
                     <tr>
                       <td
-                        colSpan={8}
+                        colSpan={7}
                         className="py-20 text-center text-muted-foreground"
                       >
                         No se encontraron datos.
@@ -367,15 +363,13 @@ function ColaboradoresPage() {
                         key={u.userId}
                         className="border-b border-border hover:bg-muted/30"
                       >
-                        <td className="px-4 py-3.5">
+                        <td className="px-4 py-3.5 min-w-[200px]">
                           <span className="font-semibold text-foreground block">
                             {u.firstName} {u.lastName}
                           </span>
-                          {u.phone && (
-                            <span className="text-xs text-muted-foreground md:hidden block mt-0.5">
-                              {u.phone}
-                            </span>
-                          )}
+                          <span className="text-xs text-muted-foreground block mt-0.5">
+                            {getRoleLabel(u.roleId)}
+                          </span>
                         </td>
                         <td className="px-4 py-3.5 whitespace-nowrap hidden md:table-cell">
                           <Badge variant="outline" className="mr-2">
@@ -383,8 +377,13 @@ function ColaboradoresPage() {
                           </Badge>
                           <span className="text-xs">{u.username}</span>
                         </td>
-                        <td className="px-4 py-3.5 text-muted-foreground hidden md:table-cell">
-                          {u.email ?? '—'}
+                        <td className="px-4 py-3.5 hidden md:table-cell">
+                          <span className="text-sm text-foreground block">
+                            {u.email ?? '—'}
+                          </span>
+                          <span className="text-xs text-muted-foreground block mt-0.5">
+                            {u.phone ?? '—'}
+                          </span>
                         </td>
                         <td className="px-4 py-3.5 font-medium hidden md:table-cell">
                           {u.age ?? '—'}
@@ -397,9 +396,6 @@ function ColaboradoresPage() {
                           >
                             {genderLabel(u.gender)}
                           </Badge>
-                        </td>
-                        <td className="px-4 py-3.5 text-muted-foreground hidden md:table-cell">
-                          {u.phone}
                         </td>
                         <td className="px-4 py-3.5 text-muted-foreground hidden md:table-cell">
                           {formatDate(u.createdAt)}

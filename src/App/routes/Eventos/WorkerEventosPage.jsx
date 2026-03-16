@@ -23,6 +23,13 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import {
   getWorkerCurrentEventService,
   getWorkerEventHistoryService,
   getWorkerAttendanceService,
@@ -151,34 +158,25 @@ function EventDetailModal({ event, onClose }) {
     });
   }, [event]);
 
-  if (!event) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full sm:max-w-lg bg-white sm:rounded-2xl rounded-t-2xl shadow-xl overflow-hidden">
-
-        {/* Header */}
-        <div className="flex items-start justify-between gap-3 px-5 pt-5 pb-4 border-b border-border">
-          <div>
-            <p className="text-xs font-semibold text-brand uppercase tracking-wide mb-0.5">Detalle del evento</p>
-            <h3 className="text-lg font-bold text-foreground leading-tight">{event.name}</h3>
+    <Dialog open={!!event} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-lg max-h-[90dvh] flex flex-col gap-0 p-0">
+        <DialogHeader className="px-5 pt-5 pb-4 border-b border-border shrink-0">
+          <p className="text-xs font-semibold text-brand uppercase tracking-wide mb-0.5">Detalle del evento</p>
+          <DialogTitle className="leading-tight">{event?.name}</DialogTitle>
+          <DialogDescription asChild>
             <div className="flex items-center gap-3 mt-1 flex-wrap">
               <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                <MapPin className="w-3 h-3" />{event.location ?? '—'}
+                <MapPin className="w-3 h-3" />{event?.location ?? '—'}
               </span>
               <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Calendar className="w-3 h-3" /><EventDateDisplay event={event} />
+                <Calendar className="w-3 h-3" />{event && <EventDateDisplay event={event} />}
               </span>
             </div>
-          </div>
-          <button onClick={onClose} className="h-8 w-8 rounded-lg border border-border flex items-center justify-center text-muted-foreground hover:bg-muted shrink-0">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
+          </DialogDescription>
+        </DialogHeader>
 
-        {/* Body */}
-        <div className="px-5 py-4 space-y-4 max-h-[70vh] overflow-y-auto">
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
           {loading ? (
             <div className="space-y-3 animate-pulse">
               <div className="h-6 bg-muted rounded-full w-28" />
@@ -190,18 +188,18 @@ function EventDetailModal({ event, onClose }) {
             <p className="text-sm text-muted-foreground text-center py-8">No se encontró información de asistencia.</p>
           ) : (
             <>
-              <RoleBadge role={event.role} />
+              <RoleBadge role={event?.role} />
 
               {/* Bloque asistencia */}
               <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-3">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Asistencia</p>
 
                 {detail.attended === true ? (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-semibold">
                     <Check className="w-3.5 h-3.5" /> Asistió
                   </span>
                 ) : detail.attended === false ? (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-50 text-red-600 border border-red-200 text-xs font-semibold">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 text-xs font-semibold">
                     <X className="w-3.5 h-3.5" /> No asistió
                   </span>
                 ) : (
@@ -212,8 +210,8 @@ function EventDetailModal({ event, onClose }) {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center shrink-0">
-                      <LogIn className="w-4 h-4 text-emerald-700" />
+                    <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center shrink-0">
+                      <LogIn className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
                     </div>
                     <div>
                       <p className="text-[10px] text-muted-foreground font-medium">Entrada</p>
@@ -221,8 +219,8 @@ function EventDetailModal({ event, onClose }) {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center shrink-0">
-                      <LogOut className="w-4 h-4 text-red-600" />
+                    <div className="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-900/40 flex items-center justify-center shrink-0">
+                      <LogOut className="w-4 h-4 text-red-600 dark:text-red-400" />
                     </div>
                     <div>
                       <p className="text-[10px] text-muted-foreground font-medium">Salida</p>
@@ -251,9 +249,9 @@ function EventDetailModal({ event, onClose }) {
                 ) : (
                   <div className="space-y-2">
                     {detail.incidents.map((inc) => (
-                      <div key={inc.id} className="rounded-xl border border-border bg-white p-3 flex items-start gap-3">
-                        <div className="w-7 h-7 rounded-lg bg-amber-100 flex items-center justify-center shrink-0 mt-0.5">
-                          <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                      <div key={inc.id} className="rounded-xl border border-border bg-card p-3 flex items-start gap-3">
+                        <div className="w-7 h-7 rounded-lg bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center shrink-0 mt-0.5">
+                          <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-2">
@@ -270,8 +268,8 @@ function EventDetailModal({ event, onClose }) {
             </>
           )}
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -473,9 +471,7 @@ function WorkerEventosPage() {
         </Card>
       </div>
 
-      {selectedEvent && (
-        <EventDetailModal event={selectedEvent} onClose={() => setSelectedEvent(null)} />
-      )}
+      <EventDetailModal event={selectedEvent} onClose={() => setSelectedEvent(null)} />
     </div>
   );
 }

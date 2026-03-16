@@ -435,7 +435,7 @@ export function ZonesCanvas({
       {/* Empty state — sin plano cargado */}
       {!loading && !planImage && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-          <div className="pointer-events-auto flex flex-col items-center gap-4 bg-white/90 backdrop-blur-sm border border-border rounded-2xl shadow-lg px-10 py-8 text-center max-w-xs">
+          <div className="pointer-events-auto flex flex-col items-center gap-4 bg-card/95 backdrop-blur-sm border border-border rounded-2xl shadow-lg px-10 py-8 text-center max-w-xs">
             <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center">
               <ImageOff className="w-7 h-7 text-muted-foreground" />
             </div>

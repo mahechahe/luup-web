@@ -4,17 +4,27 @@ import { Calendar, Home, Package, UserCheck } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 
 const NAV_ITEMS = [
-  { label: 'Inicio',        path: '/dashboard',    icon: Home,      adminOnly: false },
-  { label: 'Eventos',       path: '/eventos/listado', icon: Calendar, adminOnly: false },
-  { label: 'Inventario',    path: '/inventario',   icon: Package,   adminOnly: true  },
-  { label: 'Colaboradores', path: '/colaboradores', icon: UserCheck, adminOnly: true  },
+  { label: 'Inicio', path: '/dashboard', icon: Home, adminOnly: false },
+  {
+    label: 'Eventos',
+    path: '/eventos/listado',
+    icon: Calendar,
+    adminOnly: false,
+  },
+  { label: 'Inventario', path: '/inventario', icon: Package, adminOnly: true },
+  {
+    label: 'Colaboradores',
+    path: '/colaboradores',
+    icon: UserCheck,
+    adminOnly: true,
+  },
 ];
 
 export default function BottomNav() {
   const { user } = useUserStore();
-  const isStrictAdmin = user?.roleId === 1;
-
-  const visibleItems = NAV_ITEMS.filter(item => !item.adminOnly || isStrictAdmin);
+  const visibleItems = NAV_ITEMS.filter(
+    (item) => !item.adminOnly || hasAdminAccess(user?.roleId)
+  );
 
   return (
     <nav
@@ -50,9 +60,16 @@ export default function BottomNav() {
                       isActive ? 'bg-brand/10' : ''
                     }`}
                   >
-                    <Icon className="w-5 h-5" strokeWidth={isActive ? 2.5 : 1.8} />
+                    <Icon
+                      className="w-5 h-5"
+                      strokeWidth={isActive ? 2.5 : 1.8}
+                    />
                   </span>
-                  <span className={`text-[11px] leading-none font-medium transition-all duration-200 ${isActive ? 'font-semibold' : ''}`}>
+                  <span
+                    className={`text-[11px] leading-none font-medium transition-all duration-200 ${
+                      isActive ? 'font-semibold' : ''
+                    }`}
+                  >
                     {label}
                   </span>
                 </>

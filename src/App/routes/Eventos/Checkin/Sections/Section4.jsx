@@ -8,6 +8,7 @@ import {
   Clock,
   Cookie,
   DoorOpen,
+  History,
   IdCard,
   Package,
   PackageOpen,
@@ -19,6 +20,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getStation3RecordsService } from '../../services/eventServices';
+import { AttendanceHistoryModal } from '../components/AttendanceHistoryModal';
 import { CheckoutModal } from '../components/CheckoutModal';
 
 const PAGE_SIZE = 25;
@@ -245,7 +247,8 @@ function CollabCheckoutCard({ collab, onCheckout }) {
                   const used = item.usedQuantity ?? 0;
                   const damaged = item.damagedQuantity ?? 0;
                   const pending =
-                    item.pendingQuantity ?? item.quantity - returned - used - damaged;
+                    item.pendingQuantity ??
+                    item.quantity - returned - used - damaged;
                   const complete = pending === 0;
                   return (
                     <div
@@ -301,7 +304,10 @@ function CollabCheckoutCard({ collab, onCheckout }) {
                           {
                             label: 'Dañado',
                             value: damaged,
-                            color: damaged > 0 ? 'text-destructive' : 'text-muted-foreground',
+                            color:
+                              damaged > 0
+                                ? 'text-destructive'
+                                : 'text-muted-foreground',
                           },
                           {
                             label: 'Pendiente',
@@ -414,6 +420,7 @@ export const Section4 = ({ eventId }) => {
   const pageSize = PAGE_SIZE;
   const [checkoutCollab, setCheckoutCollab] = useState(null);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   const handleOpenCheckout = (collab) => {
     setCheckoutCollab(collab);
@@ -498,6 +505,11 @@ export const Section4 = ({ eventId }) => {
         collab={checkoutCollab}
         onCheckedOut={handleCheckedOut}
       />
+      <AttendanceHistoryModal
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        eventId={Number(eventId)}
+      />
 
       {/* Banner */}
       <div className="rounded-2xl bg-[#234465] px-6 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-md">
@@ -509,18 +521,27 @@ export const Section4 = ({ eventId }) => {
             Check-out
           </h2>
         </div>
-        <div className="text-right">
-          <p className="text-sm font-medium text-white/60 uppercase tracking-wide mb-0.5">
-            Fecha de hoy
-          </p>
-          <p className="text-xl sm:text-2xl font-bold text-[#DD7419] capitalize leading-snug">
-            {new Date().toLocaleDateString('es-CO', {
-              weekday: 'long',
-              day: '2-digit',
-              month: 'long',
-              year: 'numeric',
-            })}
-          </p>
+        <div className="flex flex-col sm:items-end gap-2">
+          <div className="text-right">
+            <p className="text-sm font-medium text-white/60 uppercase tracking-wide mb-0.5">
+              Fecha de hoy
+            </p>
+            <p className="text-xl sm:text-2xl font-bold text-[#DD7419] capitalize leading-snug">
+              {new Date().toLocaleDateString('es-CO', {
+                weekday: 'long',
+                day: '2-digit',
+                month: 'long',
+                year: 'numeric',
+              })}
+            </p>
+          </div>
+          <button
+            onClick={() => setHistoryOpen(true)}
+            className="flex items-center gap-1.5 self-end text-xs font-semibold text-white/80 hover:text-white bg-white/10 hover:bg-white/20 border border-white/20 px-3 py-1.5 rounded-lg transition"
+          >
+            <History className="w-3.5 h-3.5" />
+            Ver histórico de check-in
+          </button>
         </div>
       </div>
 

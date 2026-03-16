@@ -18,6 +18,6 @@ export const hasAdminAccess = (roleId) =>
 /** Etiqueta legible del roleId */
 export const getRoleLabel = (roleId) => {
   if (roleId === ROLE_IDS.ADMIN) return 'Administrador';
-  if (roleId === ROLE_IDS.SUPER_ADMIN) return 'Super Administrador';
-  return 'Colaborador';
+  if (roleId === ROLE_IDS.SUPER_ADMIN) return 'SuperAdministrador';
+  return 'Trabajador';
 };

@@ -36,7 +36,7 @@ function AttendanceCard({ attendance, loading }) {
   const incidents = attendance?.incidents ?? [];
 
   return (
-    <Card className={`shadow-sm ${attended ? 'border-emerald-200 bg-emerald-50/50' : 'border-border'}`}>
+    <Card className={`shadow-sm ${attended ? 'border-emerald-200 bg-emerald-50/50 dark:border-emerald-800 dark:bg-emerald-900/20' : 'border-border'}`}>
       <CardContent className="p-6">
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
           Tu estado en el evento
@@ -77,7 +77,7 @@ function AttendanceCard({ attendance, loading }) {
             </p>
             <div className="flex flex-wrap gap-2">
               {incidents.map((inc) => (
-                <div key={inc.id} className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-border text-xs text-foreground">
+                <div key={inc.id} className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-card border border-border text-xs text-foreground">
                   <span className="font-medium">{inc.name}</span>
                   <span className="text-muted-foreground">· {inc.time}</span>
                 </div>
@@ -192,7 +192,7 @@ export default function WorkerEventoModulesPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b border-border bg-white px-6 py-4">
+      <header className="border-b border-border bg-card px-6 py-4">
         <div className="max-w-3xl mx-auto flex items-center gap-4">
           <button
             onClick={() => navigate('/eventos/mis-eventos')}
@@ -253,13 +253,13 @@ export default function WorkerEventoModulesPage() {
                     <button
                       key={module.id}
                       onClick={() => navigate(module.path)}
-                      className="group relative bg-white rounded-2xl p-6 shadow-sm border-2 border-transparent hover:border-[#234465] hover:shadow-md transition-all duration-300 text-left flex items-center gap-4"
+                      className="group relative bg-card rounded-2xl p-6 shadow-sm border-2 border-transparent hover:border-[#234465] dark:hover:border-[#7493B2] hover:shadow-md transition-all duration-300 text-left flex items-center gap-4"
                     >
                       <div className={`w-12 h-12 rounded-xl ${module.color} flex items-center justify-center shrink-0 transition-transform group-hover:scale-110 duration-300`}>
                         <module.icon className="w-6 h-6 text-white" />
                       </div>
                       <div>
-                        <h3 className="text-base font-bold text-foreground group-hover:text-[#234465] transition-colors">
+                        <h3 className="text-base font-bold text-foreground group-hover:text-[#234465] dark:group-hover:text-[#7493B2] transition-colors">
                           {module.title}
                         </h3>
                         <p className="text-sm text-muted-foreground leading-relaxed">

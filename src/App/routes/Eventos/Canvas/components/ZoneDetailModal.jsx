@@ -1,4 +1,5 @@
 import {
+  ArrowLeftRight,
   Crown,
   Package,
   Plus,
@@ -328,7 +329,9 @@ export function ZoneDetailModal({
                 <PeopleSubsection
                   label="Supervisor de Zona"
                   sublabel="Responsable únicamente de su zona asignada"
-                  icon={<Shield className="w-3.5 h-3.5 text-[#234465] dark:text-[#7493B2]" />}
+                  icon={
+                    <Shield className="w-3.5 h-3.5 text-muted-foreground" />
+                  }
                   accentColor="#234465"
                   colorClass="text-[#234465] dark:text-[#7493B2]"
                   people={supervisores}
@@ -347,8 +350,10 @@ export function ZoneDetailModal({
                   people={colaboradores}
                   isAdmin={isAdmin}
                   canAdd={true}
+                  canTransfer={true}
                   onAdd={() => setModalRole('colaborador')}
                   onRemove={(personId) => onRemovePerson(zone.id, personId)}
+                  onTransfer={(personId) => onAddPeople(zone.id, personId)}
                 />
               </div>
             </div>
@@ -385,8 +390,10 @@ function PeopleSubsection({
   people,
   isAdmin,
   canAdd,
+  canTransfer = false,
   onAdd,
   onRemove,
+  onTransfer,
 }) {
   return (
     <div
@@ -396,8 +403,12 @@ function PeopleSubsection({
       <div className="flex items-start justify-between mb-2">
         <div>
           <h4
-            className={`text-xs font-bold uppercase flex items-center gap-1.5 ${colorClass ?? 'text-muted-foreground'}`}
-            style={!colorClass && accentColor ? { color: accentColor } : undefined}
+            className={`text-xs font-bold uppercase flex items-center gap-1.5 ${
+              colorClass ?? 'text-muted-foreground'
+            }`}
+            style={
+              !colorClass && accentColor ? { color: accentColor } : undefined
+            }
           >
             {icon} {label}
           </h4>
@@ -410,8 +421,16 @@ function PeopleSubsection({
         {isAdmin && canAdd && (
           <button
             onClick={onAdd}
-            className="flex items-center gap-1 text-xs font-semibold shrink-0 transition"
-            style={{ color: accentColor ?? '#234465' }}
+            className={`flex items-center gap-1 text-xs font-semibold shrink-0 transition ${
+              !accentColor || accentColor === '#234465'
+                ? 'text-[#234465] dark:text-[#7493B2]'
+                : ''
+            }`}
+            style={
+              accentColor && accentColor !== '#234465'
+                ? { color: accentColor }
+                : undefined
+            }
           >
             <Plus className="w-3.5 h-3.5" /> Agregar
           </button>
@@ -431,12 +450,23 @@ function PeopleSubsection({
               )}
             </div>
             {isAdmin && (
-              <button
-                onClick={() => onRemove(p.id)}
-                className="text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition shrink-0 ml-2"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
+              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition shrink-0 ml-2">
+                {canTransfer && (
+                  <button
+                    onClick={() => onTransfer(p.id)}
+                    className="text-muted-foreground hover:text-[#234465] dark:hover:text-[#7493B2] transition"
+                    title="Trasladar"
+                  >
+                    <ArrowLeftRight className="w-3.5 h-3.5" />
+                  </button>
+                )}
+                <button
+                  onClick={() => onRemove(p.id)}
+                  className="text-muted-foreground hover:text-destructive transition"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
             )}
           </div>
         ))}

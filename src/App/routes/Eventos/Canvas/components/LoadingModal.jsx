@@ -5,7 +5,7 @@ export function LoadingModal({
 }) {
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl px-8 py-10 flex flex-col items-center gap-6 max-w-md">
+      <div className="bg-card rounded-2xl shadow-2xl px-8 py-10 flex flex-col items-center gap-6 max-w-md border border-border">
         <div className="relative">
           {/* Círculo animado externo */}
           <div className="absolute inset-0 rounded-full border-4 border-[#234465]/20 animate-ping" />
