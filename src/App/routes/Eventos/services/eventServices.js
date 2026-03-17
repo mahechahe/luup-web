@@ -206,16 +206,18 @@ export const createWasteEntryService = async (zoneId, body) => {
 
     if (body.file) {
       payload = new FormData();
-      payload.append('quantity', body.quantity);
+      if (body.quantity != null) payload.append('quantity', body.quantity);
       if (body.weightKg != null) payload.append('weightKg', body.weightKg);
-      if (body.note) payload.append('note', body.note);
+      if (body.bagColor)         payload.append('bagColor', body.bagColor);  // ← nuevo
+      if (body.note)             payload.append('note', body.note);
       payload.append('file', body.file);
       headers = { 'Content-Type': 'multipart/form-data' };
     } else {
       payload = {
-        quantity: body.quantity,
-        weightKg: body.weightKg ?? null,
-        note: body.note ?? null,
+        quantity:  body.quantity  ?? null,
+        weightKg:  body.weightKg  ?? null,
+        bagColor:  body.bagColor  ?? null,  // ← nuevo
+        note:      body.note      ?? null,
       };
     }
 
