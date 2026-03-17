@@ -20,7 +20,14 @@ import { createWasteEntryService } from '../../services/eventServices';
 const QTY_PRESETS = [5, 10, 20, 50];
 const KG_PRESETS = [5, 10, 25, 50];
 
-const RESET_FORM = { quantity: 0, weightKg: '', note: '' };
+const BAG_COLORS = [
+  { id: 'verde',  hex: '#22c55e', label: 'Verde' },
+  { id: 'blanco', hex: '#f1f5f9', label: 'Blanco', border: true },
+  { id: 'negra',  hex: '#1e293b', label: 'Negra' },
+  { id: 'roja',   hex: '#ef4444', label: 'Roja' },
+];
+
+const RESET_FORM = { quantity: 0, weightKg: '', note: '', bagColor: null };
 
 export function WasteFormModal({ open, onClose, zone, onSave }) {
   const [form, setForm] = useState(RESET_FORM);
@@ -31,10 +38,20 @@ export function WasteFormModal({ open, onClose, zone, onSave }) {
 
   const cameraInputRef = useRef(null);
 
-  const weightRequired = form.quantity > 0;
-  const isValid =
-    (form.quantity === 0 && imageFile !== null) ||
-    (form.quantity > 0 && form.weightKg !== '');
+  // ¿El usuario ha tocado alguno de los 3 campos?
+  const anyFieldFilled =
+    form.quantity > 0 ||
+    form.weightKg !== '' ||
+    form.bagColor !== null;
+
+  // Si tocó algo → los 3 son obligatorios, foto opcional
+  // Si no tocó nada → foto obligatoria
+  const fieldsRequired = anyFieldFilled;
+  const photoRequired = !anyFieldFilled;
+
+  const isValid = anyFieldFilled
+    ? form.quantity > 0 && form.weightKg !== '' && form.bagColor !== null
+    : imageFile !== null;
 
   const addQty = (n) =>
     setForm((f) => ({ ...f, quantity: Math.max(0, f.quantity + n) }));
@@ -67,6 +84,7 @@ export function WasteFormModal({ open, onClose, zone, onSave }) {
     const res = await createWasteEntryService(zone.id, {
       quantity: form.quantity,
       weightKg: form.weightKg !== '' ? parseFloat(form.weightKg) : null,
+      bagColor: form.bagColor ?? null,
       note: form.note.trim() || null,
       file: imageFile ?? undefined,
     });
@@ -118,12 +136,52 @@ export function WasteFormModal({ open, onClose, zone, onSave }) {
           className="flex flex-col flex-1 overflow-y-auto"
         >
           <div className="px-5 space-y-5 pb-5">
+
+            {/* ── Color de bolsa ── */}
+            <div>
+              <p className="text-xs font-semibold text-foreground mb-3">
+                Color de bolsa{' '}
+                {fieldsRequired
+                  ? <span className="text-destructive">*</span>
+                  : <span className="font-normal text-muted-foreground">(opcional)</span>
+                }
+              </p>
+              <div className="flex items-center gap-3">
+                {BAG_COLORS.map((color) => (
+                  <button
+                    key={color.id}
+                    type="button"
+                    onClick={() =>
+                      setForm((f) => ({
+                        ...f,
+                        bagColor: f.bagColor === color.id ? null : color.id,
+                      }))
+                    }
+                    title={color.label}
+                    className={`w-12 h-12 rounded-xl transition-all shrink-0 ${
+                      color.border ? 'border border-slate-200 dark:border-slate-600' : ''
+                    } ${
+                      form.bagColor === color.id
+                        ? 'ring-4 ring-offset-2 ring-[#DD7419] scale-110 shadow-md'
+                        : 'hover:scale-105 hover:shadow-sm'
+                    }`}
+                    style={{ backgroundColor: color.hex }}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className="border-t border-border" />
+
             {/* ── Cantidad ── */}
             <div>
               <div className="flex items-center justify-between mb-3">
                 <p className="text-xs font-semibold text-foreground">
                   Cantidad de basuras{' '}
-                  <span className="text-destructive">*</span>
+                  {fieldsRequired
+                    ? <span className="text-destructive">*</span>
+                    : <span className="font-normal text-muted-foreground">(opcional)</span>
+                  }
                 </p>
                 {form.quantity > 0 && (
                   <button
@@ -137,7 +195,6 @@ export function WasteFormModal({ open, onClose, zone, onSave }) {
                 )}
               </div>
 
-              {/* Counter */}
               <div className="flex items-center justify-between gap-3 mb-3">
                 <button
                   type="button"
@@ -166,7 +223,6 @@ export function WasteFormModal({ open, onClose, zone, onSave }) {
                 </button>
               </div>
 
-              {/* Quick-add */}
               <div className="grid grid-cols-4 gap-2">
                 {QTY_PRESETS.map((n) => (
                   <button
@@ -188,13 +244,10 @@ export function WasteFormModal({ open, onClose, zone, onSave }) {
               <div className="flex items-center justify-between mb-3">
                 <p className="text-xs font-semibold text-foreground">
                   Peso{' '}
-                  {weightRequired ? (
-                    <span className="text-destructive">*</span>
-                  ) : (
-                    <span className="font-normal text-muted-foreground">
-                      (opcional)
-                    </span>
-                  )}
+                  {fieldsRequired
+                    ? <span className="text-destructive">*</span>
+                    : <span className="font-normal text-muted-foreground">(opcional)</span>
+                  }
                 </p>
                 {form.weightKg !== '' && (
                   <button
@@ -208,14 +261,12 @@ export function WasteFormModal({ open, onClose, zone, onSave }) {
                 )}
               </div>
 
-              {/* Display */}
               <div className="flex flex-col items-center mb-3">
                 <span className="text-4xl font-black text-[#234465] leading-none tabular-nums">
                   {weightDisplay}
                 </span>
               </div>
 
-              {/* Quick-add */}
               <div className="grid grid-cols-4 gap-2 mb-3">
                 {KG_PRESETS.map((n) => (
                   <button
@@ -229,7 +280,6 @@ export function WasteFormModal({ open, onClose, zone, onSave }) {
                 ))}
               </div>
 
-              {/* Manual input */}
               <input
                 type="number"
                 min="0"
@@ -249,9 +299,10 @@ export function WasteFormModal({ open, onClose, zone, onSave }) {
             <div>
               <p className="text-xs font-semibold text-foreground mb-3">
                 Foto{' '}
-                <span className="font-normal text-muted-foreground">
-                  (opcional)
-                </span>
+                {photoRequired
+                  ? <span className="text-destructive">*</span>
+                  : <span className="font-normal text-muted-foreground">(opcional)</span>
+                }
               </p>
 
               {imagePreview ? (
@@ -273,10 +324,16 @@ export function WasteFormModal({ open, onClose, zone, onSave }) {
                 <button
                   type="button"
                   onClick={() => cameraInputRef.current?.click()}
-                  className="w-full flex flex-col items-center justify-center gap-2 h-20 rounded-xl border-2 border-dashed border-border text-muted-foreground hover:border-[#DD7419]/40 hover:text-[#DD7419] hover:bg-[#DD7419]/5 transition"
+                  className={`w-full flex flex-col items-center justify-center gap-2 h-20 rounded-xl border-2 border-dashed transition ${
+                    photoRequired
+                      ? 'border-destructive/40 text-destructive hover:bg-destructive/5'
+                      : 'border-border text-muted-foreground hover:border-[#DD7419]/40 hover:text-[#DD7419] hover:bg-[#DD7419]/5'
+                  }`}
                 >
                   <Camera className="w-5 h-5" />
-                  <span className="text-xs font-medium">Tomar foto</span>
+                  <span className="text-xs font-medium">
+                    {photoRequired ? 'Foto requerida' : 'Tomar foto'}
+                  </span>
                 </button>
               )}
 
