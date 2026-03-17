@@ -509,6 +509,37 @@ export const getStation3RecordsService = async (eventId, filters = {}) => {
   }
 };
 
+export const getStation4RecordsService = async (eventId, filters = {}) => {
+  try {
+    const today = new Date();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    const yyyy = today.getFullYear();
+    const body = {
+      eventId: Number(eventId),
+      dateRegister: `${mm}-${dd}-${yyyy}`,
+      page: filters.page ?? 1,
+      limit: filters.limit ?? 25,
+      station4: true,
+    };
+    if (filters.name) body.name = filters.name;
+    if (filters.cedula) body.cedula = filters.cedula;
+    const { data } = await axios.post(
+      `${EVENTS_URL}/attendance/station3`,
+      body
+    );
+    return { status: true, data: data?.data, errors: null };
+  } catch (error) {
+    return {
+      status: false,
+      data: null,
+      errors:
+        error?.response?.data?.message ||
+        'Error al obtener los registros de estación 3.',
+    };
+  }
+};
+
 export const checkoutService = async ({
   attendanceId,
   returnedUniform,
@@ -530,6 +561,23 @@ export const checkoutService = async ({
       data: null,
       errors:
         error?.response?.data?.message || 'Error al registrar el checkout.',
+    };
+  }
+};
+
+export const confirmAssignmentService = async (attendanceId) => {
+  try {
+    const { data } = await axios.patch(
+      `${EVENTS_URL}/worker/attendance/${attendanceId}/confirm-station-2`,
+      {}
+    );
+    return { status: true, data: data?.data, errors: null };
+  } catch (error) {
+    return {
+      status: false,
+      data: null,
+      errors:
+        error?.response?.data?.message || 'Error al confirmar la asignación.',
     };
   }
 };

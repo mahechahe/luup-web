@@ -75,6 +75,14 @@ export const Section2 = ({ eventId }) => {
       };
       return;
     }
+
+    if (type === 'confirm') {
+      findCollabIdx.attendance = {
+        ...findCollabIdx.attendance,
+        confirmStation2: true,
+      };
+      return;
+    }
   };
 
   /* Fetch */
@@ -200,11 +208,11 @@ export const Section2 = ({ eventId }) => {
       <div className="flex items-start gap-3 rounded-xl border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/30 px-4 py-3">
         <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
         <p className="text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
-          <span className="font-semibold">Importante:</span> Para que los
-          colaboradores se habiliten en la{' '}
-          <span className="font-semibold">Estación 3</span>, deben tener marcada
-          la opción obligatoria del{' '}
-          <span className="font-semibold">Refrigerio</span>.
+          <span className="font-semibold">Importante:</span> Para que un
+          colaborador pase a la{' '}
+          <span className="font-semibold">Estación 3</span>, debe tener marcado
+          el <span className="font-semibold">Refrigerio</span> y tener la{' '}
+          <span className="font-semibold">asignación confirmada</span>.
         </p>
       </div>
 

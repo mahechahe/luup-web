@@ -80,7 +80,7 @@ export function ZonesSidebar({
       >
         <div className="w-full md:w-80 flex flex-col h-full overflow-y-auto">
         {/* Título */}
-        <div className="px-5 py-4 border-b border-border shrink-0">
+        <div className="hidden md:block px-5 py-4 border-b border-border shrink-0">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg bg-[#DD7419]/10 flex items-center justify-center">
               <Layers className="w-3.5 h-3.5 text-[#DD7419]" />
@@ -90,7 +90,7 @@ export function ZonesSidebar({
         </div>
 
         {/* Herramientas */}
-        <div className="px-4 py-4 border-b border-border space-y-3 shrink-0">
+        <div className="hidden md:block px-4 py-4 border-b border-border space-y-3 shrink-0">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-1">
             Herramientas
           </p>

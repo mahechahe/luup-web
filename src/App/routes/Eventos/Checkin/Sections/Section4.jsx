@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { Button } from '@/components/ui/button';
 import {
   Briefcase,
   Calendar,
@@ -19,8 +19,8 @@ import {
   UtensilsCrossed,
   X,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { getStation3RecordsService } from '../../services/eventServices';
+import { useEffect, useState } from 'react';
+import { getStation4RecordsService } from '../../services/eventServices';
 import { AttendanceHistoryModal } from '../components/AttendanceHistoryModal';
 import { CheckoutModal } from '../components/CheckoutModal';
 
@@ -473,7 +473,7 @@ export const Section4 = ({ eventId }) => {
 
   const fetchData = (currentFilters = filters, page = currentPage) => {
     setLoading(true);
-    getStation3RecordsService(eventId, {
+    getStation4RecordsService(eventId, {
       ...currentFilters,
       page,
       limit: pageSize,
@@ -547,7 +547,9 @@ export const Section4 = ({ eventId }) => {
               onClick={() => fetchData(filters, currentPage)}
               disabled={loading}
             >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              <RefreshCw
+                className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`}
+              />
               Actualizar
             </Button>
             <button
