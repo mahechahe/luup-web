@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { X, Loader2, UtensilsCrossed, Coffee, MapPinOff, AlertTriangle, CornerDownLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { createIncidentService } from '../../services/eventServices';
 
 const PRESETS = [
   { label: 'En almuerzo', Icon: UtensilsCrossed },
@@ -15,11 +16,13 @@ function nowTime() {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
-export function IncidentFormModal({ open, onClose, collaborator, onSave }) {
+export function IncidentFormModal({ open, onClose, person, eventId, onSave }) {
   const [form, setForm] = useState({ name: '', time: nowTime(), note: '' });
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
 
-  if (!open || !collaborator) return null;
+  // Usar person (nombre unificado) — compatible con supervisor, colaborador y responsable de acopio
+  if (!open || !person) return null;
 
   const handlePreset = (label) => setForm((f) => ({ ...f, name: label }));
 
@@ -27,12 +30,24 @@ export function IncidentFormModal({ open, onClose, collaborator, onSave }) {
     e.preventDefault();
     if (!form.name.trim()) return;
     setSaving(true);
+    setError(null);
 
-    // Simula delay de guardado (se reemplaza con llamada real al backend)
-    await new Promise((r) => setTimeout(r, 500));
+    const res = await createIncidentService({
+      eventId: Number(eventId),
+      userId: person.userId,
+      name: form.name.trim(),
+      time: form.time,
+      note: form.note.trim() || null,
+    });
 
-    onSave(collaborator.userId, {
-      id: Date.now(),
+    if (!res.status) {
+      setError(res.errors ?? 'Error al registrar la incidencia.');
+      setSaving(false);
+      return;
+    }
+
+    onSave(person.userId, {
+      id: res.incident?.id ?? Date.now(),
       name: form.name.trim(),
       time: form.time,
       note: form.note.trim() || null,
@@ -46,6 +61,7 @@ export function IncidentFormModal({ open, onClose, collaborator, onSave }) {
 
   const handleClose = () => {
     setForm({ name: '', time: nowTime(), note: '' });
+    setError(null);
     onClose();
   };
 
@@ -59,7 +75,7 @@ export function IncidentFormModal({ open, onClose, collaborator, onSave }) {
           <div>
             <h2 className="text-base font-bold text-foreground">Nueva incidencia</h2>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {collaborator.firstName} {collaborator.lastName}
+              {person.firstName} {person.lastName}
             </p>
           </div>
           <button
@@ -136,6 +152,11 @@ export function IncidentFormModal({ open, onClose, collaborator, onSave }) {
               className="w-full px-3 py-2 rounded-md border border-border bg-white text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#234465]/30 resize-none"
             />
           </div>
+
+          {/* Error */}
+          {error && (
+            <p className="text-xs text-destructive">{error}</p>
+          )}
 
           {/* Acciones */}
           <div className="flex gap-2 pt-1">

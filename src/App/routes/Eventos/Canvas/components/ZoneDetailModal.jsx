@@ -2,6 +2,7 @@ import {
   ArrowLeftRight,
   Crown,
   Package,
+  PackageOpen,
   Plus,
   Shield,
   StickyNote,
@@ -24,11 +25,12 @@ export function ZoneDetailModal({
   onDeleteRequest,
   onClose,
 }) {
-  const [modalRole, setModalRole] = useState(null); // 'supervisor' | 'coordinador' | 'colaborador' | null
+  const [modalRole, setModalRole] = useState(null); // 'supervisor' | 'coordinador' | 'colaborador' | 'responsable_acopio' | null
 
   const supervisores = zone.people.filter((p) => p.role === 'supervisor');
   const coordinadores = zone.people.filter((p) => p.role === 'coordinador');
   const colaboradores = zone.people.filter((p) => p.role === 'colaborador');
+  const responsablesAcopio = zone.people.filter((p) => p.role === 'responsable_acopio');
 
   // IDs a excluir según el rol que se está agregando
   const getExcludedIds = () => {
@@ -51,6 +53,14 @@ export function ZoneDetailModal({
           if (z.id === zone.id && p.role === 'coordinador') {
             excludedSet.add(p.id);
           }
+        });
+      });
+    } else if (modalRole === 'responsable_acopio') {
+      // RESPONSABLE DE ACOPIO: No puede estar en ninguna otra zona ni tener otro rol
+      // Excluir a TODOS los que ya están asignados en cualquier zona
+      zones.forEach((z) => {
+        z.people.forEach((p) => {
+          excludedSet.add(p.id);
         });
       });
     } else {
@@ -355,6 +365,21 @@ export function ZoneDetailModal({
                   onRemove={(personId) => onRemovePerson(zone.id, personId)}
                   onTransfer={(personId) => onAddPeople(zone.id, personId)}
                 />
+
+                {/* ✅ Responsable de Acopio — solo visible en zonas de categoría 'acopio' */}
+                {zone.category === 'acopio' && (
+                  <PeopleSubsection
+                    label="Responsable de Acopio"
+                    sublabel="Acceso únicamente a su centro de acopio"
+                    icon={<PackageOpen className="w-3.5 h-3.5 text-[#DD7419]" />}
+                    accentColor="#DD7419"
+                    people={responsablesAcopio}
+                    isAdmin={isAdmin}
+                    canAdd={responsablesAcopio.length === 0}
+                    onAdd={() => setModalRole('responsable_acopio')}
+                    onRemove={(personId) => onRemovePerson(zone.id, personId)}
+                  />
+                )}
               </div>
             </div>
 

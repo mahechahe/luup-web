@@ -26,6 +26,8 @@ export function AddPersonModal({ zoneId, role, existingIds, onConfirm, onClose }
     supervisor: 'Agregar Supervisor de Zona',
     coordinador: 'Agregar Coordinador',
     colaborador: 'Agregar Colaboradores',
+    // ✅ Nuevo rol
+    responsable_acopio: 'Agregar Responsable de Acopio',
   };
   const modalTitle = roleLabels[role] || 'Agregar personas';
 
@@ -81,8 +83,8 @@ export function AddPersonModal({ zoneId, role, existingIds, onConfirm, onClose }
       if (next.has(collaborator.userId)) {
         next.delete(collaborator.userId);
       } else {
-        if (role === 'supervisor' || role === 'coordinador') {
-          // Solo uno: reemplaza cualquier selección previa
+        // ✅ Roles de selección única: supervisor, coordinador y responsable_acopio
+        if (role === 'supervisor' || role === 'coordinador' || role === 'responsable_acopio') {
           next.clear();
         }
         next.set(collaborator.userId, collaborator);

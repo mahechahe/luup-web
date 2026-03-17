@@ -69,10 +69,16 @@ export default function ZonasPage() {
     );
   }, []);
 
+  // ✅ parseIncidents incluye responsableAcopio además de supervisor, coordinador y colaboradores
   const parseIncidents = (zones) => {
     const map = {};
     zones.forEach((z) => {
-      const people = [z.supervisor, z.coordinator, ...z.collaborators].filter(Boolean);
+      const people = [
+        z.supervisor,
+        z.coordinator,
+        z.responsableAcopio,
+        ...z.collaborators,
+      ].filter(Boolean);
       people.forEach((p) => { if (p.incidents?.length) map[p.userId] = p.incidents; });
     });
     return map;
@@ -149,7 +155,13 @@ export default function ZonasPage() {
     if (!searchQuery.trim()) return zoneList;
     const q = searchQuery.toLowerCase();
     return zoneList.filter((zone) => {
-      const people = [zone.coordinator, zone.supervisor, ...zone.collaborators].filter(Boolean);
+      // ✅ Incluir responsableAcopio en la búsqueda
+      const people = [
+        zone.coordinator,
+        zone.supervisor,
+        zone.responsableAcopio,
+        ...zone.collaborators,
+      ].filter(Boolean);
       return people.some((p) =>
         `${p.firstName} ${p.lastName}`.toLowerCase().includes(q) ||
         p.cedula?.toLowerCase().includes(q) ||

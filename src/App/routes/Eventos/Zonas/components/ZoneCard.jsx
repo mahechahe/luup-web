@@ -14,6 +14,7 @@ import {
   ClipboardList,
   History,
   ChevronDown,
+  PackageOpen,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -65,12 +66,14 @@ export function ZoneCard({
     ...(zone.coordinator ? [zone.coordinator] : []),
     ...(zone.supervisor ? [zone.supervisor] : []),
     ...zone.collaborators,
+    ...(zone.responsableAcopio ? [zone.responsableAcopio] : []),
   ];
 
   const staffCount =
     (zone.supervisor ? 1 : 0) +
     (zone.coordinator ? 1 : 0) +
-    zone.collaborators.length;
+    zone.collaborators.length +
+    (zone.responsableAcopio ? 1 : 0);
 
   const getLatest = (userId) => {
     const arr = incidents[userId] ?? [];
@@ -408,6 +411,25 @@ export function ZoneCard({
                     />
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* ✅ Responsable de Acopio — usa SupervisorCard con color naranja */}
+            {zone.category === 'acopio' && zone.responsableAcopio && (
+              <div>
+                <RoleSectionLabel
+                  icon={PackageOpen}
+                  label="Responsable de Acopio"
+                  sublabel="Acceso únicamente a su centro de acopio"
+                  colorClass="text-[#DD7419]"
+                />
+                <SupervisorCard
+                  person={zone.responsableAcopio}
+                  zoneColor="#DD7419"
+                  incident={getLatest(zone.responsableAcopio.userId)}
+                  onAddIncident={() => onAddIncident(zone.responsableAcopio)}
+                  onViewHistory={() => onViewHistory(zone.responsableAcopio)}
+                />
               </div>
             )}
 

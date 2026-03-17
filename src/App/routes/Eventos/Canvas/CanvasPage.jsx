@@ -16,6 +16,7 @@ import { EventoHeader } from './components/EventoHeader';
 import { LoadingModal } from './components/LoadingModal';
 import { ZonesCanvas } from './components/ZonesCanvas';
 import { ZonesSidebar } from './components/ZonesSidebar';
+import { Maximize2, X } from 'lucide-react';
 
 function CanvasPage() {
   const { eventId } = useParams();
@@ -31,6 +32,8 @@ function CanvasPage() {
 
   /* UI */
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  // ✅ Modal de mapa fullscreen en móvil
+  const [mapFullscreen, setMapFullscreen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeletingZone, setIsDeletingZone] = useState(false);
 
@@ -61,7 +64,7 @@ function CanvasPage() {
 
       // Procesar y establecer zonas
       const processedZones = zonesRes.data.zones.map((zone) => {
-        // Construir array de personas combinando supervisor, coordinador y colaboradores
+        // Construir array de personas combinando todos los roles
         const people = [];
 
         if (zone.supervisor) {
@@ -80,6 +83,17 @@ function CanvasPage() {
             name: `${zone.coordinator.firstName} ${zone.coordinator.lastName}`.trim(),
             cedula: zone.coordinator.cedula,
             role: 'coordinador',
+            status: 'confirmed',
+          });
+        }
+
+        // ✅ Responsable de acopio — solo existe en zonas de categoría 'acopio'
+        if (zone.responsableAcopio) {
+          people.push({
+            id: zone.responsableAcopio.userId,
+            name: `${zone.responsableAcopio.firstName} ${zone.responsableAcopio.lastName}`.trim(),
+            cedula: zone.responsableAcopio.cedula,
+            role: 'responsable_acopio',
             status: 'confirmed',
           });
         }
@@ -106,6 +120,14 @@ function CanvasPage() {
           wasteLimit: zone.wasteLimit ?? null,
           weightLimit: zone.weightLimit ?? null,
           people,
+          // ✅ Exponer responsableAcopio como propiedad directa para ZoneLabel en canvas
+          responsableAcopio: zone.responsableAcopio
+            ? {
+                userId: zone.responsableAcopio.userId,
+                name: `${zone.responsableAcopio.firstName} ${zone.responsableAcopio.lastName}`.trim(),
+                cedula: zone.responsableAcopio.cedula,
+              }
+            : null,
           // Expandir geometría según el tipo
           ...(zone.type === 'rect'
             ? zone.geometry
@@ -263,6 +285,8 @@ function CanvasPage() {
       // Extraer IDs por rol
       const supervisor = zone.people.find((p) => p.role === 'supervisor');
       const coordinador = zone.people.find((p) => p.role === 'coordinador');
+      // ✅ Responsable de acopio — campo directo en la tabla igual que supervisor/coordinador
+      const responsableAcopio = zone.people.find((p) => p.role === 'responsable_acopio');
       const colaboradores = zone.people.filter((p) => p.role === 'colaborador');
 
       return {
@@ -298,6 +322,8 @@ function CanvasPage() {
         // Personas asignadas (solo IDs)
         supervisorId: supervisor ? supervisor.id : null,
         coordinadorId: coordinador ? coordinador.id : null,
+        // ✅ guardado como columna directa en event_zones
+        responsableAcopioId: responsableAcopio ? responsableAcopio.id : null,
         colaboradorIds: colaboradores.map((c) => c.id),
       };
     });
@@ -325,6 +351,24 @@ function CanvasPage() {
     );
   }
 
+  /* Props compartidas del canvas — evita repetir en cada instancia */
+  const sharedCanvasProps = {
+    zones,
+    selectedId,
+    tool,
+    planImage: displayedPlan,
+    polyPoints,
+    isAdmin: IS_ADMIN,
+    loading,
+    onAddZone: addZone,
+    onUpdateZone: updateZone,
+    onSelectZone: setSelectedId,
+    onAddPolyPoint: handleAddPolyPoint,
+    onFinishPolygon: finishPolygon,
+    onChangeTool: setTool,
+    onSelectPlan: () => fileInputRef.current.click(),
+  };
+
   /* ── Render ──────────────────────────────────────────── */
   return (
     <div className="h-screen flex flex-col bg-background overflow-hidden">
@@ -344,26 +388,13 @@ function CanvasPage() {
         onSave={handleSaveZones}
       />
 
-      <div className="flex flex-1 overflow-hidden relative">
+      {/* ── Layout desktop: canvas + sidebar lado a lado ── */}
+      <div className="hidden md:flex flex-1 overflow-hidden relative">
         <ZonesCanvas
-          zones={zones}
-          selectedId={selectedId}
-          tool={tool}
-          planImage={displayedPlan}
-          polyPoints={polyPoints}
-          isAdmin={IS_ADMIN}
+          {...sharedCanvasProps}
           sidebarOpen={sidebarOpen}
-          loading={loading}
-          onAddZone={addZone}
-          onUpdateZone={updateZone}
-          onSelectZone={setSelectedId}
-          onAddPolyPoint={handleAddPolyPoint}
-          onFinishPolygon={finishPolygon}
-          onChangeTool={setTool}
           onToggleSidebar={() => setSidebarOpen((v) => !v)}
-          onSelectPlan={() => fileInputRef.current.click()}
         />
-
         <ZonesSidebar
           isOpen={sidebarOpen}
           tool={tool}
@@ -387,6 +418,81 @@ function CanvasPage() {
           onDeleteRequest={setDeleteId}
         />
       </div>
+
+      {/* ── Layout móvil: canvas h-[50vh] arriba + sidebar abajo (igual que antes) ── */}
+      <div className="md:hidden flex-1 flex flex-col overflow-hidden">
+
+        {/* Canvas en la mitad superior — solo lectura con touch pan */}
+        <div className="relative shrink-0">
+          <ZonesCanvas
+            {...sharedCanvasProps}
+            sidebarOpen={false}
+            onToggleSidebar={() => {}}
+          />
+
+          {/* ✅ Botón flotante para abrir el mapa en fullscreen */}
+          <button
+            onClick={() => setMapFullscreen(true)}
+            className="absolute bottom-3 right-3 z-20 flex items-center gap-1.5 bg-[#234465]/90 backdrop-blur-sm text-white text-[11px] font-semibold px-3 py-2 rounded-full shadow-lg active:scale-95 transition-transform"
+          >
+            <Maximize2 className="w-3.5 h-3.5" />
+            Ver mapa completo
+          </button>
+        </div>
+
+        {/* Sidebar en la parte inferior, scrolleable */}
+        <div className="flex-1 overflow-y-auto border-t border-border">
+          <ZonesSidebar
+            isOpen={true}
+            tool={tool}
+            zones={zones}
+            selectedId={selectedId}
+            isAdmin={IS_ADMIN}
+            polyPoints={polyPoints}
+            pendingFile={pendingFile}
+            uploadingPlan={uploadingPlan}
+            uploadError={uploadError}
+            hasPlan={!!planImage}
+            onToolChange={handleToolChange}
+            onFinishPolygon={finishPolygon}
+            onSelectPlan={() => fileInputRef.current.click()}
+            onUploadPlan={handleUploadPlan}
+            onCancelPending={handleCancelPending}
+            onSelectZone={setSelectedId}
+            onUpdateZone={updateZone}
+            onAddPeople={addPeople}
+            onRemovePerson={removePerson}
+            onDeleteRequest={setDeleteId}
+          />
+        </div>
+      </div>
+
+      {/* ✅ Modal fullscreen del mapa — solo móvil */}
+      {mapFullscreen && (
+        <div className="fixed inset-0 z-50 bg-background flex flex-col md:hidden">
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card shrink-0">
+            <p className="text-sm font-bold text-foreground">
+              {event?.name ?? 'Mapa del evento'}
+            </p>
+            <button
+              onClick={() => setMapFullscreen(false)}
+              className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Canvas fullscreen con pan táctil y zoom */}
+          <div className="flex-1 overflow-hidden">
+            <ZonesCanvas
+              {...sharedCanvasProps}
+              sidebarOpen={false}
+              onToggleSidebar={() => {}}
+            />
+          </div>
+        </div>
+      )}
 
       <DeleteZoneModal
         deleteId={deleteId}
