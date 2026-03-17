@@ -64,8 +64,34 @@ export function WasteFormModal({ open, onClose, zone, onSave }) {
   const handleImageChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setImageFile(file);
-    setImagePreview(URL.createObjectURL(file));
+
+    const MAX_PX = 1920;
+    const QUALITY = 0.82;
+
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      let { width, height } = img;
+      if (width > MAX_PX || height > MAX_PX) {
+        if (width >= height) { height = Math.round((height * MAX_PX) / width); width = MAX_PX; }
+        else { width = Math.round((width * MAX_PX) / height); height = MAX_PX; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        (blob) => {
+          const compressed = new File([blob], 'photo.jpg', { type: 'image/jpeg' });
+          setImageFile(compressed);
+          setImagePreview(URL.createObjectURL(compressed));
+        },
+        'image/jpeg',
+        QUALITY,
+      );
+    };
+    img.src = objectUrl;
   };
 
   const removeImage = () => {
