@@ -1,5 +1,20 @@
 import { useState } from 'react';
-import { X, Trash2, Weight, ClipboardList, Calendar, ImageIcon, Loader2 } from 'lucide-react';
+import {
+  X,
+  Trash2,
+  Weight,
+  ClipboardList,
+  Calendar,
+  ImageIcon,
+  Loader2,
+} from 'lucide-react';
+
+const BAG_COLORS = {
+  verde: { hex: '#22c55e', label: 'Verde', border: false },
+  blanco: { hex: '#f1f5f9', label: 'Blanco', border: true },
+  negra: { hex: '#1e293b', label: 'Negra', border: false },
+  roja: { hex: '#ef4444', label: 'Roja', border: false },
+};
 import { getWasteSignedUrlService } from '../../services/eventServices';
 
 function formatDateTime(isoString) {
@@ -55,8 +70,12 @@ export function WasteHistoryModal({ open, onClose, zone, entries = [] }) {
                 <ClipboardList className="w-4.5 h-4.5 text-[#DD7419]" />
               </div>
               <div>
-                <h2 className="text-base font-bold text-foreground">Historial de basuras</h2>
-                <p className="text-xs text-muted-foreground mt-0.5">{zone.name}</p>
+                <h2 className="text-base font-bold text-foreground">
+                  Historial de basuras
+                </h2>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {zone.name}
+                </p>
               </div>
             </div>
             <button
@@ -74,7 +93,9 @@ export function WasteHistoryModal({ open, onClose, zone, entries = [] }) {
               <p className="text-[11px] font-semibold text-[#DD7419]/70 uppercase tracking-wide flex items-center gap-1">
                 <Trash2 className="w-3 h-3" /> Total registradas
               </p>
-              <p className="text-3xl font-bold text-[#DD7419] leading-none mt-1">{totalQty}</p>
+              <p className="text-3xl font-bold text-[#DD7419] leading-none mt-1">
+                {totalQty}
+              </p>
               <p className="text-xs text-[#DD7419]/50 mt-0.5">unidades</p>
             </div>
             <div className="rounded-xl bg-[#DD7419]/8 border border-[#DD7419]/20 px-4 py-3">
@@ -108,12 +129,15 @@ export function WasteHistoryModal({ open, onClose, zone, entries = [] }) {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
                       <p className="text-sm font-semibold text-foreground">
-                        {entry.quantity}{' '}
+                        {entry.quantity || 0}{' '}
                         <span className="font-normal text-muted-foreground">
                           {entry.quantity === 1 ? 'unidad' : 'unidades'}
                         </span>
                         {entry.weightKg != null && (
-                          <span className="text-muted-foreground font-normal"> · {entry.weightKg} kg</span>
+                          <span className="text-muted-foreground font-normal">
+                            {' '}
+                            · {entry.weightKg} kg
+                          </span>
                         )}
                       </p>
                       <span className="text-[11px] text-muted-foreground font-medium shrink-0">
@@ -124,6 +148,22 @@ export function WasteHistoryModal({ open, onClose, zone, entries = [] }) {
                       <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
                         {entry.note}
                       </p>
+                    )}
+                    {entry.bagColor && BAG_COLORS[entry.bagColor] && (
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <span
+                          className="w-3 h-3 rounded-full shrink-0 inline-block"
+                          style={{
+                            backgroundColor: BAG_COLORS[entry.bagColor].hex,
+                            boxShadow: BAG_COLORS[entry.bagColor].border
+                              ? 'inset 0 0 0 1px #cbd5e1'
+                              : undefined,
+                          }}
+                        />
+                        <span className="text-[11px] text-muted-foreground">
+                          Bolsa {BAG_COLORS[entry.bagColor].label.toLowerCase()}
+                        </span>
+                      </div>
                     )}
                     <div className="flex items-center justify-between mt-1.5 gap-2">
                       <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
@@ -198,8 +238,10 @@ export function WasteHistoryModal({ open, onClose, zone, entries = [] }) {
             {/* Info del registro */}
             <div className="mt-3 px-1 flex items-center justify-between text-white/70 text-xs">
               <span>
-                {viewingEntry.quantity} {viewingEntry.quantity === 1 ? 'unidad' : 'unidades'}
-                {viewingEntry.weightKg != null && ` · ${viewingEntry.weightKg} kg`}
+                {viewingEntry.quantity}{' '}
+                {viewingEntry.quantity === 1 ? 'unidad' : 'unidades'}
+                {viewingEntry.weightKg != null &&
+                  ` · ${viewingEntry.weightKg} kg`}
               </span>
               <span>{formatDateTime(viewingEntry.createdAt)}</span>
             </div>
