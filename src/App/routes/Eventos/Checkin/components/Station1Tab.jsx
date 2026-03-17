@@ -1,5 +1,6 @@
 import { upsertAttendanceService } from '@/App/routes/Eventos/services/eventServices';
 import {
+  AlertTriangle,
   Check,
   ChevronDown,
   ChevronUp,
@@ -65,6 +66,16 @@ function CollabCard({
     !!collab.uniformSize ||
     collab.attendance?.uniform ||
     !!collab.attendance?.uniformSize;
+
+  // Uniforme pendiente de devolución de checkout anterior
+  const pendingReturn = collab.pendingUniformReturn ?? null;
+  const pendingReturnDate = pendingReturn?.exitTime
+    ? new Date(pendingReturn.exitTime).toLocaleDateString('es-CO', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+      })
+    : null;
 
   const handleAttendance = async () => {
     setSavingAttendance(true);
@@ -216,6 +227,23 @@ function CollabCard({
           </p>
         )}
 
+        {pendingReturn && (
+          <div className="flex items-start gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-xl px-3 py-2.5 mb-3">
+            <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+            <div className="min-w-0">
+              <p className="text-xs font-bold text-amber-800 dark:text-amber-300 leading-snug">
+                No devolvió el uniforme del checkout anterior
+              </p>
+              <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-0.5">
+                Talla <span className="font-bold">{pendingReturn.uniformSize}</span>
+                {pendingReturnDate && (
+                  <> · <span className="capitalize">{pendingReturnDate}</span></>
+                )}
+              </p>
+            </div>
+          </div>
+        )}
+
         <div className="flex items-center gap-1.5">
           <button
             onClick={attended ? handleAttendance : () => onEdit(collab)}
@@ -240,9 +268,13 @@ function CollabCard({
             )}
           </button>
           <button
-            onClick={() => setShowUniform((v) => !v)}
+            onClick={() => !pendingReturn && setShowUniform((v) => !v)}
+            disabled={!!pendingReturn}
+            title={pendingReturn ? 'No se puede asignar uniforme hasta devolver el anterior' : undefined}
             className={`flex-1 flex items-center justify-center gap-2 h-10 rounded-xl font-semibold text-sm transition-all border ${
-              uniformDone
+              pendingReturn
+                ? 'bg-muted border-border text-muted-foreground opacity-50 cursor-not-allowed'
+                : uniformDone
                 ? 'bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-300 dark:hover:bg-blue-900/50'
                 : 'bg-card border-border text-muted-foreground hover:bg-muted'
             }`}

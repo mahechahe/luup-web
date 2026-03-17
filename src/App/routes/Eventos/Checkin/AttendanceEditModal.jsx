@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Loader2, Shirt, X } from 'lucide-react';
+import { AlertTriangle, Loader2, Shirt, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -99,6 +99,15 @@ export default function AttendanceEditModal({
   }, [open, collaborator]);
 
   if (!collaborator) return null;
+
+  const pendingReturn = collaborator.pendingUniformReturn ?? null;
+  const pendingReturnDate = pendingReturn?.exitTime
+    ? new Date(pendingReturn.exitTime).toLocaleDateString('es-CO', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+      })
+    : null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -238,13 +247,17 @@ export default function AttendanceEditModal({
           <div className="border-t border-border" />
 
           {/* Uniforme */}
-          <div>
+          <div className={pendingReturn ? 'opacity-60' : undefined}>
             <div className="flex items-center gap-2 mb-2 flex-wrap">
               <Shirt className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
               <span className="text-xs font-medium text-foreground">
                 Uniforme
               </span>
-              {(() => {
+              {pendingReturn ? (
+                <span className="text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 px-2 py-0.5 rounded-full">
+                  Bloqueado
+                </span>
+              ) : (() => {
                 const assignedSize =
                   collaborator.uniformSize ??
                   collaborator.attendance?.uniformSize ??
@@ -263,7 +276,7 @@ export default function AttendanceEditModal({
                   </span>
                 );
               })()}
-              {form.uniformSize && (
+              {!pendingReturn && form.uniformSize && (
                 <button
                   type="button"
                   onClick={() => setForm((f) => ({ ...f, uniformSize: '' }))}
@@ -273,19 +286,41 @@ export default function AttendanceEditModal({
                 </button>
               )}
             </div>
+
+            {pendingReturn && (
+              <div className="flex items-start gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-xl px-3 py-2.5 mb-3">
+                <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-amber-800 dark:text-amber-300 leading-snug">
+                    No devolvió el uniforme del checkout anterior
+                  </p>
+                  <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-0.5">
+                    Talla <span className="font-bold">{pendingReturn.uniformSize}</span>
+                    {pendingReturnDate && (
+                      <> · <span className="capitalize">{pendingReturnDate}</span></>
+                    )}
+                  </p>
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-6 gap-1.5">
               {SIZES.map((size) => (
                 <button
                   key={size}
                   type="button"
+                  disabled={!!pendingReturn}
                   onClick={() =>
+                    !pendingReturn &&
                     setForm((f) => ({
                       ...f,
                       uniformSize: f.uniformSize === size ? '' : size,
                     }))
                   }
                   className={`h-9 rounded-lg text-xs font-bold transition-all border-2 ${
-                    form.uniformSize === size
+                    pendingReturn
+                      ? 'bg-muted border-border text-muted-foreground cursor-not-allowed'
+                      : form.uniformSize === size
                       ? 'bg-[#DD7419] border-[#DD7419] text-white'
                       : 'bg-card border-border text-foreground hover:border-[#DD7419]/50'
                   }`}
