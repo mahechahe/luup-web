@@ -176,7 +176,7 @@ export default function WorkerEventoModulesPage() {
     });
   }, [eventId]);
 
-  const isSupervisorOrCoordinator = role === 'supervisor' || role === 'coordinator';
+  const isSupervisorOrCoordinator = role === 'supervisor' || role === 'coordinator' || role === 'responsable_acopio';
 
   const modules = [
     {

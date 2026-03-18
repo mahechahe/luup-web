@@ -17,6 +17,7 @@ function getGreeting() {
 function getEventRoleLabel(eventRole) {
   if (eventRole === 'coordinator') return 'Coordinador';
   if (eventRole === 'supervisor') return 'Supervisor';
+  if (eventRole === 'responsable_acopio') return 'Resp. Acopio';
   if (eventRole === 'worker') return 'Colaborador';
   return null;
 }
@@ -46,16 +47,18 @@ const FEATURES = [
 
 // Ruta destino según el rol en el evento activo
 const ROLE_PATH = {
-  coordinator: (eventId) => `/eventos/${eventId}/zonas`,
-  supervisor:  (eventId) => `/eventos/${eventId}/zonas`,
-  worker:      (eventId) => `/eventos/${eventId}/worker`,
+  coordinator:        (eventId) => `/eventos/${eventId}/zonas`,
+  supervisor:         (eventId) => `/eventos/${eventId}/zonas`,
+  responsable_acopio: (eventId) => `/eventos/${eventId}/zonas`,
+  worker:             (eventId) => `/eventos/${eventId}/worker`,
 };
 
 // Label del botón según el rol en el evento activo
 const ROLE_LABEL = {
-  coordinator: 'Ir a mis zonas',
-  supervisor:  'Ir a mis zonas',
-  worker:      'Ver mi estado en el evento',
+  coordinator:        'Ir a mis zonas',
+  supervisor:         'Ir a mis zonas',
+  responsable_acopio: 'Ir a mis zonas',
+  worker:             'Ver mi estado en el evento',
 };
 
 function Dashboard() {
