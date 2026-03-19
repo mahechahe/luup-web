@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Layers, ArrowLeft, CheckCircle2, XCircle, Clock, LogIn, LogOut, Coffee, MapPin, XCircle as XCircleIcon } from 'lucide-react';
+import { Layers, ArrowLeft, CheckCircle2, XCircle, Clock, LogIn, LogOut, Coffee, MapPin, XCircle as XCircleIcon, AlertTriangle } from 'lucide-react';
 import { getWorkerCurrentEventService, getWorkerAttendanceService, getWorkerZonesService } from './services/eventServices';
 import { getEventoDetailService } from './services/eventServices';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -249,25 +249,45 @@ export default function WorkerEventoModulesPage() {
                   Módulos disponibles
                 </p>
                 <div className="grid grid-cols-1 gap-4">
-                  {modules.map((module) => (
-                    <button
-                      key={module.id}
-                      onClick={() => navigate(module.path)}
-                      className="group relative bg-card rounded-2xl p-6 shadow-sm border-2 border-transparent hover:border-[#234465] dark:hover:border-[#7493B2] hover:shadow-md transition-all duration-300 text-left flex items-center gap-4"
-                    >
-                      <div className={`w-12 h-12 rounded-xl ${module.color} flex items-center justify-center shrink-0 transition-transform group-hover:scale-110 duration-300`}>
-                        <module.icon className="w-6 h-6 text-white" />
+                  {modules.map((module) => {
+                    const hasCheckIn = !!attendance?.entryTime;
+                    const disabled = module.id === 'zonas' && !hasCheckIn;
+
+                    return (
+                      <div key={module.id} className="flex flex-col gap-2">
+                        <button
+                          onClick={() => !disabled && navigate(module.path)}
+                          disabled={disabled || loadingAttendance}
+                          className={`group relative bg-card rounded-2xl p-6 shadow-sm border-2 transition-all duration-300 text-left flex items-center gap-4 ${
+                            disabled || loadingAttendance
+                              ? 'border-border opacity-50 cursor-not-allowed'
+                              : 'border-transparent hover:border-[#234465] dark:hover:border-[#7493B2] hover:shadow-md cursor-pointer'
+                          }`}
+                        >
+                          <div className={`w-12 h-12 rounded-xl ${module.color} flex items-center justify-center shrink-0 ${!disabled && !loadingAttendance ? 'transition-transform group-hover:scale-110 duration-300' : ''}`}>
+                            <module.icon className="w-6 h-6 text-white" />
+                          </div>
+                          <div>
+                            <h3 className={`text-base font-bold text-foreground transition-colors ${!disabled && !loadingAttendance ? 'group-hover:text-[#234465] dark:group-hover:text-[#7493B2]' : ''}`}>
+                              {module.title}
+                            </h3>
+                            <p className="text-sm text-muted-foreground leading-relaxed">
+                              {module.description}
+                            </p>
+                          </div>
+                        </button>
+
+                        {disabled && !loadingAttendance && (
+                          <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200 dark:bg-amber-900/20 dark:border-amber-800">
+                            <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                            <p className="text-xs text-amber-700 dark:text-amber-300 leading-relaxed">
+                              Debes registrar tu <span className="font-semibold">check-in</span> en el evento antes de acceder a tus zonas.
+                            </p>
+                          </div>
+                        )}
                       </div>
-                      <div>
-                        <h3 className="text-base font-bold text-foreground group-hover:text-[#234465] dark:group-hover:text-[#7493B2] transition-colors">
-                          {module.title}
-                        </h3>
-                        <p className="text-sm text-muted-foreground leading-relaxed">
-                          {module.description}
-                        </p>
-                      </div>
-                    </button>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}

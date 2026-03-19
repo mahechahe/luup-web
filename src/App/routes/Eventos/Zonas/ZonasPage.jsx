@@ -69,14 +69,14 @@ export default function ZonasPage() {
     );
   }, []);
 
-  // ✅ parseIncidents incluye responsableAcopio además de supervisor, coordinador y colaboradores
+  // ✅ parseIncidents incluye responsableAcopio (array) además de supervisor, coordinador y colaboradores
   const parseIncidents = (zones) => {
     const map = {};
     zones.forEach((z) => {
       const people = [
         z.supervisor,
         z.coordinator,
-        z.responsableAcopio,
+        ...(z.responsableAcopio ?? []),
         ...z.collaborators,
       ].filter(Boolean);
       people.forEach((p) => { if (p.incidents?.length) map[p.userId] = p.incidents; });
@@ -159,7 +159,7 @@ export default function ZonasPage() {
       const people = [
         zone.coordinator,
         zone.supervisor,
-        zone.responsableAcopio,
+        ...(zone.responsableAcopio ?? []),
         ...zone.collaborators,
       ].filter(Boolean);
       return people.some((p) =>
@@ -267,24 +267,24 @@ export default function ZonasPage() {
           </div>
         ) : (
           <Tabs defaultValue="general">
-            <TabsList className="h-auto p-1 gap-1 bg-muted/60 flex-col sm:flex-row w-full sm:w-auto">
+            <TabsList className="h-auto p-1 gap-1 bg-muted/60 flex-row w-full">
               <TabsTrigger
                 value="general"
-                className="w-full sm:w-auto justify-start sm:justify-center flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium data-[state=active]:bg-[#234465] data-[state=active]:text-white data-[state=active]:shadow-sm"
+                className="flex-1  justify-center flex items-center gap-2 px-4 py-2.5 rounded-md text-sm font-medium data-[state=active]:bg-[#234465] data-[state=active]:text-white data-[state=active]:shadow-sm"
               >
-                <Layers className="w-4 h-4" />
-                Zona general
-                <span className="ml-1 px-1.5 py-0.5 rounded-full text-[11px] font-bold">
+                <Layers className="w-4 h-4 shrink-0" />
+                <span>Zona general</span>
+                <span className="px-1.5 py-0.5 rounded-full text-[11px] font-bold bg-black/10 data-[state=active]:bg-white/20">
                   {generales.length}
                 </span>
               </TabsTrigger>
               <TabsTrigger
                 value="acopio"
-                className="w-full sm:w-auto justify-start sm:justify-center flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium data-[state=active]:bg-[#DD7419] data-[state=active]:text-white data-[state=active]:shadow-sm"
+                className="flex-1  justify-center flex items-center gap-2 px-4 py-2.5 rounded-md text-sm font-medium data-[state=active]:bg-[#DD7419] data-[state=active]:text-white data-[state=active]:shadow-sm"
               >
-                <PackageOpen className="w-4 h-4" />
-                Centro de Acopio
-                <span className="ml-1 px-1.5 py-0.5 rounded-full text-[11px] font-bold">
+                <PackageOpen className="w-4 h-4 shrink-0" />
+                <span>Centro de Acopio</span>
+                <span className="px-1.5 py-0.5 rounded-full text-[11px] font-bold bg-black/10 data-[state=active]:bg-white/20">
                   {acopios.length}
                 </span>
               </TabsTrigger>

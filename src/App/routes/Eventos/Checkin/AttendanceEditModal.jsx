@@ -51,6 +51,16 @@ function isoToTime(iso) {
   return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
+/* Hora actual redondeada al múltiplo de 5 min más cercano → "HH:mm" */
+function currentTimeRounded() {
+  const now = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  const roundedMin = Math.round(now.getMinutes() / 5) * 5;
+  const h = roundedMin === 60 ? (now.getHours() + 1) % 24 : now.getHours();
+  const m = roundedMin === 60 ? 0 : roundedMin;
+  return `${pad(h)}:${pad(m)}`;
+}
+
 const ATTENDED_OPTIONS = [
   {
     value: true,
@@ -90,7 +100,7 @@ export default function AttendanceEditModal({
         collaborator.uniformSize ?? a?.uniformSize ?? '';
       setForm({
         attended: a?.attended ?? null,
-        entryTime: isoToTime(a?.entryTime),
+        entryTime: isoToTime(a?.entryTime) || currentTimeRounded(),
         notes: a?.notes ?? '',
         uniformSize: currentUniformSize,
       });

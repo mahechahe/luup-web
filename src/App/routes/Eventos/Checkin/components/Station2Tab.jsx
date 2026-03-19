@@ -7,6 +7,7 @@ import {
   Cookie,
   UserCheck,
   ClipboardCheck,
+  X,
 } from 'lucide-react';
 import { updateDeliveryService, confirmAssignmentService } from '@/App/routes/Eventos/services/eventServices';
 import {
@@ -104,7 +105,7 @@ function CollabCard({ collab, onActionSaved }) {
       received: newReceived,
     });
     if (res.status) {
-      onActionSaved(collab.userId, type, snackDetail.trim() || null);
+      onActionSaved(collab.userId, type, snackDetail.trim() || null, newReceived);
     }
     setSaving(null);
   };
@@ -188,17 +189,18 @@ function CollabCard({ collab, onActionSaved }) {
         {/* Acciones */}
         <div className="space-y-2">
         <div className="flex gap-2 flex-wrap">
-          {ACTIONS.map(({ key, type, Icon, label, requiresDetail, activeBg, doneBg, doneText, doneBorder }) => {
+          {ACTIONS.map(({ key, type, Icon, label, requiresDetail, doneBg, doneText, doneBorder }) => {
             const done = !!station2[key];
             const isSaving = saving === key;
+            const canUndo = done && !assignConfirmed;
             return (
               <button
                 key={key}
                 onClick={() => handleToggle(key, type)}
-                disabled={!!saving || done || assignConfirmed}
-                className={`relative flex items-center gap-2 h-10 px-4 rounded-xl border-2 font-semibold text-xs transition-all ${
+                disabled={!!saving || assignConfirmed}
+                className={`relative flex items-center gap-2 h-10 px-4 rounded-xl border-2 font-semibold text-xs transition-all group ${
                   done
-                    ? `${doneBg} ${doneText} ${doneBorder} cursor-default`
+                    ? `${doneBg} ${doneText} ${doneBorder} ${canUndo ? 'hover:opacity-70 cursor-pointer' : 'cursor-default'}`
                     : 'bg-card border-border text-muted-foreground hover:bg-muted active:scale-95'
                 }`}
               >
@@ -208,7 +210,10 @@ function CollabCard({ collab, onActionSaved }) {
                 {isSaving ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : done ? (
-                  <Check className="w-4 h-4" strokeWidth={3} />
+                  <>
+                    <Check className="w-4 h-4 group-hover:hidden" strokeWidth={3} />
+                    {canUndo && <X className="w-4 h-4 hidden group-hover:block" />}
+                  </>
                 ) : (
                   <Icon className="w-4 h-4" />
                 )}
@@ -334,18 +339,18 @@ function CollabCard({ collab, onActionSaved }) {
               </span>{' '}
               será habilitado para la Estación 3 y ya no podrá ser gestionado aquí.
             </p>
-            <DialogFooter className="gap-2 sm:gap-2">
+            <DialogFooter>
               <button
                 onClick={() => setShowConfirm(false)}
                 disabled={saving === 'confirm'}
-                className="flex-1 h-9 rounded-lg border border-border text-sm text-muted-foreground hover:bg-muted transition"
+                className="w-full py-3 sm:py-2 sm:px-4 rounded-lg border border-border text-sm text-muted-foreground hover:bg-muted transition"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleConfirmAssignment}
                 disabled={saving === 'confirm'}
-                className="flex-1 h-9 rounded-lg bg-[#234465] text-white text-sm font-semibold hover:bg-[#234465]/90 transition flex items-center justify-center gap-1.5"
+                className="w-full py-3 sm:py-2 sm:px-4 rounded-lg bg-[#234465] text-white text-sm font-semibold hover:bg-[#234465]/90 transition flex items-center justify-center gap-1.5"
               >
                 {saving === 'confirm' ? (
                   <Loader2 className="w-4 h-4 animate-spin" />

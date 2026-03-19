@@ -375,7 +375,7 @@ export function ZoneDetailModal({
                     accentColor="#DD7419"
                     people={responsablesAcopio}
                     isAdmin={isAdmin}
-                    canAdd={responsablesAcopio.length === 0}
+                    canAdd={true}
                     onAdd={() => setModalRole('responsable_acopio')}
                     onRemove={(personId) => onRemovePerson(zone.id, personId)}
                   />

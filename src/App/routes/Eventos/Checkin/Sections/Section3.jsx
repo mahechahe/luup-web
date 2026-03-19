@@ -35,6 +35,9 @@ import {
   getStation3RecordsService,
 } from '../../services/eventServices';
 import { InventoryModal } from '../components/InventoryModal';
+import { AddInventoryModal } from '../components/AddInventoryModal';
+import { useUserStore } from '@/App/context/userStore';
+import { hasAdminAccess } from '@/App/utils/roles';
 
 const PAGE_SIZE = 25;
 
@@ -63,7 +66,13 @@ function roleLabel(role) {
   );
 }
 
-function CollabCard({ collab, onAssign, onRequestConfirm }) {
+function CollabCard({
+  collab,
+  onAssign,
+  onRequestConfirm,
+  onAddMore,
+  isAdmin,
+}) {
   const items = collab.inventoryItems ?? [];
   const hasItems = items.length > 0;
   const [itemsExpanded, setItemsExpanded] = useState(false);
@@ -322,16 +331,22 @@ function CollabCard({ collab, onAssign, onRequestConfirm }) {
               </div>
             </div>
           ) : isConfirmed ? (
-            <div className="flex items-center justify-center gap-2 rounded-xl bg-[#234465]/8 dark:bg-[#7493B2]/10 border border-[#234465]/20 dark:border-[#7493B2]/25 px-4 py-2.5">
-              <CheckCircle2 className="w-4 h-4 text-[#234465] dark:text-[#7493B2] shrink-0" />
-              <div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-center gap-2 rounded-xl bg-[#234465]/8 dark:bg-[#7493B2]/10 border border-[#234465]/20 dark:border-[#7493B2]/25 px-4 py-2.5">
+                <CheckCircle2 className="w-4 h-4 text-[#234465] dark:text-[#7493B2] shrink-0" />
                 <p className="text-xs font-bold text-[#234465] dark:text-[#7493B2] leading-none">
                   Asignación confirmada
                 </p>
-                <p className="text-[10px] text-[#234465]/60 dark:text-[#7493B2]/60 mt-0.5">
-                  No se pueden asignar más ítems
-                </p>
               </div>
+              {isAdmin && (
+                <button
+                  onClick={() => onAddMore(collab)}
+                  className="w-full flex items-center justify-center gap-1.5 h-8 rounded-lg text-[11px] font-semibold text-[#DD7419] border border-[#DD7419]/25 hover:bg-[#DD7419]/5 transition"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Reasignación de inventario
+                </button>
+              )}
             </div>
           ) : (
             <div className="flex gap-2">
@@ -342,15 +357,13 @@ function CollabCard({ collab, onAssign, onRequestConfirm }) {
                 <Plus className="w-3.5 h-3.5" />
                 Asignar inventario
               </button>
-              {hasItems && (
-                <button
-                  onClick={() => onRequestConfirm(collab)}
-                  className="flex-1 flex items-center justify-center gap-1.5 h-8 rounded-lg text-[11px] font-semibold text-[#234465] dark:text-[#7493B2] border border-[#234465]/25 dark:border-[#7493B2]/30 hover:bg-[#234465]/5 transition"
-                >
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  Confirmar asignación
-                </button>
-              )}
+              <button
+                onClick={() => onRequestConfirm(collab)}
+                className="flex-1 flex items-center justify-center gap-1.5 h-8 rounded-lg text-[11px] font-semibold text-[#234465] dark:text-[#7493B2] border border-[#234465]/25 dark:border-[#7493B2]/30 hover:bg-[#234465]/5 transition"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                Confirmar asignación
+              </button>
             </div>
           )}
         </div>
@@ -381,8 +394,12 @@ function CardSkeleton() {
 }
 
 export const Section3 = ({ eventId }) => {
+  const { user } = useUserStore();
+  const isAdmin = hasAdminAccess(user?.roleId);
+
   const [showInventory, setShowInventory] = useState(false);
   const [assignCollab, setAssignCollab] = useState(null);
+  const [addMoreCollab, setAddMoreCollab] = useState(null);
   const [confirmTarget, setConfirmTarget] = useState(null);
   const [confirming, setConfirming] = useState(false);
   const [filters, setFilters] = useState({ name: '', cedula: '' });
@@ -418,6 +435,19 @@ export const Section3 = ({ eventId }) => {
       })
     );
     setAssignCollab(null);
+  };
+
+  const handleAdded = (newItem) => {
+    setCollaborators((prev) =>
+      prev.map((c) => {
+        if (c.userId !== addMoreCollab?.userId) return c;
+        return {
+          ...c,
+          inventoryItems: [...(c.inventoryItems ?? []), newItem],
+        };
+      })
+    );
+    setAddMoreCollab(null);
   };
 
   const handleConfirmInventory = async () => {
@@ -614,8 +644,10 @@ export const Section3 = ({ eventId }) => {
             <CollabCard
               key={collab.userId}
               collab={collab}
+              isAdmin={isAdmin}
               onAssign={setAssignCollab}
               onRequestConfirm={setConfirmTarget}
+              onAddMore={setAddMoreCollab}
             />
           ))}
         </div>
@@ -690,6 +722,16 @@ export const Section3 = ({ eventId }) => {
       {/* Modal inventario — solo navegación */}
       <InventoryModal open={showInventory} onOpenChange={setShowInventory} />
 
+      {/* Modal reasignación de inventario — solo admin, post-confirmación */}
+      <InventoryModal
+        open={!!addMoreCollab}
+        onOpenChange={(v) => { if (!v) setAddMoreCollab(null); }}
+        mode="assign"
+        collab={addMoreCollab}
+        eventId={eventId}
+        onAssigned={handleAdded}
+      />
+
       {/* Modal inventario — asignar a colaborador */}
       <InventoryModal
         open={!!assignCollab}
@@ -698,6 +740,7 @@ export const Section3 = ({ eventId }) => {
         }}
         mode="assign"
         collab={assignCollab}
+        eventId={eventId}
         onAssigned={handleAssigned}
       />
 

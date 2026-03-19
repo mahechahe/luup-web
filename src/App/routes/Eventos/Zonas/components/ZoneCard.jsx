@@ -65,15 +65,15 @@ export function ZoneCard({
   const allPeople = [
     ...(zone.coordinator ? [zone.coordinator] : []),
     ...(zone.supervisor ? [zone.supervisor] : []),
+    ...(zone.responsableAcopio ?? []),
     ...zone.collaborators,
-    ...(zone.responsableAcopio ? [zone.responsableAcopio] : []),
   ];
 
   const staffCount =
     (zone.supervisor ? 1 : 0) +
     (zone.coordinator ? 1 : 0) +
-    zone.collaborators.length +
-    (zone.responsableAcopio ? 1 : 0);
+    (zone.responsableAcopio?.length ?? 0) +
+    zone.collaborators.length;
 
   const getLatest = (userId) => {
     const arr = incidents[userId] ?? [];
@@ -388,6 +388,29 @@ export function ZoneCard({
               </div>
             )}
 
+            {zone.category === 'acopio' && zone.responsableAcopio?.length > 0 && (
+              <div>
+                <RoleSectionLabel
+                  icon={PackageOpen}
+                  label="Responsable de Acopio"
+                  sublabel="Acceso únicamente a su centro de acopio"
+                  count={zone.responsableAcopio.length}
+                  colorClass="text-[#DD7419]"
+                />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {zone.responsableAcopio.map((r, i) => (
+                    <CollaboratorCard
+                      key={i}
+                      person={r}
+                      incident={getLatest(r.userId)}
+                      onAddIncident={() => onAddIncident(r)}
+                      onViewHistory={() => onViewHistory(r)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
             {zone.collaborators.length > 0 && (
               <div>
                 <RoleSectionLabel
@@ -411,25 +434,6 @@ export function ZoneCard({
                     />
                   ))}
                 </div>
-              </div>
-            )}
-
-            {/* ✅ Responsable de Acopio — usa SupervisorCard con color naranja */}
-            {zone.category === 'acopio' && zone.responsableAcopio && (
-              <div>
-                <RoleSectionLabel
-                  icon={PackageOpen}
-                  label="Responsable de Acopio"
-                  sublabel="Acceso únicamente a su centro de acopio"
-                  colorClass="text-[#DD7419]"
-                />
-                <SupervisorCard
-                  person={zone.responsableAcopio}
-                  zoneColor="#DD7419"
-                  incident={getLatest(zone.responsableAcopio.userId)}
-                  onAddIncident={() => onAddIncident(zone.responsableAcopio)}
-                  onViewHistory={() => onViewHistory(zone.responsableAcopio)}
-                />
               </div>
             )}
 

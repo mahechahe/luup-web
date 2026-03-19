@@ -22,7 +22,8 @@ function formatTime(iso) {
 }
 
 function roleBadgeClass(role) {
-  if (role === 'supervisor') return 'bg-[#234465]/10 text-[#234465] dark:bg-[#234465]/20 dark:text-[#7493B2]';
+  if (role === 'supervisor')
+    return 'bg-[#234465]/10 text-[#234465] dark:bg-[#234465]/20 dark:text-[#7493B2]';
   if (role === 'coordinador') return 'bg-[#DD7419]/10 text-[#DD7419]';
   return 'bg-[#7493B2]/10 text-[#7493B2]';
 }
@@ -32,6 +33,7 @@ function roleLabel(role) {
       supervisor: 'Supervisor',
       coordinador: 'Coordinador',
       colaborador: 'Colaborador',
+      responsable_acopio: 'Resp. Acopio',
     }[role] ?? role
   );
 }
@@ -120,7 +122,9 @@ function CollabCard({
   return (
     <div
       className={`bg-card rounded-2xl border overflow-hidden transition-all ${
-        attended ? 'border-emerald-200 dark:border-emerald-800' : 'border-border'
+        attended
+          ? 'border-emerald-200 dark:border-emerald-800'
+          : 'border-border'
       }`}
     >
       <div className={`h-1 ${attended ? 'bg-emerald-500' : 'bg-muted'}`} />
@@ -235,9 +239,13 @@ function CollabCard({
                 No devolvió el uniforme del checkout anterior
               </p>
               <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-0.5">
-                Talla <span className="font-bold">{pendingReturn.uniformSize}</span>
+                Talla{' '}
+                <span className="font-bold">{pendingReturn.uniformSize}</span>
                 {pendingReturnDate && (
-                  <> · <span className="capitalize">{pendingReturnDate}</span></>
+                  <>
+                    {' '}
+                    · <span className="capitalize">{pendingReturnDate}</span>
+                  </>
                 )}
               </p>
             </div>
@@ -270,13 +278,17 @@ function CollabCard({
           <button
             onClick={() => !pendingReturn && setShowUniform((v) => !v)}
             disabled={!!pendingReturn}
-            title={pendingReturn ? 'No se puede asignar uniforme hasta devolver el anterior' : undefined}
+            title={
+              pendingReturn
+                ? 'No se puede asignar uniforme hasta devolver el anterior'
+                : undefined
+            }
             className={`flex-1 flex items-center justify-center gap-2 h-10 rounded-xl font-semibold text-sm transition-all border ${
               pendingReturn
                 ? 'bg-muted border-border text-muted-foreground opacity-50 cursor-not-allowed'
                 : uniformDone
-                ? 'bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-300 dark:hover:bg-blue-900/50'
-                : 'bg-card border-border text-muted-foreground hover:bg-muted'
+                  ? 'bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-300 dark:hover:bg-blue-900/50'
+                  : 'bg-card border-border text-muted-foreground hover:bg-muted'
             }`}
           >
             <Shirt className="w-4 h-4" />

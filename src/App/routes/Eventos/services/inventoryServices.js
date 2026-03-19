@@ -9,6 +9,7 @@ export const assignInventoryToCollaboratorService = async ({
   userId,
   quantity,
   createdBy,
+  eventId,
 }) => {
   try {
     const today = new Date();
@@ -20,6 +21,7 @@ export const assignInventoryToCollaboratorService = async ({
       userId,
       quantity,
       createdBy,
+      eventId,
       dateRegister: `${yyyy}-${mm}-${dd}`,
     });
     return { status: true, data: data?.data, errors: null };

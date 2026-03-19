@@ -40,6 +40,7 @@ export function InventoryModal({
   onOpenChange,
   mode = 'browse',
   collab = null,
+  eventId = null,
   onAssigned,
 }) {
   const [search, setSearch] = useState('');
@@ -77,6 +78,7 @@ export function InventoryModal({
       userId: collab.userId,
       quantity,
       createdBy: currentUser?.userId,
+      eventId,
     });
     if (res.status) {
       toast.success(`Inventario asignado a ${collab.firstName}`);

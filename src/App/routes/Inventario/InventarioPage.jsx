@@ -328,7 +328,7 @@ export default function InventarioPage() {
     <div className="min-h-screen bg-background px-4 py-6 pb-24">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* ── Header ───────────────────────────────────── */}
-        <div className="rounded-2xl bg-[#234465] px-6 py-5 shadow-md flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="rounded-2xl bg-[#234465] px-6 py-5 shadow-md flex flex-col gap-4">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
               <Boxes className="w-6 h-6 text-white" />
@@ -345,7 +345,7 @@ export default function InventarioPage() {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               variant="outline"
               className={`gap-1.5 h-9 border-white/20 text-white hover:bg-white/20 hover:text-white ${
@@ -378,7 +378,7 @@ export default function InventarioPage() {
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Actualizar
             </Button>
             <Button
-              className="bg-[#DD7419] hover:bg-[#DD7419]/90 text-white gap-1.5 h-9 font-semibold shadow-sm"
+              className="bg-[#DD7419] hover:bg-[#DD7419]/90 text-white gap-1.5 h-9 font-semibold shadow-sm sm:ml-auto"
               onClick={() => setModalItem(null)}
             >
               <Plus className="w-4 h-4" /> Agregar ítem

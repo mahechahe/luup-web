@@ -41,48 +41,28 @@ export const Section2 = ({ eventId }) => {
     setCurrentPage(1);
   };
 
-  const handleActionSaved = (collaboratorId, type, typeSnack) => {
-    const findCollabIdx = collaborators.find(
-      (c) => c.userId === collaboratorId
+  const handleActionSaved = (collaboratorId, type, typeSnack, received = true) => {
+    setCollaborators((prev) =>
+      prev.map((c) => {
+        if (c.userId !== collaboratorId) return c;
+
+        let updatedAttendance = { ...c.attendance };
+
+        if (type === 'suitcase') {
+          updatedAttendance.receivedSuitcase = received;
+        } else if (type === 'lunch') {
+          updatedAttendance.receivedLunch = received;
+        } else if (type === 'snack') {
+          updatedAttendance.receivedSnack = received;
+          updatedAttendance.snackDetail = received ? typeSnack : null;
+        } else if (type === 'confirm') {
+          updatedAttendance.confirmStation2 = true;
+        }
+
+        return { ...c, attendance: updatedAttendance };
+      })
     );
 
-    if (!findCollabIdx) {
-      toast.error('Colaborador no encontrado');
-      return;
-    }
-
-    if (type === 'suitcase') {
-      findCollabIdx.attendance = {
-        ...findCollabIdx.attendance,
-        receivedSuitcase: true,
-      };
-      return;
-    }
-
-    if (type === 'lunch') {
-      findCollabIdx.attendance = {
-        ...findCollabIdx.attendance,
-        receivedLunch: true,
-      };
-      return;
-    }
-
-    if (type === 'snack') {
-      findCollabIdx.attendance = {
-        ...findCollabIdx.attendance,
-        receivedSnack: true,
-        snackDetail: typeSnack,
-      };
-      return;
-    }
-
-    if (type === 'confirm') {
-      findCollabIdx.attendance = {
-        ...findCollabIdx.attendance,
-        confirmStation2: true,
-      };
-      return;
-    }
   };
 
   /* Fetch */

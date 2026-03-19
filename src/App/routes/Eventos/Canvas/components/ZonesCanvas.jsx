@@ -12,30 +12,14 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import { COLORS, generateId, getCenter } from './constants';
 
-/* ── Etiqueta SVG de zona ─────────────────────────────────
-   Si la zona es de categoría 'acopio' y tiene responsableAcopio,
-   la caja se hace más alta y muestra el nombre debajo del título.
-────────────────────────────────────────────────────────── */
 function ZoneLabel({ zone, isSelected }) {
-  const hasResponsable =
-    zone.category === 'acopio' && zone.responsableAcopio;
-
-  // Nombre corto: primero + primer apellido (max 2 palabras)
-  const responsableName = hasResponsable
-    ? zone.responsableAcopio.name.split(' ').slice(0, 2).join(' ')
-    : null;
-
-  const boxW = hasResponsable ? 130 : 110;
-  const boxH = hasResponsable ? 44 : 28;
-  const nameY = hasResponsable ? -6 : 5;
-
   return (
     <g className="pointer-events-none select-none">
       <rect
-        x={-(boxW / 2)}
-        y={-(boxH / 2)}
-        width={boxW}
-        height={boxH}
+        x={-55}
+        y={-14}
+        width={110}
+        height={28}
         rx="4"
         fill="white"
         fillOpacity="0.92"
@@ -43,7 +27,7 @@ function ZoneLabel({ zone, isSelected }) {
         strokeWidth={isSelected ? 2 : 1.5}
       />
       <text
-        y={nameY}
+        y={5}
         textAnchor="middle"
         fontSize="12"
         fontWeight="bold"
@@ -51,17 +35,6 @@ function ZoneLabel({ zone, isSelected }) {
       >
         {zone.name}
       </text>
-      {hasResponsable && (
-        <text
-          y={nameY + 16}
-          textAnchor="middle"
-          fontSize="9.5"
-          fontWeight="600"
-          fill="#DD7419"
-        >
-          {responsableName}
-        </text>
-      )}
     </g>
   );
 }
@@ -363,14 +336,55 @@ export function ZonesCanvas({
           onContextMenu={(e) => e.preventDefault()}
         >
           <defs>
-            <pattern id="grid-mobile" width="40" height="40" patternUnits="userSpaceOnUse">
-              <path d="M 40 0 L 0 0 0 40" fill="none" stroke="gray" strokeWidth="0.5" opacity="0.2" />
+            <pattern
+              id="grid-mobile"
+              width="40"
+              height="40"
+              patternUnits="userSpaceOnUse"
+            >
+              <path
+                d="M 40 0 L 0 0 0 40"
+                fill="none"
+                stroke="gray"
+                strokeWidth="0.5"
+                opacity="0.2"
+              />
             </pattern>
           </defs>
-          <rect id="background-rect" x="-5000" y="-5000" width="10000" height="10000" fill="#f8fafc" />
-          <rect id="workspace-rect" x="0" y="0" width="1200" height="800" fill="white" />
-          <rect id="grid-rect" x="0" y="0" width="1200" height="800" fill="url(#grid-mobile)" />
-          <image href={planImage} x="50" y="50" width="1100" height="700" opacity="0.9" preserveAspectRatio="none" className="pointer-events-none" />
+          <rect
+            id="background-rect"
+            x="-5000"
+            y="-5000"
+            width="10000"
+            height="10000"
+            fill="#f8fafc"
+          />
+          <rect
+            id="workspace-rect"
+            x="0"
+            y="0"
+            width="1200"
+            height="800"
+            fill="white"
+          />
+          <rect
+            id="grid-rect"
+            x="0"
+            y="0"
+            width="1200"
+            height="800"
+            fill="url(#grid-mobile)"
+          />
+          <image
+            href={planImage}
+            x="50"
+            y="50"
+            width="1100"
+            height="700"
+            opacity="0.9"
+            preserveAspectRatio="none"
+            className="pointer-events-none"
+          />
           {renderZones()}
         </svg>
 
@@ -396,7 +410,9 @@ export function ZonesCanvas({
               <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center">
                 <ImageOff className="w-6 h-6 text-muted-foreground" />
               </div>
-              <p className="font-semibold text-sm text-foreground">Sin plano cargado</p>
+              <p className="font-semibold text-sm text-foreground">
+                Sin plano cargado
+              </p>
               <p className="text-xs text-muted-foreground">
                 No hay un plano del recinto para este evento.
               </p>
@@ -450,9 +466,15 @@ export function ZonesCanvas({
                 ? 'bg-[#DD7419]/10 text-[#DD7419] hover:bg-[#DD7419]/20'
                 : 'text-muted-foreground hover:bg-muted hover:text-foreground'
             }`}
-            title={freeMove ? 'Bloquear movimiento' : 'Habilitar movimiento libre'}
+            title={
+              freeMove ? 'Bloquear movimiento' : 'Habilitar movimiento libre'
+            }
           >
-            {freeMove ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+            {freeMove ? (
+              <Unlock className="w-4 h-4" />
+            ) : (
+              <Lock className="w-4 h-4" />
+            )}
             <span className="text-[8px] font-semibold leading-none">
               {freeMove ? 'Libre' : 'Bloq.'}
             </span>
@@ -469,17 +491,51 @@ export function ZonesCanvas({
           onMouseUp={handleMouseUp}
           onContextMenu={(e) => e.preventDefault()}
           onDoubleClick={
-            tool === 'poly' && polyPoints.length >= 3 ? onFinishPolygon : undefined
+            tool === 'poly' && polyPoints.length >= 3
+              ? onFinishPolygon
+              : undefined
           }
         >
           <defs>
-            <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-              <path d="M 40 0 L 0 0 0 40" fill="none" stroke="gray" strokeWidth="0.5" opacity="0.2" />
+            <pattern
+              id="grid"
+              width="40"
+              height="40"
+              patternUnits="userSpaceOnUse"
+            >
+              <path
+                d="M 40 0 L 0 0 0 40"
+                fill="none"
+                stroke="gray"
+                strokeWidth="0.5"
+                opacity="0.2"
+              />
             </pattern>
           </defs>
-          <rect id="background-rect" x="-5000" y="-5000" width="10000" height="10000" fill="#f8fafc" />
-          <rect id="workspace-rect" x="0" y="0" width="1200" height="800" fill="white" />
-          <rect id="grid-rect" x="0" y="0" width="1200" height="800" fill="url(#grid)" />
+          <rect
+            id="background-rect"
+            x="-5000"
+            y="-5000"
+            width="10000"
+            height="10000"
+            fill="#f8fafc"
+          />
+          <rect
+            id="workspace-rect"
+            x="0"
+            y="0"
+            width="1200"
+            height="800"
+            fill="white"
+          />
+          <rect
+            id="grid-rect"
+            x="0"
+            y="0"
+            width="1200"
+            height="800"
+            fill="url(#grid)"
+          />
 
           <image
             href={planImage}
@@ -532,8 +588,16 @@ export function ZonesCanvas({
           {/* Preview rect en dibujo */}
           {isDrawing && currentRect && tool === 'rect' && (
             <rect
-              x={currentRect.width < 0 ? currentRect.x + currentRect.width : currentRect.x}
-              y={currentRect.height < 0 ? currentRect.y + currentRect.height : currentRect.y}
+              x={
+                currentRect.width < 0
+                  ? currentRect.x + currentRect.width
+                  : currentRect.x
+              }
+              y={
+                currentRect.height < 0
+                  ? currentRect.y + currentRect.height
+                  : currentRect.y
+              }
               width={Math.abs(currentRect.width)}
               height={Math.abs(currentRect.height)}
               fill="rgba(35,68,101,0.15)"
@@ -584,7 +648,9 @@ export function ZonesCanvas({
                 <ImageOff className="w-7 h-7 text-muted-foreground" />
               </div>
               <div>
-                <p className="font-semibold text-sm text-foreground">Sin plano cargado</p>
+                <p className="font-semibold text-sm text-foreground">
+                  Sin plano cargado
+                </p>
                 <p className="text-xs text-muted-foreground mt-1">
                   No hay un plano del recinto para este evento.
                 </p>

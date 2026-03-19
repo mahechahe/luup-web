@@ -87,14 +87,16 @@ function CanvasPage() {
           });
         }
 
-        // ✅ Responsable de acopio — solo existe en zonas de categoría 'acopio'
-        if (zone.responsableAcopio) {
-          people.push({
-            id: zone.responsableAcopio.userId,
-            name: `${zone.responsableAcopio.firstName} ${zone.responsableAcopio.lastName}`.trim(),
-            cedula: zone.responsableAcopio.cedula,
-            role: 'responsable_acopio',
-            status: 'confirmed',
+        // ✅ Responsables de acopio — array, similar a collaborators
+        if (zone.responsableAcopio?.length) {
+          zone.responsableAcopio.forEach((r) => {
+            people.push({
+              id: r.userId,
+              name: `${r.firstName} ${r.lastName}`.trim(),
+              cedula: r.cedula,
+              role: 'responsable_acopio',
+              status: 'confirmed',
+            });
           });
         }
 
@@ -120,14 +122,14 @@ function CanvasPage() {
           wasteLimit: zone.wasteLimit ?? null,
           weightLimit: zone.weightLimit ?? null,
           people,
-          // ✅ Exponer responsableAcopio como propiedad directa para ZoneLabel en canvas
-          responsableAcopio: zone.responsableAcopio
-            ? {
-                userId: zone.responsableAcopio.userId,
-                name: `${zone.responsableAcopio.firstName} ${zone.responsableAcopio.lastName}`.trim(),
-                cedula: zone.responsableAcopio.cedula,
-              }
-            : null,
+          // ✅ Exponer responsableAcopio como array para ZoneLabel en canvas
+          responsableAcopio: zone.responsableAcopio?.length
+            ? zone.responsableAcopio.map((r) => ({
+                userId: r.userId,
+                name: `${r.firstName} ${r.lastName}`.trim(),
+                cedula: r.cedula,
+              }))
+            : [],
           // Expandir geometría según el tipo
           ...(zone.type === 'rect'
             ? zone.geometry
@@ -285,8 +287,8 @@ function CanvasPage() {
       // Extraer IDs por rol
       const supervisor = zone.people.find((p) => p.role === 'supervisor');
       const coordinador = zone.people.find((p) => p.role === 'coordinador');
-      // ✅ Responsable de acopio — campo directo en la tabla igual que supervisor/coordinador
-      const responsableAcopio = zone.people.find((p) => p.role === 'responsable_acopio');
+      // ✅ Responsables de acopio — ahora es un array como collaborators
+      const responsablesAcopio = zone.people.filter((p) => p.role === 'responsable_acopio');
       const colaboradores = zone.people.filter((p) => p.role === 'colaborador');
 
       return {
@@ -322,8 +324,8 @@ function CanvasPage() {
         // Personas asignadas (solo IDs)
         supervisorId: supervisor ? supervisor.id : null,
         coordinadorId: coordinador ? coordinador.id : null,
-        // ✅ guardado como columna directa en event_zones
-        responsableAcopioId: responsableAcopio ? responsableAcopio.id : null,
+        // ✅ guardado como array de IDs
+        responsableAcopioIds: responsablesAcopio.map((r) => r.id),
         colaboradorIds: colaboradores.map((c) => c.id),
       };
     });
