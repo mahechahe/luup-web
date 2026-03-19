@@ -330,7 +330,9 @@ function DotacionModal({ inventory, existingCart, onConfirm, onClose, saving, gi
               {cart.map(({ item, cantidad }) => (
                 <div key={item.id} className={`flex items-center gap-2 px-3 py-2 rounded-xl border ${exceedsStock(item, cantidad) ? 'bg-red-50 border-red-200' : 'bg-[#eff6ff] border-[#bfdbfe]'}`}>
                   <Package className={`w-3.5 h-3.5 shrink-0 ${exceedsStock(item, cantidad) ? 'text-red-500' : 'text-[#234465]'}`} />
-                  <span className="flex-1 text-xs font-semibold text-foreground truncate">{item.nombre}</span>
+                  {/* ✅ FIX #1: break-words en lugar de truncate para que el nombre del ítem
+                      sea completamente visible en pantallas pequeñas */}
+                  <span className="flex-1 text-xs font-semibold text-foreground break-words min-w-0 leading-tight">{item.nombre}</span>
                   {exceedsStock(item, cantidad) && (
                     <span className="text-[10px] text-red-500 font-bold shrink-0">máx {item.cantidad}</span>
                   )}
@@ -352,6 +354,8 @@ function DotacionModal({ inventory, existingCart, onConfirm, onClose, saving, gi
                         }
                       }}
                       className="w-12 h-6 text-center text-xs font-black tabular-nums border border-border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#234465]/20"
+                      // ✅ FIX #2: fontSize 16px evita el zoom automático en iOS al enfocar
+                      style={{ fontSize: '16px' }}
                     />
                     <button onClick={() => updateQty(item.id, 1)} disabled={exceedsStock(item, cantidad + 1)} className="w-6 h-6 rounded-lg bg-white border border-border flex items-center justify-center hover:bg-muted disabled:opacity-30 transition">
                       <Plus className="w-3 h-3" />
@@ -376,6 +380,8 @@ function DotacionModal({ inventory, existingCart, onConfirm, onClose, saving, gi
                   onChange={(e) => { setSearch(e.target.value); setPage(1); }}
                   placeholder="Buscar ítem…"
                   className="w-full h-9 pl-9 pr-3 rounded-lg border border-border text-sm focus:outline-none focus:ring-2 focus:ring-[#234465]/20 bg-background"
+                  // ✅ FIX #2: fontSize 16px evita el zoom automático en iOS al enfocar
+                  style={{ fontSize: '16px' }}
                 />
               </div>
               <button
@@ -416,7 +422,8 @@ function DotacionModal({ inventory, existingCart, onConfirm, onClose, saving, gi
                       }
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-foreground truncate">{item.nombre}</p>
+                      {/* ✅ FIX #1: break-words para nombre completo visible en móvil */}
+                      <p className="text-xs font-semibold text-foreground break-words leading-tight">{item.nombre}</p>
                       {item.descripcion && (
                         <p className="text-[10px] text-muted-foreground truncate">{item.descripcion}</p>
                       )}
@@ -535,9 +542,12 @@ function CollabCard({ collab, inventory, onDotacionSaved, givenByName }) {
           {hasDotacion && (
             <div className="space-y-1.5">
               <div className="flex flex-wrap gap-1.5">
+                {/* ✅ FIX #1: text-xs en lugar de text-[10px] y sin truncado para que el
+                    nombre del ítem sea legible en móvil */}
                 {dotacion.map((d, i) => (
-                  <span key={i} className="text-[10px] font-semibold px-2 py-1 rounded-lg bg-violet-50 text-violet-700 border border-violet-100">
-                    {d.cantidad}× {d.itemNombre}
+                  <span key={i} className="inline-flex items-baseline gap-1 text-xs font-semibold px-2 py-1 rounded-lg bg-violet-50 text-violet-700 border border-violet-100">
+                    <span className="font-bold tabular-nums shrink-0">{d.cantidad}×</span>
+                    <span className="break-words">{d.itemNombre}</span>
                   </span>
                 ))}
               </div>
