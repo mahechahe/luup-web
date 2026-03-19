@@ -35,6 +35,22 @@ export const assignInventoryToCollaboratorService = async ({
   }
 };
 
+export const deleteInventoryAssignmentService = async (collaboratorItemId) => {
+  try {
+    const { data } = await axios.delete(`${INVENTORY_URL}/collaborator`, {
+      data: { collaboratorItemId },
+    });
+    return { status: true, data: data?.data, errors: null };
+  } catch (error) {
+    return {
+      status: false,
+      data: null,
+      errors:
+        error?.response?.data?.message || 'Error al eliminar la asignación.',
+    };
+  }
+};
+
 export const getInventoryListService = async ({ page = 1, nombre } = {}) => {
   try {
     const body = { page };

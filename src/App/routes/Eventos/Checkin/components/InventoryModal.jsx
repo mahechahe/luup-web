@@ -9,6 +9,7 @@ import {
   Plus,
   RefreshCw,
   Search,
+  Trash2,
   X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -54,8 +55,8 @@ export function InventoryModal({
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [selectedItem, setSelectedItem] = useState(null);
-  const [quantity, setQuantity] = useState(1);
+  // Map<id, { item, quantity }>
+  const [selectedItems, setSelectedItems] = useState(new Map());
   const [saving, setSaving] = useState(false);
   const searchRef = useRef(null);
   const currentUser = useUserStore((state) => state.user);
@@ -65,39 +66,83 @@ export function InventoryModal({
       setSearch('');
       setSearchInput('');
       setCurrentPage(1);
-      setSelectedItem(null);
-      setQuantity(1);
+      setSelectedItems(new Map());
     }
   }, [open]);
 
-  const handleConfirmAssign = async () => {
-    if (!selectedItem || !collab) return;
-    setSaving(true);
-    const res = await assignInventoryToCollaboratorService({
-      inventoryItemId: selectedItem.id,
-      userId: collab.userId,
-      quantity,
-      createdBy: currentUser?.userId,
-      eventId,
+  const toggleItem = (item) => {
+    setSelectedItems((prev) => {
+      const next = new Map(prev);
+      if (next.has(item.id)) {
+        next.delete(item.id);
+      } else {
+        next.set(item.id, { item, quantity: 1 });
+      }
+      return next;
     });
-    if (res.status) {
+  };
+
+  const updateQuantity = (id, delta) => {
+    setSelectedItems((prev) => {
+      const next = new Map(prev);
+      const entry = next.get(id);
+      if (!entry) return prev;
+      const newQty = Math.max(
+        1,
+        Math.min(entry.item.cantidad, entry.quantity + delta)
+      );
+      next.set(id, { ...entry, quantity: newQty });
+      return next;
+    });
+  };
+
+  const removeSelected = (id) => {
+    setSelectedItems((prev) => {
+      const next = new Map(prev);
+      next.delete(id);
+      return next;
+    });
+  };
+
+  const handleConfirmAssign = async () => {
+    if (selectedItems.size === 0 || !collab) return;
+    setSaving(true);
+    let anyError = false;
+    for (const [, { item, quantity }] of selectedItems) {
+      const res = await assignInventoryToCollaboratorService({
+        inventoryItemId: item.id,
+        userId: collab.userId,
+        quantity,
+        createdBy: currentUser?.userId,
+        eventId,
+      });
+      if (res.status) {
+        onAssigned?.(res.data);
+      } else {
+        toast.error(
+          `Error con "${item.nombre}": ${res.errors ?? 'Error al asignar'}`
+        );
+        anyError = true;
+      }
+    }
+    if (!anyError) {
       toast.success(`Inventario asignado a ${collab.firstName}`);
-      onAssigned?.(res.data);
-    } else {
-      toast.error(res.errors ?? 'Error al asignar el inventario');
+      onOpenChange(false);
     }
     setSaving(false);
   };
 
   const fetchData = (page = currentPage, nombre = search) => {
     setLoading(true);
-    getInventoryListService({ page, nombre: nombre || undefined }).then((res) => {
-      if (res.status) {
-        setItems(res.items);
-        setPagination(res.pagination);
+    getInventoryListService({ page, nombre: nombre || undefined }).then(
+      (res) => {
+        if (res.status) {
+          setItems(res.items);
+          setPagination(res.pagination);
+        }
+        setLoading(false);
       }
-      setLoading(false);
-    });
+    );
   };
 
   useEffect(() => {
@@ -117,12 +162,13 @@ export function InventoryModal({
   const { total, totalPages } = pagination;
   const safePage = Math.min(currentPage, Math.max(1, totalPages));
   const startIdx = (safePage - 1) * pagination.limit;
+  const selectedCount = selectedItems.size;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="p-0 gap-0 max-w-2xl max-h-[min(85vh,520px)] flex flex-col overflow-hidden"
+        className="p-0 gap-0 max-w-2xl max-h-[min(90vh,600px)] flex flex-col overflow-hidden"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
@@ -151,7 +197,9 @@ export function InventoryModal({
               className="w-8 h-8 rounded-lg hover:bg-muted flex items-center justify-center transition text-muted-foreground shrink-0 disabled:opacity-50"
               title="Actualizar"
             >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              <RefreshCw
+                className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`}
+              />
             </button>
             <button
               onClick={() => onOpenChange(false)}
@@ -267,123 +315,150 @@ export function InventoryModal({
                   </td>
                 </tr>
               ) : (
-                items.map((item, idx) => (
-                  <tr
-                    key={item.id}
-                    className="border-b border-border/50 hover:bg-muted/30 transition-colors"
-                  >
-                    <td className="px-3 py-1.5 text-muted-foreground hidden sm:table-cell">
-                      {startIdx + idx + 1}
-                    </td>
-                    <td className="px-3 py-1.5 font-semibold text-foreground">
-                      <p className="truncate max-w-[140px] sm:max-w-[200px]">
-                        {item.nombre}
-                      </p>
-                      {item.descripcion && (
-                        <p className="text-[10px] text-muted-foreground truncate max-w-[140px] sm:hidden mt-0.5">
-                          {item.descripcion}
-                        </p>
-                      )}
-                    </td>
-                    <td className="px-3 py-1.5 text-muted-foreground max-w-[180px] truncate hidden sm:table-cell">
-                      {item.descripcion || '—'}
-                    </td>
-                    <td className="px-3 py-1.5 text-center">
-                      <span className="inline-block font-bold text-[#DD7419] bg-[#DD7419]/10 px-2 py-0.5 rounded-full">
-                        {item.cantidad}
-                      </span>
-                    </td>
-                    <td className="px-3 py-1.5 text-right text-muted-foreground font-medium hidden sm:table-cell">
-                      {formatCurrency(item.precioUnitario)}
-                    </td>
-                    {mode === 'assign' && (
-                      <td className="px-2 py-1.5">
-                        <button
-                          onClick={() => {
-                            setSelectedItem(item);
-                            setQuantity(1);
-                          }}
-                          className={`w-7 h-7 rounded-lg flex items-center justify-center transition shrink-0 ${
-                            selectedItem?.id === item.id
-                              ? 'bg-[#DD7419] text-white'
-                              : 'bg-[#DD7419]/10 text-[#DD7419] hover:bg-[#DD7419]/20'
-                          }`}
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                        </button>
+                items.map((item, idx) => {
+                  const isSelected = selectedItems.has(item.id);
+                  return (
+                    <tr
+                      key={item.id}
+                      className={`border-b border-border/50 transition-colors ${
+                        isSelected
+                          ? 'bg-[#DD7419]/5'
+                          : 'hover:bg-muted/30'
+                      }`}
+                    >
+                      <td className="px-3 py-1.5 text-muted-foreground hidden sm:table-cell">
+                        {startIdx + idx + 1}
                       </td>
-                    )}
-                  </tr>
-                ))
+                      <td className="px-3 py-1.5 font-semibold text-foreground">
+                        <p className="break-words">
+                          {item.nombre}
+                        </p>
+                        {item.descripcion && (
+                          <p className="text-[10px] text-muted-foreground truncate max-w-[140px] sm:hidden mt-0.5">
+                            {item.descripcion}
+                          </p>
+                        )}
+                      </td>
+                      <td className="px-3 py-1.5 text-muted-foreground max-w-[180px] truncate hidden sm:table-cell">
+                        {item.descripcion || '—'}
+                      </td>
+                      <td className="px-3 py-1.5 text-center">
+                        <span className="inline-block font-bold text-[#DD7419] bg-[#DD7419]/10 px-2 py-0.5 rounded-full">
+                          {item.cantidad}
+                        </span>
+                      </td>
+                      <td className="px-3 py-1.5 text-right text-muted-foreground font-medium hidden sm:table-cell">
+                        {formatCurrency(item.precioUnitario)}
+                      </td>
+                      {mode === 'assign' && (
+                        <td className="px-2 py-1.5">
+                          <button
+                            onClick={() => toggleItem(item)}
+                            className={`w-7 h-7 rounded-lg flex items-center justify-center transition shrink-0 ${
+                              isSelected
+                                ? 'bg-[#DD7419] text-white'
+                                : 'bg-[#DD7419]/10 text-[#DD7419] hover:bg-[#DD7419]/20'
+                            }`}
+                          >
+                            <Plus
+                              className={`w-3.5 h-3.5 transition-transform ${
+                                isSelected ? 'rotate-45' : ''
+                              }`}
+                            />
+                          </button>
+                        </td>
+                      )}
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
         </div>
 
-        {/* Panel de confirmación de asignación */}
-        {mode === 'assign' && selectedItem && (
-          <div className="border-t-2 border-[#DD7419]/20 bg-[#DD7419]/5 px-5 py-3 shrink-0 space-y-3">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-[#DD7419]/15 flex items-center justify-center shrink-0">
-                <Package className="w-4 h-4 text-[#DD7419]" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-bold text-foreground truncate">
-                  {selectedItem.nombre}
-                </p>
-                <p className="text-[10px] text-muted-foreground">
-                  Stock disponible:{' '}
-                  <span className="font-semibold text-[#DD7419]">
-                    {selectedItem.cantidad}
-                  </span>
-                </p>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <span className="text-xs font-semibold text-foreground">
-                  Cantidad:
+        {/* Panel de ítems seleccionados */}
+        {mode === 'assign' && selectedCount > 0 && (
+          <div className="border-t-2 border-[#DD7419] bg-background px-4 pt-3 pb-3 shrink-0">
+
+            {/* Cabecera del panel */}
+            <div className="flex items-center justify-between mb-2.5">
+              <div className="flex items-center gap-1.5">
+                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#DD7419] text-white text-[10px] font-bold shrink-0">
+                  {selectedCount}
                 </span>
-                <div className="flex items-center border border-[#DD7419]/30 rounded-xl overflow-hidden">
+                <p className="text-xs font-semibold text-foreground">
+                  {selectedCount === 1 ? 'ítem seleccionado' : 'ítems seleccionados'}
+                </p>
+              </div>
+              <button
+                onClick={() => setSelectedItems(new Map())}
+                className="text-[10px] text-muted-foreground hover:text-destructive transition flex items-center gap-1"
+              >
+                <X className="w-3 h-3" />
+                Limpiar
+              </button>
+            </div>
+
+            {/* Lista scrollable de ítems seleccionados */}
+            <div className="space-y-1.5 max-h-32 overflow-y-auto">
+              {[...selectedItems.values()].map(({ item, quantity }) => (
+                <div
+                  key={item.id}
+                  className="flex items-center gap-2.5 bg-muted/50 border border-[#DD7419]/20 rounded-xl px-3 py-2"
+                >
+                  {/* Nombre + stock disponible */}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-foreground truncate leading-tight">
+                      {item.nombre}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                      Stock: <span className="font-semibold text-[#DD7419]">{item.cantidad}</span>
+                    </p>
+                  </div>
+
+                  {/* Control de cantidad */}
+                  <div className="flex items-center bg-background border border-[#DD7419]/30 rounded-lg overflow-hidden shrink-0">
+                    <button
+                      onClick={() => updateQuantity(item.id, -1)}
+                      disabled={quantity <= 1}
+                      className="w-7 h-7 flex items-center justify-center text-[#DD7419] font-bold text-base hover:bg-[#DD7419]/10 disabled:opacity-25 disabled:cursor-not-allowed transition"
+                    >
+                      −
+                    </button>
+                    <span className="w-7 text-center text-xs font-bold text-foreground select-none border-x border-[#DD7419]/20">
+                      {quantity}
+                    </span>
+                    <button
+                      onClick={() => updateQuantity(item.id, 1)}
+                      disabled={quantity >= item.cantidad}
+                      className="w-7 h-7 flex items-center justify-center text-[#DD7419] font-bold text-base hover:bg-[#DD7419]/10 disabled:opacity-25 disabled:cursor-not-allowed transition"
+                    >
+                      +
+                    </button>
+                  </div>
+
+                  {/* Quitar ítem */}
                   <button
-                    onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                    disabled={quantity <= 1}
-                    className="w-10 h-10 flex items-center justify-center text-[#DD7419] font-bold text-lg hover:bg-[#DD7419]/10 disabled:opacity-30 disabled:cursor-not-allowed transition active:scale-95"
+                    onClick={() => removeSelected(item.id)}
+                    className="w-6 h-6 flex items-center justify-center rounded-md text-muted-foreground hover:bg-red-50 hover:text-red-500 transition shrink-0"
                   >
-                    −
-                  </button>
-                  <span className="w-10 text-center text-sm font-bold text-foreground select-none">
-                    {quantity}
-                  </span>
-                  <button
-                    onClick={() =>
-                      setQuantity((q) => Math.min(selectedItem.cantidad, q + 1))
-                    }
-                    disabled={quantity >= selectedItem.cantidad}
-                    className="w-10 h-10 flex items-center justify-center text-[#DD7419] font-bold text-lg hover:bg-[#DD7419]/10 disabled:opacity-30 disabled:cursor-not-allowed transition active:scale-95"
-                  >
-                    +
+                    <Trash2 className="w-3 h-3" />
                   </button>
                 </div>
-              </div>
+              ))}
             </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => {
-                  setSelectedItem(null);
-                  setQuantity(1);
-                }}
-                className="flex-1 h-8 rounded-lg border border-border text-xs text-muted-foreground hover:bg-muted transition"
-              >
-                Cancelar
-              </button>
+
+            {/* Botón confirmar */}
+            <div className="mt-2.5">
               <button
                 onClick={handleConfirmAssign}
                 disabled={saving}
-                className="flex-1 h-8 rounded-lg bg-[#DD7419] text-white text-xs font-semibold hover:bg-[#DD7419]/90 transition flex items-center justify-center gap-1.5 disabled:opacity-70"
+                className="w-full h-9 rounded-xl bg-[#DD7419] text-white text-xs font-semibold hover:bg-[#DD7419]/90 active:scale-[0.98] transition flex items-center justify-center gap-1.5 disabled:opacity-70 shadow-sm"
               >
                 {saving ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
                 ) : (
-                  'Confirmar asignación'
+                  `Confirmar asignación (${selectedCount})`
                 )}
               </button>
             </div>

@@ -15,6 +15,7 @@ import {
   Plus,
   RefreshCw,
   Search,
+  Trash2,
   User,
   X,
 } from 'lucide-react';
@@ -34,6 +35,7 @@ import {
   confirmInventoryService,
   getStation3RecordsService,
 } from '../../services/eventServices';
+import { deleteInventoryAssignmentService } from '../../services/inventoryServices';
 import { InventoryModal } from '../components/InventoryModal';
 import { AddInventoryModal } from '../components/AddInventoryModal';
 import { useUserStore } from '@/App/context/userStore';
@@ -71,6 +73,7 @@ function CollabCard({
   onAssign,
   onRequestConfirm,
   onAddMore,
+  onDeleteItem,
   isAdmin,
 }) {
   const items = collab.inventoryItems ?? [];
@@ -232,15 +235,32 @@ function CollabCard({
                             )}
                           </div>
                         </div>
-                        <span
-                          className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                            complete
-                              ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
-                              : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
-                          }`}
-                        >
-                          {complete ? 'Completo' : 'Pendiente'}
-                        </span>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                              complete
+                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
+                                : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
+                            }`}
+                          >
+                            {complete ? 'Completo' : 'Pendiente'}
+                          </span>
+                          {!isConfirmed && !complete && (
+                            <button
+                              onClick={() =>
+                                onDeleteItem({
+                                  collabUserId: collab.userId,
+                                  itemId: item.id,
+                                  itemName: item.itemName,
+                                })
+                              }
+                              className="w-6 h-6 flex items-center justify-center rounded-md text-muted-foreground hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-500 transition"
+                              title="Eliminar asignación"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
                       </div>
                       <div className="grid grid-cols-5 gap-1.5">
                         {[
@@ -402,6 +422,8 @@ export const Section3 = ({ eventId }) => {
   const [addMoreCollab, setAddMoreCollab] = useState(null);
   const [confirmTarget, setConfirmTarget] = useState(null);
   const [confirming, setConfirming] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null); // { collabUserId, itemId, itemName }
+  const [deleting, setDeleting] = useState(false);
   const [filters, setFilters] = useState({ name: '', cedula: '' });
   const [filterInput, setFilterInput] = useState({ name: '', cedula: '' });
   const [loading, setLoading] = useState(true);
@@ -467,6 +489,30 @@ export const Section3 = ({ eventId }) => {
       setConfirmTarget(null);
     } else {
       toast.error(res.errors ?? 'Error al confirmar el inventario');
+    }
+  };
+
+  const handleDeleteItem = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    const res = await deleteInventoryAssignmentService(deleteTarget.itemId);
+    setDeleting(false);
+    if (res.status) {
+      toast.success('Asignación eliminada');
+      setCollaborators((prev) =>
+        prev.map((c) => {
+          if (c.userId !== deleteTarget.collabUserId) return c;
+          return {
+            ...c,
+            inventoryItems: c.inventoryItems.filter(
+              (i) => i.id !== deleteTarget.itemId
+            ),
+          };
+        })
+      );
+      setDeleteTarget(null);
+    } else {
+      toast.error(res.errors ?? 'Error al eliminar la asignación');
     }
   };
 
@@ -648,6 +694,7 @@ export const Section3 = ({ eventId }) => {
               onAssign={setAssignCollab}
               onRequestConfirm={setConfirmTarget}
               onAddMore={setAddMoreCollab}
+              onDeleteItem={setDeleteTarget}
             />
           ))}
         </div>
@@ -713,6 +760,63 @@ export const Section3 = ({ eventId }) => {
                 </span>
               ) : (
                 'Sí, confirmar'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirmación de eliminación de ítem */}
+      <AlertDialog
+        open={!!deleteTarget}
+        onOpenChange={(v) => { if (!v && !deleting) setDeleteTarget(null); }}
+      >
+        <AlertDialogContent className="max-w-sm">
+          <AlertDialogHeader>
+            <div className="flex items-center gap-3 mb-1">
+              <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center shrink-0">
+                <Trash2 className="w-5 h-5 text-red-500" />
+              </div>
+              <AlertDialogTitle className="text-base leading-snug">
+                ¿Eliminar esta asignación?
+              </AlertDialogTitle>
+            </div>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Vas a eliminar el ítem{' '}
+                  <span className="font-semibold text-foreground">
+                    {deleteTarget?.itemName}
+                  </span>{' '}
+                  de la asignación pendiente.
+                </p>
+                <div className="flex items-start gap-2 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-3 py-2.5">
+                  <span className="text-red-500 text-base leading-none mt-0.5">⚠</span>
+                  <p className="text-xs text-red-700 dark:text-red-300 leading-relaxed">
+                    Esta acción no se puede deshacer. El ítem volverá al
+                    inventario disponible.
+                  </p>
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleDeleteItem();
+              }}
+              disabled={deleting}
+              className="bg-red-500 hover:bg-red-600 text-white"
+            >
+              {deleting ? (
+                <span className="flex items-center gap-1.5">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  Eliminando…
+                </span>
+              ) : (
+                'Sí, eliminar'
               )}
             </AlertDialogAction>
           </AlertDialogFooter>
