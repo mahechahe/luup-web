@@ -16,7 +16,8 @@ import { EventoHeader } from './components/EventoHeader';
 import { LoadingModal } from './components/LoadingModal';
 import { ZonesCanvas } from './components/ZonesCanvas';
 import { ZonesSidebar } from './components/ZonesSidebar';
-import { Maximize2, X } from 'lucide-react';
+// ✅ FIX #3: se agrega ChevronDown y ChevronUp para el acordeón del layout
+import { ChevronDown, ChevronUp, X } from 'lucide-react';
 
 function CanvasPage() {
   const { eventId } = useParams();
@@ -34,6 +35,8 @@ function CanvasPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   // ✅ Modal de mapa fullscreen en móvil
   const [mapFullscreen, setMapFullscreen] = useState(false);
+  // ✅ FIX #3: controla si el canvas acordeón está expandido en móvil
+  const [mapExpanded, setMapExpanded] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeletingZone, setIsDeletingZone] = useState(false);
 
@@ -424,23 +427,9 @@ function CanvasPage() {
       {/* ── Layout móvil: canvas h-[50vh] arriba + sidebar abajo (igual que antes) ── */}
       <div className="md:hidden flex-1 flex flex-col overflow-hidden">
 
-        {/* Canvas en la mitad superior — solo lectura con touch pan */}
-        <div className="relative shrink-0">
-          <ZonesCanvas
-            {...sharedCanvasProps}
-            sidebarOpen={false}
-            onToggleSidebar={() => {}}
-          />
-
-          {/* ✅ Botón flotante para abrir el mapa en fullscreen */}
-          <button
-            onClick={() => setMapFullscreen(true)}
-            className="absolute bottom-3 right-3 z-20 flex items-center gap-1.5 bg-[#234465]/90 backdrop-blur-sm text-white text-[11px] font-semibold px-3 py-2 rounded-full shadow-lg active:scale-95 transition-transform"
-          >
-            <Maximize2 className="w-3.5 h-3.5" />
-            Ver mapa completo
-          </button>
-        </div>
+        {/* ✅ FIX #3: el canvas inline y el botón flotante se reemplazan por un
+            acordeón al final del sidebar — el usuario toca "Ver layout" para
+            expandir/colapsar el mapa sin salir de la página */}
 
         {/* Sidebar en la parte inferior, scrolleable */}
         <div className="flex-1 overflow-y-auto border-t border-border">
@@ -466,6 +455,33 @@ function CanvasPage() {
             onRemovePerson={removePerson}
             onDeleteRequest={setDeleteId}
           />
+
+          {/* ✅ FIX #3: acordeón Ver / Ocultar layout — se agrega al final del sidebar */}
+          <div className="border-t border-border">
+            <button
+              onClick={() => setMapExpanded((v) => !v)}
+              className="w-full flex items-center justify-between px-4 py-3 bg-card hover:bg-muted/50 transition active:bg-muted"
+            >
+              <span className="text-sm font-bold text-foreground">
+                {mapExpanded ? 'Ocultar layout' : 'Ver layout'}
+              </span>
+              {mapExpanded
+                ? <ChevronUp className="w-4 h-4 text-muted-foreground" />
+                : <ChevronDown className="w-4 h-4 text-muted-foreground" />
+              }
+            </button>
+
+            {/* Canvas expandible — h-[60vh] da espacio útil para interactuar */}
+            {mapExpanded && (
+              <div className="h-[60vh] border-t border-border">
+                <ZonesCanvas
+                  {...sharedCanvasProps}
+                  sidebarOpen={false}
+                  onToggleSidebar={() => {}}
+                />
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

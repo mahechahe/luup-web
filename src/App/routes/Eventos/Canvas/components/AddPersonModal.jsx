@@ -99,8 +99,14 @@ export function AddPersonModal({ zoneId, role, existingIds, onConfirm, onClose }
   };
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-card rounded-2xl shadow-2xl w-[640px] max-h-[85vh] flex flex-col">
+    <div className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm">
+      {/* ✅ FIX móvil: w-full en móvil, 640px en sm+. Bottom sheet en móvil (rounded-t-2xl), centrado en sm+ */}
+      <div className="bg-card rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:w-[640px] max-h-[92dvh] sm:max-h-[85vh] flex flex-col">
+
+        {/* Pill handle visible solo en mobile */}
+        <div className="flex justify-center pt-3 pb-1 sm:hidden shrink-0">
+          <div className="w-10 h-1 rounded-full bg-muted-foreground/20" />
+        </div>
 
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
@@ -135,6 +141,8 @@ export function AddPersonModal({ zoneId, role, existingIds, onConfirm, onClose }
               onChange={(e) => setSearchFirst(e.target.value)}
               onKeyDown={handleKeyDown}
               className="w-full pl-8 pr-3 py-1.5 text-xs border border-border rounded-lg outline-none focus:border-[#DD7419] bg-background text-foreground"
+              // ✅ FIX #2: fontSize 16px evita zoom en iOS
+              style={{ fontSize: '16px' }}
             />
           </div>
           <div className="flex-1 relative">
@@ -145,6 +153,8 @@ export function AddPersonModal({ zoneId, role, existingIds, onConfirm, onClose }
               onChange={(e) => setSearchCedula(e.target.value)}
               onKeyDown={handleKeyDown}
               className="w-full pl-8 pr-3 py-1.5 text-xs border border-border rounded-lg outline-none focus:border-[#DD7419] bg-background text-foreground"
+              // ✅ FIX #2: fontSize 16px evita zoom en iOS
+              style={{ fontSize: '16px' }}
             />
           </div>
           <button
@@ -176,63 +186,66 @@ export function AddPersonModal({ zoneId, role, existingIds, onConfirm, onClose }
               <p className="text-sm">No se encontraron colaboradores</p>
             </div>
           ) : (
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="border-b border-border bg-muted/40 sticky top-0">
-                  <th className="w-10 px-4 py-2.5" />
-                  <th className="px-3 py-2.5 text-left font-semibold text-muted-foreground uppercase tracking-wide text-[10px]">
-                    Nombre
-                  </th>
-                  <th className="px-3 py-2.5 text-left font-semibold text-muted-foreground uppercase tracking-wide text-[10px]">
-                    Cédula
-                  </th>
-                  <th className="px-3 py-2.5 text-left font-semibold text-muted-foreground uppercase tracking-wide text-[10px]">
-                    Teléfono
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {collaborators.map((c) => {
-                  const isSelected = selected.has(c.userId);
-                  const alreadyAdded = existingIds.has(c.userId);
-                  return (
-                    <tr
-                      key={c.userId}
-                      onClick={() => !alreadyAdded && toggleSelect(c)}
-                      className={`border-b border-border last:border-0 transition-colors ${
-                        alreadyAdded
-                          ? 'opacity-40 cursor-not-allowed bg-muted/10'
-                          : isSelected
-                            ? 'bg-[#DD7419]/5 cursor-pointer'
-                            : 'hover:bg-muted/30 cursor-pointer'
-                      }`}
-                    >
-                      <td className="px-4 py-2.5">
-                        <div
-                          className={`w-4 h-4 rounded border-2 flex items-center justify-center transition ${
-                            isSelected
-                              ? 'bg-[#DD7419] border-[#DD7419]'
-                              : 'border-border bg-background'
-                          }`}
-                        >
-                          {isSelected && <Check className="w-2.5 h-2.5 text-white" />}
-                        </div>
-                      </td>
-                      <td className="px-3 py-2.5 font-medium text-foreground">
-                        {`${c.firstName} ${c.lastName}`.trim()}
-                        {alreadyAdded && (
-                          <span className="ml-1.5 text-[9px] text-muted-foreground font-normal">
-                            (ya asignado a otra zona)
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-3 py-2.5 text-muted-foreground">{c.cedula}</td>
-                      <td className="px-3 py-2.5 text-muted-foreground">{c.phone ?? '—'}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+            // ✅ FIX móvil: overflow-x-auto para que la tabla no se colapse en pantallas pequeñas
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-border bg-muted/40 sticky top-0">
+                    <th className="w-10 px-4 py-2.5" />
+                    <th className="px-3 py-2.5 text-left font-semibold text-muted-foreground uppercase tracking-wide text-[10px]">
+                      Nombre
+                    </th>
+                    <th className="px-3 py-2.5 text-left font-semibold text-muted-foreground uppercase tracking-wide text-[10px]">
+                      Cédula
+                    </th>
+                    <th className="px-3 py-2.5 text-left font-semibold text-muted-foreground uppercase tracking-wide text-[10px]">
+                      Teléfono
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {collaborators.map((c) => {
+                    const isSelected = selected.has(c.userId);
+                    const alreadyAdded = existingIds.has(c.userId);
+                    return (
+                      <tr
+                        key={c.userId}
+                        onClick={() => !alreadyAdded && toggleSelect(c)}
+                        className={`border-b border-border last:border-0 transition-colors ${
+                          alreadyAdded
+                            ? 'opacity-40 cursor-not-allowed bg-muted/10'
+                            : isSelected
+                              ? 'bg-[#DD7419]/5 cursor-pointer'
+                              : 'hover:bg-muted/30 cursor-pointer'
+                        }`}
+                      >
+                        <td className="px-4 py-2.5">
+                          <div
+                            className={`w-4 h-4 rounded border-2 flex items-center justify-center transition ${
+                              isSelected
+                                ? 'bg-[#DD7419] border-[#DD7419]'
+                                : 'border-border bg-background'
+                            }`}
+                          >
+                            {isSelected && <Check className="w-2.5 h-2.5 text-white" />}
+                          </div>
+                        </td>
+                        <td className="px-3 py-2.5 font-medium text-foreground">
+                          {`${c.firstName} ${c.lastName}`.trim()}
+                          {alreadyAdded && (
+                            <span className="ml-1.5 text-[9px] text-muted-foreground font-normal">
+                              (ya asignado a otra zona)
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-3 py-2.5 text-muted-foreground">{c.cedula}</td>
+                        <td className="px-3 py-2.5 text-muted-foreground">{c.phone ?? '—'}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
 
