@@ -470,31 +470,37 @@ function CanvasPage() {
       </div>
 
       {/* ✅ Modal fullscreen del mapa — solo móvil */}
-      {mapFullscreen && (
-        <div className="fixed inset-0 z-50 bg-background flex flex-col md:hidden">
-          {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card shrink-0">
-            <p className="text-sm font-bold text-foreground">
-              {event?.name ?? 'Mapa del evento'}
-            </p>
-            <button
-              onClick={() => setMapFullscreen(false)}
-              className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
+{mapFullscreen && (
+  <div
+    className="fixed inset-0 z-50 bg-background flex flex-col md:hidden"
+    style={{
+      paddingTop: 'env(safe-area-inset-top, 0px)',
+      paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+    }}
+  >
+    {/* Header */}
+    <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card shrink-0">
+      <p className="text-sm font-bold text-foreground">
+        {event?.name ?? 'Mapa del evento'}
+      </p>
+      <button
+        onClick={() => setMapFullscreen(false)}
+        className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition"
+      >
+        <X className="w-5 h-5" />
+      </button>
+    </div>
 
-          {/* Canvas fullscreen con pan táctil y zoom */}
-          <div className="flex-1 overflow-hidden">
-            <ZonesCanvas
-              {...sharedCanvasProps}
-              sidebarOpen={false}
-              onToggleSidebar={() => {}}
-            />
-          </div>
-        </div>
-      )}
+    {/* Canvas fullscreen con pan táctil y zoom */}
+    <div className="flex-1 overflow-hidden">
+      <ZonesCanvas
+        {...sharedCanvasProps}
+        sidebarOpen={false}
+        onToggleSidebar={() => {}}
+      />
+    </div>
+  </div>
+)}
 
       <DeleteZoneModal
         deleteId={deleteId}
