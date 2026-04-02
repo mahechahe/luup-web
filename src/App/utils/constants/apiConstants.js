@@ -20,5 +20,6 @@ export const constants = {
     APPOINTMENT_REVIEWS: 'appointment-reviews',
     PROFESSIONAL_SHOWCASES: 'professional-showcases',
     SUSCRIPTIONS: 'suscriptions',
+    LOCATION: 'location',
   },
 };
