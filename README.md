@@ -196,7 +196,17 @@ Comprimir **el contenido** de `dist/` (no la carpeta en sí) en un archivo `dist
 2. Navegar en el panel remoto hasta el directorio del servidor (por ejemplo `/var/www/web_luup/` o la ruta que corresponda).
 3. Arrastrar `dist.zip` desde el panel local al panel remoto.
 
-### Paso 4 — Limpiar y desplegar en el servidor (SSH)
+### Paso 4 — Verificar que el archivo subió correctamente
+
+Antes de desplegar, confirmar que el ZIP es el correcto revisando su fecha y peso:
+
+```bash
+ls -lh dist.zip
+```
+
+Esto muestra el tamaño y la hora de modificación del archivo. Si la fecha y hora coinciden con la subida reciente, se puede continuar con el despliegue.
+
+### Paso 5 — Limpiar y desplegar en el servidor (SSH)
 
 Conectarse al servidor por SSH y ejecutar:
 
