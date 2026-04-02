@@ -1,3 +1,5 @@
+export const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
+
 export const constants = {
   // BASE_URL: 'http://localhost:3000/api/v1',
   BASE_URL: '/api/v1',

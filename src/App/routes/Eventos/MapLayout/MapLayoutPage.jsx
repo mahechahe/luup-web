@@ -18,11 +18,12 @@ import { TrackingPanel } from './modals/TrackingPanel';
 import { useUserStore } from '@/App/context/userStore';
 import { hasAdminAccess } from '@/App/utils/roles';
 import { getLiveLocationsService } from './services/mapLayoutServices';
+import { MAPBOX_TOKEN } from '@/App/utils/constants/apiConstants';
 
 import 'mapbox-gl/dist/mapbox-gl.css';
 import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css';
 
-mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
+mapboxgl.accessToken = MAPBOX_TOKEN;
 
 const CENTER = [-74.09211028939165, 4.65864757893157];
 

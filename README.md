@@ -172,6 +172,46 @@ BASE_URL: 'http://localhost:3000/api/v1'  // desarrollo
 
 ---
 
+## Despliegue en producción
+
+El proceso de deploy es manual vía **FileZilla** + SSH al servidor donde Nginx sirve la app.
+
+### Paso 1 — Generar el build
+
+```bash
+npm run build
+```
+
+Esto genera la carpeta `dist/` en la raíz del proyecto.
+
+### Paso 2 — Comprimir el dist
+
+Comprimir **el contenido** de `dist/` (no la carpeta en sí) en un archivo `dist.zip`.
+
+> En Windows: seleccionar todo lo que hay dentro de `dist/` → clic derecho → _Comprimir en archivo ZIP_ → renombrar a `dist.zip`.
+
+### Paso 3 — Subir el ZIP con FileZilla
+
+1. Abrir FileZilla y conectarse al servidor.
+2. Navegar en el panel remoto hasta el directorio del servidor (por ejemplo `/var/www/web_luup/` o la ruta que corresponda).
+3. Arrastrar `dist.zip` desde el panel local al panel remoto.
+
+### Paso 4 — Limpiar y desplegar en el servidor (SSH)
+
+Conectarse al servidor por SSH y ejecutar:
+
+```bash
+# 1. Limpiar el contenido anterior
+sudo rm -rf /var/www/web_luup/*
+
+# 2. Descomprimir el nuevo build
+sudo unzip -o dist.zip -d /var/www/web_luup
+```
+
+La app queda activa de inmediato. No es necesario reiniciar Nginx salvo que cambie su configuración.
+
+---
+
 ## Convenciones
 
 - **Alias de importación**: usar `@/` para todo import interno (mapeado a `./src`)

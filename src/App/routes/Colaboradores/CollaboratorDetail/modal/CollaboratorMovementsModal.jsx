@@ -13,10 +13,11 @@ import {
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { getCollaboratorLocationHistoryService } from './collaboratorLocationService';
+import { MAPBOX_TOKEN } from '@/App/utils/constants/apiConstants';
 
 import 'mapbox-gl/dist/mapbox-gl.css';
 
-mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
+mapboxgl.accessToken = MAPBOX_TOKEN;
 
 /* ── Helpers ─────────────────────────────────────────────── */
 function fmtTime(iso) {
