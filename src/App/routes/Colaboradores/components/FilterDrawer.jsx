@@ -92,7 +92,10 @@ export function FilterDrawer({ open, onClose, onApply, activeFilters }) {
         </SheetHeader>
 
         {/* Campos */}
-        <div className="flex-1 overflow-y-auto px-4 py-6 space-y-5">
+        <div
+          className="flex-1 overflow-y-auto px-4 py-6 space-y-5"
+          onKeyDown={(e) => { if (e.key === 'Enter') handleApply(); }}
+        >
           {/* Nombre */}
           <div className="space-y-1.5">
             <Label htmlFor="filter-nombre" className="text-sm font-medium">

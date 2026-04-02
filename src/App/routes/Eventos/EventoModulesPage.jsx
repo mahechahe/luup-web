@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { MapIcon, ListChecks, UserCheck, ArrowLeft } from 'lucide-react';
+import { MapIcon, ListChecks, UserCheck, ArrowLeft, Map } from 'lucide-react';
 import { getEventoDetailService } from './services/eventServices';
 import { EventoHeader } from './Canvas/components/EventoHeader';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -50,6 +50,16 @@ export default function EventoModulesPage() {
       color: 'bg-[#7493B2]',
       hoverColor: 'hover:bg-[#7493B2]/90',
       path: `/eventos/${eventId}/checkin`,
+    },
+    {
+      id: 'map-layout',
+      title: 'Layout 2',
+      description:
+        'Dibuja y gestiona las zonas del evento directamente sobre un mapa real. Define polígonos georreferenciados para cada zona.',
+      icon: Map,
+      color: 'bg-[#234465]',
+      hoverColor: 'hover:bg-[#234465]/90',
+      path: `/eventos/${eventId}/map-layout`,
     },
   ];
 

@@ -44,6 +44,10 @@ export const routesAuth = [
     component: lazy(() => import('./Eventos/Canvas/CanvasPage')),
   },
   {
+    path: 'eventos/:eventId/map-layout',
+    component: lazy(() => import('./Eventos/MapLayout/MapLayoutPage')),
+  },
+  {
     path: 'eventos/:eventId/zonas',
     component: lazy(() => import('./Eventos/Zonas/ZonasPage')),
   },

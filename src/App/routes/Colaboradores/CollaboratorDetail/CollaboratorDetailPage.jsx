@@ -16,6 +16,7 @@ import {
   HardHat,
   LogIn,
   LogOut,
+  MapPin,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -23,6 +24,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { getCollaboratorDetailService } from '../services/collaboratorServices';
+import { CollaboratorMovementsModal } from './modal/CollaboratorMovementsModal';
 
 /* ── Helpers ─────────────────────────────────────────────── */
 function formatDate(iso) {
@@ -51,17 +53,20 @@ const ROLE_CONFIG = {
   coordinator: {
     label: 'Coordinador',
     icon: ShieldCheck,
-    className: 'bg-purple-50 text-purple-700 border-purple-200',
+    className:
+      'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800/60',
   },
   supervisor: {
     label: 'Supervisor',
     icon: UserCheck,
-    className: 'bg-blue-50 text-blue-700 border-blue-200',
+    className:
+      'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800/60',
   },
   worker: {
     label: 'Colaborador',
     icon: HardHat,
-    className: 'bg-slate-50 text-slate-600 border-slate-200',
+    className:
+      'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700',
   },
 };
 
@@ -133,7 +138,7 @@ function Section({ icon: Icon, title, children }) {
 }
 
 /* ── Tarjeta de evento individual ────────────────────────── */
-function EventHistoryCard({ event }) {
+function EventHistoryCard({ event, onViewMovements }) {
   const [open, setOpen] = useState(false);
 
   const attendedKey =
@@ -142,80 +147,105 @@ function EventHistoryCard({ event }) {
       : event.attended === false
         ? 'false'
         : 'null';
+
   const attendedConfig = {
     true: {
       icon: CheckCircle2,
       label: 'Asistió',
-      className: 'text-emerald-600',
-      bg: 'bg-emerald-50 border-emerald-200',
+      badgeClass:
+        'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800/60',
+      accentClass: 'border-l-emerald-500',
     },
     false: {
       icon: XCircle,
       label: 'No asistió',
-      className: 'text-destructive',
-      bg: 'bg-red-50 border-red-200',
+      badgeClass:
+        'bg-red-50 text-red-600 border-red-200 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800/60',
+      accentClass: 'border-l-red-500',
     },
     null: {
       icon: Clock,
       label: 'Pendiente',
-      className: 'text-muted-foreground',
-      bg: 'bg-muted/40 border-border',
+      badgeClass: 'bg-muted text-muted-foreground border-border',
+      accentClass: 'border-l-muted-foreground/30',
     },
   };
+
   const att = attendedConfig[attendedKey];
   const AttIcon = att.icon;
 
   return (
-    <div className={`rounded-xl border ${att.bg} overflow-hidden`}>
+    <div
+      className={`rounded-xl border border-border bg-card overflow-hidden border-l-4 ${att.accentClass}`}
+    >
       {/* Header colapsable */}
       <button
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-start justify-between gap-3 px-4 py-4 text-left hover:bg-black/5 transition-colors"
+        className="w-full flex items-start justify-between gap-3 px-4 py-3.5 text-left hover:bg-muted/40 transition-colors"
       >
         <div className="flex items-start gap-3 min-w-0">
           <div className="w-8 h-8 rounded-lg bg-brand/10 flex items-center justify-center shrink-0 mt-0.5">
             <Calendar className="w-4 h-4 text-brand" />
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-bold text-foreground truncate">
+            <p className="text-sm font-semibold text-foreground truncate">
               {event.name}
             </p>
             <p className="text-xs text-muted-foreground mt-0.5 truncate">
               {event.location ?? '—'} ·{' '}
               {formatDate(event.date ?? event.startDate)}
             </p>
-            {/* Role badge visible solo en móvil, bajo el nombre */}
+            {/* Role badge visible solo en móvil */}
             <div className="mt-1.5 sm:hidden">
               <RoleBadge role={event.role} />
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
           {/* Role badge visible solo en desktop */}
           <span className="hidden sm:inline-flex">
             <RoleBadge role={event.role} />
           </span>
           <span
-            className={`inline-flex items-center gap-1 text-xs font-semibold ${att.className}`}
+            className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full border ${att.badgeClass}`}
           >
             <AttIcon className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">{att.label}</span>
           </span>
-          <span className="text-muted-foreground text-xs">
-            {open ? '▲' : '▼'}
+          {/* Botón de movimientos */}
+          {event.locationPingsCount > 0 && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onViewMovements(event);
+              }}
+              className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full border bg-brand/10 text-brand border-brand/20 hover:bg-brand/20 transition-colors"
+            >
+              <MapPin className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Ver movimientos</span>
+            </button>
+          )}
+          <span
+            className={`text-muted-foreground text-xs transition-transform duration-200 ${
+              open ? 'rotate-180' : ''
+            }`}
+          >
+            ▼
           </span>
         </div>
       </button>
 
       {/* Detalle expandible */}
       {open && (
-        <div className="px-4 pb-4 space-y-4 border-t border-inherit pt-3">
+        <div className="px-4 pb-4 space-y-4 border-t border-border pt-3">
           {/* Horarios */}
           <div className="flex items-center gap-6 sm:gap-8">
-            <div className="flex items-center gap-2">
-              <LogIn className="w-4 h-4 text-muted-foreground" />
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center">
+                <LogIn className="w-3.5 h-3.5 text-muted-foreground" />
+              </div>
               <div>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium">
                   Entrada
                 </p>
                 <p className="text-sm font-semibold text-foreground">
@@ -223,10 +253,12 @@ function EventHistoryCard({ event }) {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <LogOut className="w-4 h-4 text-muted-foreground" />
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center">
+                <LogOut className="w-3.5 h-3.5 text-muted-foreground" />
+              </div>
               <div>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium">
                   Salida
                 </p>
                 <p className="text-sm font-semibold text-foreground">
@@ -246,9 +278,9 @@ function EventHistoryCard({ event }) {
                 {event.incidents.map((inc) => (
                   <div
                     key={inc.id}
-                    className="flex items-start gap-2 px-3 py-2 rounded-lg bg-white border border-border text-xs"
+                    className="flex items-start gap-2.5 px-3 py-2.5 rounded-lg bg-muted/50 border border-border text-xs"
                   >
-                    <div className="w-1.5 h-1.5 rounded-full bg-orange-400 mt-1 shrink-0" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-brand mt-1 shrink-0" />
                     <div className="min-w-0">
                       <span className="font-semibold text-foreground">
                         {inc.name}
@@ -296,6 +328,7 @@ function CollaboratorDetailPage() {
   const [loading, setLoading] = useState(true);
   const [collaborator, setCollaborator] = useState(null);
   const [error, setError] = useState(null);
+  const [movementsTarget, setMovementsTarget] = useState(null);
 
   useEffect(() => {
     setLoading(true);
@@ -548,7 +581,18 @@ function CollaboratorDetailPage() {
               ) : (
                 <div className="space-y-3">
                   {collaborator.eventHistory.map((event) => (
-                    <EventHistoryCard key={event.eventId} event={event} />
+                    <EventHistoryCard
+                      key={event.eventId}
+                      event={event}
+                      onViewMovements={(ev) =>
+                        setMovementsTarget({
+                          event: ev,
+                          eventId: ev.eventId,
+                          userId: collaborator.userId,
+                          collaboratorName: `${collaborator.firstName} ${collaborator.lastName}`,
+                        })
+                      }
+                    />
                   ))}
                 </div>
               )}
@@ -556,6 +600,17 @@ function CollaboratorDetailPage() {
           </div>
         )}
       </div>
+
+      {movementsTarget && (
+        <CollaboratorMovementsModal
+          open={!!movementsTarget}
+          onClose={() => setMovementsTarget(null)}
+          eventId={movementsTarget?.eventId}
+          userId={movementsTarget?.userId}
+          collaboratorName={movementsTarget?.collaboratorName}
+          event={movementsTarget?.event}
+        />
+      )}
     </div>
   );
 }
