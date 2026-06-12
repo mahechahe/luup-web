@@ -15,6 +15,8 @@ import {
   History,
   ChevronDown,
   PackageOpen,
+  Truck,
+  ArrowUpRight,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -23,6 +25,7 @@ import { SupervisorCard } from './SupervisorCard';
 import { CoordinatorCard } from './CoordinatorCard';
 import { CollaboratorCard } from './CollaboratorCard';
 import { WasteHistoryModal } from './WasteHistoryModal';
+import { TruckExitHistoryModal } from './TruckExitHistoryModal';
 
 const CATEGORY_STYLE = {
   general:
@@ -53,13 +56,17 @@ export function ZoneCard({
   incidents = {},
   wasteEntries = [],
   wasteLoading = false,
+  truckExits = [],
+  truckExitsLoading = false,
   onAddIncident,
   onViewHistory,
   onAddWaste,
+  onAddTruckExit,
   onTransfer,
   eventRole,
 }) {
   const [showWasteHistory, setShowWasteHistory] = useState(false);
+  const [showTruckExitHistory, setShowTruckExitHistory] = useState(false);
   const [expanded, setExpanded] = useState(false);
 
   const allPeople = [
@@ -109,6 +116,14 @@ export function ZoneCard({
     0
   );
   const hasWasteKg = wasteEntries.some((e) => e.weightKg != null);
+
+  const totalExitQty = truckExits.reduce((sum, e) => sum + (e.quantity ?? 0), 0);
+  const totalExitKg = truckExits.reduce((sum, e) => sum + (e.weightKg ?? 0), 0);
+  const hasExitKg = truckExits.some((e) => e.weightKg != null);
+
+  const netQty = Math.max(0, totalWasteQty - totalExitQty);
+  const netKg = Math.max(0, totalWasteKg - totalExitKg);
+  const hasNetKg = hasWasteKg || hasExitKg;
 
   return (
     <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden flex flex-col">
@@ -289,7 +304,7 @@ export function ZoneCard({
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#DD7419] text-white text-xs font-semibold hover:bg-[#DD7419]/90 transition"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    Registrar
+                    Registrar entrada
                   </button>
                 </div>
                 {wasteLoading ? (
@@ -309,24 +324,24 @@ export function ZoneCard({
                     <div className="grid grid-cols-2 gap-3">
                       <div className="rounded-xl bg-[#DD7419]/8 border border-[#DD7419]/20 px-4 py-3">
                         <p className="text-[11px] font-semibold text-[#DD7419]/70 uppercase tracking-wide flex items-center gap-1">
-                          <Trash2 className="w-3 h-3" /> Total registradas
+                          <Trash2 className="w-3 h-3" /> En acopio
                         </p>
                         <p className="text-3xl font-bold text-[#DD7419] leading-none mt-1">
-                          {totalWasteQty}
+                          {netQty}
                         </p>
                         <p className="text-xs text-[#DD7419]/50 mt-0.5">
-                          unidades
+                          unidades · {totalWasteQty} entradas
                         </p>
                       </div>
                       <div className="rounded-xl bg-[#DD7419]/8 border border-[#DD7419]/20 px-4 py-3">
                         <p className="text-[11px] font-semibold text-[#DD7419]/70 uppercase tracking-wide flex items-center gap-1">
-                          <Weight className="w-3 h-3" /> Peso total
+                          <Weight className="w-3 h-3" /> Peso en acopio
                         </p>
                         <p className="text-3xl font-bold text-[#DD7419] leading-none mt-1">
-                          {hasWasteKg ? totalWasteKg.toFixed(1) : '—'}
+                          {hasNetKg ? netKg.toFixed(1) : '—'}
                         </p>
                         <p className="text-xs text-[#DD7419]/50 mt-0.5">
-                          kilogramos
+                          kg · {hasWasteKg ? totalWasteKg.toFixed(1) : '—'} kg entradas
                         </p>
                       </div>
                     </div>
@@ -342,6 +357,78 @@ export function ZoneCard({
                     ) : (
                       <p className="text-xs text-muted-foreground italic text-center py-1">
                         Sin registros aún
+                      </p>
+                    )}
+                  </>
+                )}
+              </div>
+              <div className="mx-4 sm:mx-6 border-t border-border" />
+            </>
+          )}
+
+          {/* Salidas de camión */}
+          {zone.category === 'acopio' && (
+            <>
+              <div className="px-4 sm:px-6 py-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-[#0891B2]">
+                    <Truck className="w-4 h-4" />
+                    <span className="text-sm font-bold">Salidas de camión</span>
+                  </div>
+                  <button
+                    onClick={onAddTruckExit}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0891B2] text-white text-xs font-semibold hover:bg-[#0891B2]/85 transition"
+                  >
+                    <ArrowUpRight className="w-3.5 h-3.5" />
+                    Registrar salida
+                  </button>
+                </div>
+                {truckExitsLoading ? (
+                  <div className="grid grid-cols-2 gap-3">
+                    {[0, 1].map((i) => (
+                      <div
+                        key={i}
+                        className="rounded-xl bg-[#0891B2]/8 border border-[#0891B2]/20 px-4 py-3"
+                      >
+                        <Skeleton className="h-2.5 w-28 bg-[#0891B2]/20" />
+                        <Skeleton className="h-8 w-10 mt-1 bg-[#0891B2]/20" />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="rounded-xl bg-[#0891B2]/8 border border-[#0891B2]/20 px-4 py-3">
+                        <p className="text-[11px] font-semibold text-[#0891B2]/70 uppercase tracking-wide flex items-center gap-1">
+                          <PackageOpen className="w-3 h-3" /> Total retiradas
+                        </p>
+                        <p className="text-3xl font-bold text-[#0891B2] leading-none mt-1">
+                          {totalExitQty}
+                        </p>
+                        <p className="text-xs text-[#0891B2]/50 mt-0.5">bolsas</p>
+                      </div>
+                      <div className="rounded-xl bg-[#0891B2]/8 border border-[#0891B2]/20 px-4 py-3">
+                        <p className="text-[11px] font-semibold text-[#0891B2]/70 uppercase tracking-wide flex items-center gap-1">
+                          <Weight className="w-3 h-3" /> Peso retirado
+                        </p>
+                        <p className="text-3xl font-bold text-[#0891B2] leading-none mt-1">
+                          {hasExitKg ? totalExitKg.toFixed(1) : '—'}
+                        </p>
+                        <p className="text-xs text-[#0891B2]/50 mt-0.5">kilogramos</p>
+                      </div>
+                    </div>
+                    {truckExits.length > 0 ? (
+                      <button
+                        onClick={() => setShowTruckExitHistory(true)}
+                        className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border border-[#0891B2]/30 text-[#0891B2] text-xs font-semibold hover:bg-[#0891B2]/8 transition"
+                      >
+                        <History className="w-3.5 h-3.5" />
+                        Ver historial · {truckExits.length}{' '}
+                        {truckExits.length === 1 ? 'salida' : 'salidas'}
+                      </button>
+                    ) : (
+                      <p className="text-xs text-muted-foreground italic text-center py-1">
+                        Sin salidas registradas aún
                       </p>
                     )}
                   </>
@@ -451,6 +538,13 @@ export function ZoneCard({
         onClose={() => setShowWasteHistory(false)}
         zone={zone}
         entries={wasteEntries}
+      />
+
+      <TruckExitHistoryModal
+        open={showTruckExitHistory}
+        onClose={() => setShowTruckExitHistory(false)}
+        zone={zone}
+        exits={truckExits}
       />
     </div>
   );

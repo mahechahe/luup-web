@@ -629,6 +629,93 @@ export const transferPersonZoneService = async ({
   }
 };
 
+export const createTruckExitService = async (zoneId, body) => {
+  try {
+    let payload;
+    let headers = {};
+
+    if (body.file) {
+      payload = new FormData();
+      payload.append('quantity', body.quantity);
+      payload.append('weightKg', body.weightKg);
+      payload.append('driverName', body.driverName);
+      payload.append('driverCedula', body.driverCedula);
+      payload.append('plate', body.plate);
+      if (body.note) payload.append('note', body.note);
+      payload.append('file', body.file);
+      headers = { 'Content-Type': 'multipart/form-data' };
+    } else {
+      payload = {
+        quantity: body.quantity,
+        weightKg: body.weightKg,
+        driverName: body.driverName,
+        driverCedula: body.driverCedula,
+        plate: body.plate,
+        note: body.note ?? null,
+      };
+    }
+
+    const res = await axios.post(
+      `${EVENTS_URL}/zones/${zoneId}/waste/exits`,
+      payload,
+      { headers },
+    );
+    paramShowMessageApi(res);
+    return {
+      status: true,
+      exit: res.data?.data?.exit ?? null,
+      errors: null,
+    };
+  } catch (error) {
+    paramShowMessageApi(error?.response);
+    return {
+      status: false,
+      exit: null,
+      errors: error?.response?.data?.message || 'Error al registrar la salida.',
+    };
+  }
+};
+
+export const getZoneTruckExitsService = async (zoneId) => {
+  try {
+    const res = await axios.get(`${EVENTS_URL}/zones/${zoneId}/waste/exits`);
+    paramShowMessageApi(res);
+    return {
+      status: true,
+      exits: res.data?.data?.exits ?? [],
+      errors: null,
+    };
+  } catch (error) {
+    paramShowMessageApi(error?.response);
+    return {
+      status: false,
+      exits: [],
+      errors: error?.response?.data?.message || 'Error al obtener las salidas.',
+    };
+  }
+};
+
+export const getTruckExitSignedUrlService = async (zoneId, exitId) => {
+  try {
+    const res = await axios.get(
+      `${EVENTS_URL}/zones/${zoneId}/waste/exits/${exitId}/signed-url`,
+    );
+    paramShowMessageApi(res);
+    return {
+      status: true,
+      signedUrl: res.data?.data?.signedUrl ?? null,
+      errors: null,
+    };
+  } catch (error) {
+    paramShowMessageApi(error?.response);
+    return {
+      status: false,
+      signedUrl: null,
+      errors: error?.response?.data?.message || 'Error al obtener la imagen.',
+    };
+  }
+};
+
 export const getAttendanceHistoryService = async (body) => {
   try {
     const { data } = await axios.post(`${EVENTS_URL}/attendance/history`, body);

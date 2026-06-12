@@ -8,6 +8,7 @@ import {
   getWorkerCurrentEventService,
   transferPersonZoneService,
   getZoneWasteHistoryService,
+  getZoneTruckExitsService,
 } from '../services/eventServices';
 import { useUserStore } from '@/App/context/userStore';
 import { hasAdminAccess } from '@/App/utils/roles';
@@ -21,6 +22,7 @@ import { EmptyZones } from './components/EmptyZones';
 import { IncidentFormModal } from './components/IncidentFormModal';
 import { IncidentHistoryModal } from './components/IncidentHistoryModal';
 import { WasteFormModal } from './components/WasteFormModal';
+import { TruckExitFormModal } from './components/TruckExitFormModal';
 import { TransferZoneModal } from './components/TransferZoneModal';
 
 const COORDINATOR_CAN_TRANSFER_ANY_ZONE = false;
@@ -49,6 +51,10 @@ export default function ZonasPage() {
   const [wasteLoading, setWasteLoading] = useState({});
   const [wasteTarget, setWasteTarget] = useState(null);
 
+  const [truckExits, setTruckExits] = useState({});
+  const [truckExitsLoading, setTruckExitsLoading] = useState({});
+  const [truckExitTarget, setTruckExitTarget] = useState(null);
+
   const [transferTarget, setTransferTarget] = useState(null);
   const [transferLoading, setTransferLoading] = useState(false);
 
@@ -65,6 +71,23 @@ export default function ZonasPage() {
         const res = await getZoneWasteHistoryService(zone.id);
         if (res.status) setWasteEntries((prev) => ({ ...prev, [zone.id]: res.logs }));
         setWasteLoading((prev) => ({ ...prev, [zone.id]: false }));
+      })
+    );
+  }, []);
+
+  const fetchTruckExits = useCallback(async (zones) => {
+    const acopioZones = zones.filter((z) => z.category === 'acopio');
+    if (acopioZones.length === 0) return;
+    setTruckExitsLoading((prev) => {
+      const next = { ...prev };
+      acopioZones.forEach((z) => { next[z.id] = true; });
+      return next;
+    });
+    await Promise.all(
+      acopioZones.map(async (zone) => {
+        const res = await getZoneTruckExitsService(zone.id);
+        if (res.status) setTruckExits((prev) => ({ ...prev, [zone.id]: res.exits }));
+        setTruckExitsLoading((prev) => ({ ...prev, [zone.id]: false }));
       })
     );
   }, []);
@@ -92,8 +115,9 @@ export default function ZonasPage() {
       setZones(res.zones);
       setIncidents(parseIncidents(res.zones));
       fetchWasteEntries(res.zones);
+      fetchTruckExits(res.zones);
     }
-  }, [eventId, isAdmin, fetchWasteEntries]);
+  }, [eventId, isAdmin, fetchWasteEntries, fetchTruckExits]);
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -112,12 +136,13 @@ export default function ZonasPage() {
         setZones(zonesRes.zones);
         setIncidents(parseIncidents(zonesRes.zones));
         fetchWasteEntries(zonesRes.zones);
+        fetchTruckExits(zonesRes.zones);
       }
       if (workerRes.status && workerRes.currentEvent) setEventRole(workerRes.currentEvent.role);
       setLoading(false);
     };
     fetchAll();
-  }, [eventId, isAdmin, fetchWasteEntries]);
+  }, [eventId, isAdmin, fetchWasteEntries, fetchTruckExits]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -131,6 +156,10 @@ export default function ZonasPage() {
 
   const handleSaveWaste = (zoneId, entry) => {
     setWasteEntries((prev) => ({ ...prev, [zoneId]: [...(prev[zoneId] ?? []), entry] }));
+  };
+
+  const handleSaveTruckExit = (zoneId, exit) => {
+    setTruckExits((prev) => ({ ...prev, [zoneId]: [...(prev[zoneId] ?? []), exit] }));
   };
 
   const getAvailableZones = () => {
@@ -185,9 +214,12 @@ export default function ZonasPage() {
       incidents={incidents}
       wasteEntries={wasteEntries[zone.id] ?? []}
       wasteLoading={!!wasteLoading[zone.id]}
+      truckExits={truckExits[zone.id] ?? []}
+      truckExitsLoading={!!truckExitsLoading[zone.id]}
       onAddIncident={(person) => setIncidentTarget(person)}
       onViewHistory={(person) => setHistoryTarget(person)}
       onAddWaste={() => setWasteTarget(zone)}
+      onAddTruckExit={() => setTruckExitTarget(zone)}
       onTransfer={canTransfer ? (person, zoneId) => setTransferTarget({ person, zoneId }) : undefined}
       eventRole={eventRole}
     />
@@ -333,6 +365,13 @@ export default function ZonasPage() {
         onClose={() => setWasteTarget(null)}
         zone={wasteTarget}
         onSave={handleSaveWaste}
+      />
+
+      <TruckExitFormModal
+        open={truckExitTarget !== null}
+        onClose={() => setTruckExitTarget(null)}
+        zone={truckExitTarget}
+        onSave={handleSaveTruckExit}
       />
 
       <TransferZoneModal
