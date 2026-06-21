@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { MapIcon, ListChecks, UserCheck, ArrowLeft, Map } from 'lucide-react';
+import { MapIcon, ListChecks, UserCheck, ArrowLeft, Map, BarChart2 } from 'lucide-react';
 import { getEventoDetailService } from './services/eventServices';
 import { EventoHeader } from './Canvas/components/EventoHeader';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -61,6 +61,16 @@ export default function EventoModulesPage() {
       hoverColor: 'hover:bg-[#234465]/90',
       path: `/eventos/${eventId}/map-layout`,
     },
+    {
+      id: 'reporte',
+      title: 'Reporte',
+      description:
+        'Consulta el reporte completo del evento: asistencias, ingresos de residuos, salidas de camiones y galería de fotos.',
+      icon: BarChart2,
+      color: 'bg-[#4f6d44]',
+      hoverColor: 'hover:bg-[#4f6d44]/90',
+      path: `/reportes/${eventId}`,
+    },
   ];
 
   return (
@@ -114,7 +124,11 @@ export default function EventoModulesPage() {
               modules.map((module) => (
                 <button
                   key={module.id}
-                  onClick={() => navigate(module.path)}
+                  onClick={() =>
+                    navigate(module.path, {
+                      state: module.id === 'reporte' ? { backTo: `/eventos/${eventId}` } : undefined,
+                    })
+                  }
                   className="group relative bg-card rounded-2xl p-8 shadow-lg border-2 border-transparent hover:border-border hover:shadow-2xl transition-all duration-300 text-left"
                 >
                   {/* Icono */}

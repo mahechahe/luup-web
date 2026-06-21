@@ -9,6 +9,7 @@ import {
   transferPersonZoneService,
   getZoneWasteHistoryService,
   getZoneTruckExitsService,
+  getZoneRequirementsService,
 } from '../services/eventServices';
 import { useUserStore } from '@/App/context/userStore';
 import { hasAdminAccess } from '@/App/utils/roles';
@@ -24,6 +25,7 @@ import { IncidentHistoryModal } from './components/IncidentHistoryModal';
 import { WasteFormModal } from './components/WasteFormModal';
 import { TruckExitFormModal } from './components/TruckExitFormModal';
 import { TransferZoneModal } from './components/TransferZoneModal';
+import { RequirementFormModal } from './components/RequirementFormModal';
 
 const COORDINATOR_CAN_TRANSFER_ANY_ZONE = false;
 
@@ -54,6 +56,10 @@ export default function ZonasPage() {
   const [truckExits, setTruckExits] = useState({});
   const [truckExitsLoading, setTruckExitsLoading] = useState({});
   const [truckExitTarget, setTruckExitTarget] = useState(null);
+
+  const [requirements, setRequirements] = useState({});
+  const [requirementsLoading, setRequirementsLoading] = useState({});
+  const [requirementTarget, setRequirementTarget] = useState(null);
 
   const [transferTarget, setTransferTarget] = useState(null);
   const [transferLoading, setTransferLoading] = useState(false);
@@ -92,6 +98,23 @@ export default function ZonasPage() {
     );
   }, []);
 
+  const fetchRequirements = useCallback(async (zones) => {
+    const generalZones = zones.filter((z) => z.category === 'general');
+    if (generalZones.length === 0) return;
+    setRequirementsLoading((prev) => {
+      const next = { ...prev };
+      generalZones.forEach((z) => { next[z.id] = true; });
+      return next;
+    });
+    await Promise.all(
+      generalZones.map(async (zone) => {
+        const res = await getZoneRequirementsService(zone.id);
+        if (res.status) setRequirements((prev) => ({ ...prev, [zone.id]: res.requirements }));
+        setRequirementsLoading((prev) => ({ ...prev, [zone.id]: false }));
+      })
+    );
+  }, []);
+
   // ✅ parseIncidents incluye responsableAcopio (array) además de supervisor, coordinador y colaboradores
   const parseIncidents = (zones) => {
     const map = {};
@@ -116,8 +139,9 @@ export default function ZonasPage() {
       setIncidents(parseIncidents(res.zones));
       fetchWasteEntries(res.zones);
       fetchTruckExits(res.zones);
+      fetchRequirements(res.zones);
     }
-  }, [eventId, isAdmin, fetchWasteEntries, fetchTruckExits]);
+  }, [eventId, isAdmin, fetchWasteEntries, fetchTruckExits, fetchRequirements]);
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -137,12 +161,13 @@ export default function ZonasPage() {
         setIncidents(parseIncidents(zonesRes.zones));
         fetchWasteEntries(zonesRes.zones);
         fetchTruckExits(zonesRes.zones);
+        fetchRequirements(zonesRes.zones);
       }
       if (workerRes.status && workerRes.currentEvent) setEventRole(workerRes.currentEvent.role);
       setLoading(false);
     };
     fetchAll();
-  }, [eventId, isAdmin, fetchWasteEntries, fetchTruckExits]);
+  }, [eventId, isAdmin, fetchWasteEntries, fetchTruckExits, fetchRequirements]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -160,6 +185,10 @@ export default function ZonasPage() {
 
   const handleSaveTruckExit = (zoneId, exit) => {
     setTruckExits((prev) => ({ ...prev, [zoneId]: [...(prev[zoneId] ?? []), exit] }));
+  };
+
+  const handleSaveRequirement = (zoneId, requirement) => {
+    setRequirements((prev) => ({ ...prev, [zoneId]: [requirement, ...(prev[zoneId] ?? [])] }));
   };
 
   const getAvailableZones = () => {
@@ -218,6 +247,9 @@ export default function ZonasPage() {
       truckExitsLoading={!!truckExitsLoading[zone.id]}
       onAddIncident={(person) => setIncidentTarget(person)}
       onViewHistory={(person) => setHistoryTarget(person)}
+      requirements={requirements[zone.id] ?? []}
+      requirementsLoading={!!requirementsLoading[zone.id]}
+      onAddRequirement={() => setRequirementTarget(zone)}
       onAddWaste={() => setWasteTarget(zone)}
       onAddTruckExit={() => setTruckExitTarget(zone)}
       onTransfer={canTransfer ? (person, zoneId) => setTransferTarget({ person, zoneId }) : undefined}
@@ -372,6 +404,13 @@ export default function ZonasPage() {
         onClose={() => setTruckExitTarget(null)}
         zone={truckExitTarget}
         onSave={handleSaveTruckExit}
+      />
+
+      <RequirementFormModal
+        open={requirementTarget !== null}
+        onClose={() => setRequirementTarget(null)}
+        zone={requirementTarget}
+        onSave={handleSaveRequirement}
       />
 
       <TransferZoneModal

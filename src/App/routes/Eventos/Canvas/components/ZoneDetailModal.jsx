@@ -30,7 +30,9 @@ export function ZoneDetailModal({
   const supervisores = zone.people.filter((p) => p.role === 'supervisor');
   const coordinadores = zone.people.filter((p) => p.role === 'coordinador');
   const colaboradores = zone.people.filter((p) => p.role === 'colaborador');
-  const responsablesAcopio = zone.people.filter((p) => p.role === 'responsable_acopio');
+  const responsablesAcopio = zone.people.filter(
+    (p) => p.role === 'responsable_acopio'
+  );
 
   // IDs a excluir según el rol que se está agregando
   const getExcludedIds = () => {
@@ -371,7 +373,9 @@ export function ZoneDetailModal({
                   <PeopleSubsection
                     label="Responsable de Acopio"
                     sublabel="Acceso únicamente a su centro de acopio"
-                    icon={<PackageOpen className="w-3.5 h-3.5 text-[#DD7419]" />}
+                    icon={
+                      <PackageOpen className="w-3.5 h-3.5 text-[#DD7419]" />
+                    }
                     accentColor="#DD7419"
                     people={responsablesAcopio}
                     isAdmin={isAdmin}

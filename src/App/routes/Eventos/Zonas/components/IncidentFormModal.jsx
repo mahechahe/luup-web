@@ -1,5 +1,13 @@
 import { useState } from 'react';
-import { X, Loader2, Coffee, UtensilsCrossed, CircleCheck, UserX, Check } from 'lucide-react';
+import {
+  X,
+  Loader2,
+  Coffee,
+  UtensilsCrossed,
+  CircleCheck,
+  UserX,
+  Check,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { createIncidentService } from '../../services/eventServices';
 
@@ -40,7 +48,9 @@ const TIPOS = [
 
 function nowTime() {
   const d = new Date();
-  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  return `${String(d.getHours()).padStart(2, '0')}:${String(
+    d.getMinutes()
+  ).padStart(2, '0')}`;
 }
 
 export function IncidentFormModal({ open, onClose, person, eventId, onSave }) {
@@ -64,7 +74,11 @@ export function IncidentFormModal({ open, onClose, person, eventId, onSave }) {
       note: form.note.trim() || null,
     });
 
-    if (!res.status) { setError(res.errors); setSaving(false); return; }
+    if (!res.status) {
+      setError(res.errors);
+      setSaving(false);
+      return;
+    }
 
     onSave(person.userId, res.incident);
     setForm({ name: '', time: nowTime(), note: '' });
@@ -85,7 +99,9 @@ export function IncidentFormModal({ open, onClose, person, eventId, onSave }) {
         {/* Header */}
         <div className="flex items-start justify-between mb-5">
           <div>
-            <h2 className="text-base font-bold text-foreground">Nueva incidencia</h2>
+            <h2 className="text-base font-bold text-foreground">
+              Nueva incidencia
+            </h2>
             <p className="text-xs text-muted-foreground mt-0.5">
               {person.firstName} {person.lastName}
             </p>
@@ -106,35 +122,43 @@ export function IncidentFormModal({ open, onClose, person, eventId, onSave }) {
               Tipo de incidencia <span className="text-destructive">*</span>
             </label>
             <div className="grid grid-cols-2 gap-2">
-              {TIPOS.map(({ label, Icon, color, iconBg, activeBg, activeBorder }) => {
-                const active = form.name === label;
-                return (
-                  <button
-                    key={label}
-                    type="button"
-                    onClick={() => setForm((f) => ({ ...f, name: label }))}
-                    className={`relative flex flex-col items-center justify-center gap-2 py-4 rounded-xl border-2 font-semibold text-sm transition-all active:scale-95 ${
-                      active
-                        ? `${activeBg} ${activeBorder} text-white shadow-sm`
-                        : `bg-muted/30 border-border hover:border-muted-foreground/30 hover:bg-muted/50`
-                    }`}
-                  >
-                    {/* Checkmark cuando está activo */}
-                    {active && (
-                      <span className="absolute top-2 right-2 w-4 h-4 rounded-full bg-white/25 flex items-center justify-center">
-                        <Check className="w-2.5 h-2.5 text-white" />
+              {TIPOS.map(
+                ({ label, Icon, color, iconBg, activeBg, activeBorder }) => {
+                  const active = form.name === label;
+                  return (
+                    <button
+                      key={label}
+                      type="button"
+                      onClick={() => setForm((f) => ({ ...f, name: label }))}
+                      className={`relative flex flex-col items-center justify-center gap-2 py-4 rounded-xl border-2 font-semibold text-sm transition-all active:scale-95 ${
+                        active
+                          ? `${activeBg} ${activeBorder} text-white shadow-sm`
+                          : `bg-muted/30 border-border hover:border-muted-foreground/30 hover:bg-muted/50`
+                      }`}
+                    >
+                      {/* Checkmark cuando está activo */}
+                      {active && (
+                        <span className="absolute top-2 right-2 w-4 h-4 rounded-full bg-white/25 flex items-center justify-center">
+                          <Check className="w-2.5 h-2.5 text-white" />
+                        </span>
+                      )}
+                      {/* Contenedor del ícono */}
+                      <div
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                          active ? 'bg-white/20' : iconBg
+                        }`}
+                      >
+                        <Icon
+                          className={`w-5 h-5 ${active ? 'text-white' : color}`}
+                        />
+                      </div>
+                      <span className={active ? 'text-white' : color}>
+                        {label}
                       </span>
-                    )}
-                    {/* Contenedor del ícono */}
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                      active ? 'bg-white/20' : iconBg
-                    }`}>
-                      <Icon className={`w-5 h-5 ${active ? 'text-white' : color}`} />
-                    </div>
-                    <span className={active ? 'text-white' : color}>{label}</span>
-                  </button>
-                );
-              })}
+                    </button>
+                  );
+                }
+              )}
             </div>
           </div>
 
@@ -154,7 +178,10 @@ export function IncidentFormModal({ open, onClose, person, eventId, onSave }) {
           {/* Nota */}
           <div>
             <label className="block text-xs font-medium text-foreground mb-1.5">
-              Nota <span className="text-muted-foreground font-normal">(opcional)</span>
+              Nota{' '}
+              <span className="text-muted-foreground font-normal">
+                (opcional)
+              </span>
             </label>
             <textarea
               value={form.note}
@@ -168,7 +195,13 @@ export function IncidentFormModal({ open, onClose, person, eventId, onSave }) {
           {error && <p className="text-xs text-destructive">{error}</p>}
 
           <div className="flex gap-2 pt-1">
-            <Button type="button" variant="outline" onClick={handleClose} className="flex-1" disabled={saving}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleClose}
+              className="flex-1"
+              disabled={saving}
+            >
               Cancelar
             </Button>
             <Button
@@ -181,7 +214,9 @@ export function IncidentFormModal({ open, onClose, person, eventId, onSave }) {
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   Guardando…
                 </span>
-              ) : 'Registrar'}
+              ) : (
+                'Registrar'
+              )}
             </Button>
           </div>
         </form>

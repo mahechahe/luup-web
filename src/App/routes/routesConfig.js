@@ -72,6 +72,16 @@ export const routesAuth = [
     ),
   },
 
+  // --- MÓDULO DE REPORTES ---
+  {
+    path: 'reportes',
+    component: lazy(() => import('./Reportes/ReportesPage')),
+  },
+  {
+    path: 'reportes/:eventId',
+    component: lazy(() => import('./Reportes/ReporteEventoPage')),
+  },
+
   {
     path: 'eventos/:eventId/worker',
     component: lazy(() => import('./Eventos/WorkerEventoModulesPage')),

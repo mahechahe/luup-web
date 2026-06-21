@@ -58,6 +58,9 @@ export function ZoneCard({
   wasteLoading = false,
   truckExits = [],
   truckExitsLoading = false,
+  requirements = [],
+  requirementsLoading = false,
+  onAddRequirement,
   onAddIncident,
   onViewHistory,
   onAddWaste,
@@ -69,19 +72,22 @@ export function ZoneCard({
   const [showTruckExitHistory, setShowTruckExitHistory] = useState(false);
   const [expanded, setExpanded] = useState(false);
 
+  const collaborators = zone.collaborators ?? [];
+
   const allPeople = [
     ...(zone.coordinator ? [zone.coordinator] : []),
     ...(zone.supervisor ? [zone.supervisor] : []),
     ...(zone.responsableAcopio ?? []),
-    ...zone.collaborators,
+    ...collaborators,
   ];
 
   const staffCount =
     (zone.supervisor ? 1 : 0) +
     (zone.coordinator ? 1 : 0) +
     (zone.responsableAcopio?.length ?? 0) +
-    zone.collaborators.length;
+    collaborators.length;
 
+  // incidents[userId] must arrive ordered chronologically (oldest → newest)
   const getLatest = (userId) => {
     const arr = incidents[userId] ?? [];
     return arr.length > 0 ? arr[arr.length - 1] : null;
@@ -117,7 +123,10 @@ export function ZoneCard({
   );
   const hasWasteKg = wasteEntries.some((e) => e.weightKg != null);
 
-  const totalExitQty = truckExits.reduce((sum, e) => sum + (e.quantity ?? 0), 0);
+  const totalExitQty = truckExits.reduce(
+    (sum, e) => sum + (e.quantity ?? 0),
+    0
+  );
   const totalExitKg = truckExits.reduce((sum, e) => sum + (e.weightKg ?? 0), 0);
   const hasExitKg = truckExits.some((e) => e.weightKg != null);
 
@@ -193,7 +202,7 @@ export function ZoneCard({
 
       {/* Vista colapsada — 5 mini stats */}
       {!expanded && (
-        <>
+        <div className="animate-in fade-in duration-150">
           <div className="mx-4 sm:mx-6 border-t border-border mb-3" />
           <div className="px-4 sm:px-6 pb-4">
             <div className="grid grid-cols-5 gap-1.5 bg-muted/30 rounded-2xl px-3 py-3">
@@ -229,12 +238,12 @@ export function ZoneCard({
               />
             </div>
           </div>
-        </>
+        </div>
       )}
 
       {/* Contenido expandido */}
       {expanded && (
-        <div>
+        <div className="animate-in fade-in slide-in-from-top-1 duration-200">
           <div className="mx-4 sm:mx-6 border-t border-border" />
 
           {zone.notes && (
@@ -330,7 +339,7 @@ export function ZoneCard({
                           {netQty}
                         </p>
                         <p className="text-xs text-[#DD7419]/50 mt-0.5">
-                          unidades · {totalWasteQty} entradas
+                          unidades netas · {totalWasteQty} ingresadas
                         </p>
                       </div>
                       <div className="rounded-xl bg-[#DD7419]/8 border border-[#DD7419]/20 px-4 py-3">
@@ -341,7 +350,8 @@ export function ZoneCard({
                           {hasNetKg ? netKg.toFixed(1) : '—'}
                         </p>
                         <p className="text-xs text-[#DD7419]/50 mt-0.5">
-                          kg · {hasWasteKg ? totalWasteKg.toFixed(1) : '—'} kg entradas
+                          kg · {hasWasteKg ? totalWasteKg.toFixed(1) : '—'} kg
+                          entradas
                         </p>
                       </div>
                     </div>
@@ -405,7 +415,9 @@ export function ZoneCard({
                         <p className="text-3xl font-bold text-[#0891B2] leading-none mt-1">
                           {totalExitQty}
                         </p>
-                        <p className="text-xs text-[#0891B2]/50 mt-0.5">bolsas</p>
+                        <p className="text-xs text-[#0891B2]/50 mt-0.5">
+                          bolsas
+                        </p>
                       </div>
                       <div className="rounded-xl bg-[#0891B2]/8 border border-[#0891B2]/20 px-4 py-3">
                         <p className="text-[11px] font-semibold text-[#0891B2]/70 uppercase tracking-wide flex items-center gap-1">
@@ -414,7 +426,9 @@ export function ZoneCard({
                         <p className="text-3xl font-bold text-[#0891B2] leading-none mt-1">
                           {hasExitKg ? totalExitKg.toFixed(1) : '—'}
                         </p>
-                        <p className="text-xs text-[#0891B2]/50 mt-0.5">kilogramos</p>
+                        <p className="text-xs text-[#0891B2]/50 mt-0.5">
+                          kilogramos
+                        </p>
                       </div>
                     </div>
                     {truckExits.length > 0 ? (
@@ -432,6 +446,69 @@ export function ZoneCard({
                       </p>
                     )}
                   </>
+                )}
+              </div>
+              <div className="mx-4 sm:mx-6 border-t border-border" />
+            </>
+          )}
+
+          {/* Requerimientos — solo zonas generales */}
+          {zone.category === 'general' && (
+            <>
+              <div className="px-4 sm:px-6 py-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-[#234465]">
+                    <ClipboardList className="w-4 h-4" />
+                    <span className="text-sm font-bold">Requerimientos</span>
+                    {requirements.length > 0 && (
+                      <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-[#234465]/10 text-[#234465]">
+                        {requirements.length}
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    onClick={onAddRequirement}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#234465] text-white text-xs font-semibold hover:bg-[#234465]/85 transition"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    Agregar
+                  </button>
+                </div>
+
+                {requirementsLoading ? (
+                  <div className="space-y-2">
+                    {[0, 1].map((i) => (
+                      <div key={i} className="rounded-xl border border-border px-3 py-3">
+                        <Skeleton className="h-3 w-3/4 mb-2" />
+                        <Skeleton className="h-2.5 w-1/3" />
+                      </div>
+                    ))}
+                  </div>
+                ) : requirements.length > 0 ? (
+                  <div className="space-y-2">
+                    {requirements.map((r) => (
+                      <div
+                        key={r.id}
+                        className="rounded-xl border border-[#234465]/15 bg-[#234465]/5 px-3 py-3"
+                      >
+                        <p className="text-sm text-foreground leading-snug">{r.note}</p>
+                        <p className="text-[11px] text-muted-foreground mt-1.5">
+                          {r.creator.firstName} {r.creator.lastName}
+                          {' · '}
+                          {new Date(r.createdAt).toLocaleString('es-CO', {
+                            day: '2-digit',
+                            month: 'short',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground italic text-center py-1">
+                    Sin requerimientos aún
+                  </p>
                 )}
               </div>
               <div className="mx-4 sm:mx-6 border-t border-border" />
@@ -475,42 +552,43 @@ export function ZoneCard({
               </div>
             )}
 
-            {zone.category === 'acopio' && zone.responsableAcopio?.length > 0 && (
-              <div>
-                <RoleSectionLabel
-                  icon={PackageOpen}
-                  label="Responsable de Acopio"
-                  sublabel="Acceso únicamente a su centro de acopio"
-                  count={zone.responsableAcopio.length}
-                  colorClass="text-[#DD7419]"
-                />
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {zone.responsableAcopio.map((r, i) => (
-                    <CollaboratorCard
-                      key={i}
-                      person={r}
-                      incident={getLatest(r.userId)}
-                      onAddIncident={() => onAddIncident(r)}
-                      onViewHistory={() => onViewHistory(r)}
-                    />
-                  ))}
+            {zone.category === 'acopio' &&
+              zone.responsableAcopio?.length > 0 && (
+                <div>
+                  <RoleSectionLabel
+                    icon={PackageOpen}
+                    label="Responsable de Acopio"
+                    sublabel="Acceso únicamente a su centro de acopio"
+                    count={zone.responsableAcopio.length}
+                    colorClass="text-[#DD7419]"
+                  />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {zone.responsableAcopio.map((r) => (
+                      <CollaboratorCard
+                        key={r.userId}
+                        person={r}
+                        incident={getLatest(r.userId)}
+                        onAddIncident={() => onAddIncident(r)}
+                        onViewHistory={() => onViewHistory(r)}
+                      />
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {zone.collaborators.length > 0 && (
+            {collaborators.length > 0 && (
               <div>
                 <RoleSectionLabel
                   icon={Users}
                   label="Colaboradores"
                   sublabel="Personal operativo de la zona"
-                  count={zone.collaborators.length}
+                  count={collaborators.length}
                   colorClass="text-[#7493B2]"
                 />
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {zone.collaborators.map((c, i) => (
+                  {collaborators.map((c) => (
                     <CollaboratorCard
-                      key={i}
+                      key={c.userId}
                       person={c}
                       incident={getLatest(c.userId)}
                       onAddIncident={() => onAddIncident(c)}

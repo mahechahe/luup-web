@@ -1,6 +1,14 @@
+import { useState } from 'react';
 import { useUserStore } from '@/App/context/userStore';
 import { hasAdminAccess } from '@/App/utils/roles';
-import { Calendar, Home, Package, UserCheck } from 'lucide-react';
+import {
+  BarChart3,
+  Calendar,
+  ChevronDown,
+  Home,
+  Package,
+  UserCheck,
+} from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 
 const NAV_ITEMS = [
@@ -18,66 +26,106 @@ const NAV_ITEMS = [
     icon: UserCheck,
     adminOnly: true,
   },
+  {
+    label: 'Reportes',
+    path: '/reportes',
+    icon: BarChart3,
+    adminOnly: true,
+  },
 ];
 
 export default function BottomNav() {
   const { user } = useUserStore();
+  const [isVisible, setIsVisible] = useState(true);
+
   const visibleItems = NAV_ITEMS.filter(
     (item) => !item.adminOnly || hasAdminAccess(user?.roleId)
   );
 
   return (
-    <nav
-      className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border"
+    <div
+      className="fixed bottom-0 left-0 right-0 z-50"
       style={{
-        boxShadow: '0 -4px 24px rgba(0,0,0,0.07)',
         paddingBottom: 'env(safe-area-inset-bottom)',
+        transform: isVisible
+          ? 'translateY(0)'
+          : 'translateY(calc(100% - 1.75rem))',
+        transition: 'transform 0.38s cubic-bezier(0.4, 0, 0.2, 1)',
       }}
     >
-      <ul className="flex items-stretch justify-center h-16 w-full">
-        {visibleItems.map(({ label, path, icon: Icon }) => (
-          <li key={path} className="w-24">
-            <NavLink
-              to={path}
-              end
-              className={({ isActive }) =>
-                `relative flex flex-col items-center justify-center gap-1 h-full w-full transition-colors ${
-                  isActive
-                    ? 'text-brand'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`
-              }
-            >
-              {({ isActive }) => (
-                <>
+      {/* Toggle handle */}
+      <div className="flex justify-center">
+        <button
+          onClick={() => setIsVisible((v) => !v)}
+          aria-label={isVisible ? 'Ocultar menú' : 'Mostrar menú'}
+          className="flex items-center justify-center w-16 h-7 rounded-t-2xl border border-b-0 border-border bg-card text-muted-foreground hover:text-foreground transition-colors duration-200"
+        >
+          <ChevronDown
+            className="w-4 h-4"
+            style={{
+              transform: isVisible ? 'rotate(0deg)' : 'rotate(180deg)',
+              transition: 'transform 0.38s cubic-bezier(0.4, 0, 0.2, 1)',
+            }}
+          />
+        </button>
+      </div>
+
+      {/* Nav bar */}
+      <nav
+        className="bg-card border-t border-border"
+        style={{ boxShadow: '0 -4px 24px rgba(0,0,0,0.07)' }}
+      >
+        <ul
+          className="grid h-16 w-full max-w-[30rem] mx-auto px-2 gap-1"
+          style={{
+            gridTemplateColumns: `repeat(${visibleItems.length}, minmax(0, 1fr))`,
+          }}
+        >
+          {visibleItems.map(({ label, path, icon: Icon }) => (
+            <li key={path} className="h-full min-w-0">
+              <NavLink
+                to={path}
+                end
+                className="flex flex-col items-center justify-center h-full w-full group"
+              >
+                {({ isActive }) => (
                   <span
-                    className={`absolute top-0 left-1/2 -translate-x-1/2 h-0.5 rounded-b-full transition-all duration-200 bg-brand ${
-                      isActive ? 'w-8 opacity-100' : 'w-0 opacity-0'
-                    }`}
-                  />
-                  <span
-                    className={`flex items-center justify-center w-10 h-7 rounded-full transition-colors duration-200 ${
-                      isActive ? 'bg-brand/10' : ''
-                    }`}
+                    className="relative flex flex-col items-center gap-1.5 w-full px-1.5 pt-2 pb-1.5 rounded-xl transition-all duration-200"
+                    style={
+                      isActive
+                        ? {
+                            background: '#DD7419',
+                            boxShadow: '0 4px 16px rgba(221,116,25,0.30)',
+                            color: '#ffffff',
+                          }
+                        : {}
+                    }
                   >
                     <Icon
-                      className="w-5 h-5"
+                      className={`w-[18px] h-[18px] shrink-0 transition-colors duration-200 ${
+                        isActive
+                          ? ''
+                          : 'text-muted-foreground group-hover:text-foreground'
+                      }`}
                       strokeWidth={isActive ? 2.5 : 1.8}
                     />
+                    <span
+                      className={`text-[9.5px] md:text-[11.5px] leading-none tracking-wide transition-colors duration-200 ${
+                        isActive
+                          ? ''
+                          : 'text-muted-foreground group-hover:text-foreground'
+                      }`}
+                      style={{ fontWeight: isActive ? 600 : 400 }}
+                    >
+                      {label}
+                    </span>
                   </span>
-                  <span
-                    className={`text-[11px] leading-none font-medium transition-all duration-200 ${
-                      isActive ? 'font-semibold' : ''
-                    }`}
-                  >
-                    {label}
-                  </span>
-                </>
-              )}
-            </NavLink>
-          </li>
-        ))}
-      </ul>
-    </nav>
+                )}
+              </NavLink>
+            </li>
+          ))}
+        </ul>
+      </nav>
+    </div>
   );
 }

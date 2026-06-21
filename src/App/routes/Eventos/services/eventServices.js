@@ -716,6 +716,43 @@ export const getTruckExitSignedUrlService = async (zoneId, exitId) => {
   }
 };
 
+export const createRequirementService = async (zoneId, { note }) => {
+  try {
+    const res = await axios.post(`${EVENTS_URL}/zones/${zoneId}/requirements`, { note });
+    return {
+      status: true,
+      requirement: res.data?.data?.requirement ?? null,
+      errors: null,
+    };
+  } catch (error) {
+    paramShowMessageApi(error?.response);
+    return {
+      status: false,
+      requirement: null,
+      errors: error?.response?.data?.message || 'Error al registrar el requerimiento.',
+    };
+  }
+};
+
+export const getZoneRequirementsService = async (zoneId) => {
+  try {
+    const res = await axios.get(`${EVENTS_URL}/zones/${zoneId}/requirements`);
+    paramShowMessageApi(res);
+    return {
+      status: true,
+      requirements: res.data?.data?.requirements ?? [],
+      errors: null,
+    };
+  } catch (error) {
+    paramShowMessageApi(error?.response);
+    return {
+      status: false,
+      requirements: [],
+      errors: error?.response?.data?.message || 'Error al obtener los requerimientos.',
+    };
+  }
+};
+
 export const getAttendanceHistoryService = async (body) => {
   try {
     const { data } = await axios.post(`${EVENTS_URL}/attendance/history`, body);

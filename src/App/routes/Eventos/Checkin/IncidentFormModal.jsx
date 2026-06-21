@@ -1,5 +1,13 @@
 import { useState } from 'react';
-import { X, Loader2, UtensilsCrossed, Coffee, MapPinOff, AlertTriangle, CornerDownLeft } from 'lucide-react';
+import {
+  X,
+  Loader2,
+  UtensilsCrossed,
+  Coffee,
+  MapPinOff,
+  AlertTriangle,
+  CornerDownLeft,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { createIncidentService } from '../../services/eventServices';
 
@@ -13,7 +21,9 @@ const PRESETS = [
 
 function nowTime() {
   const d = new Date();
-  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  return `${String(d.getHours()).padStart(2, '0')}:${String(
+    d.getMinutes()
+  ).padStart(2, '0')}`;
 }
 
 export function IncidentFormModal({ open, onClose, person, eventId, onSave }) {
@@ -73,7 +83,9 @@ export function IncidentFormModal({ open, onClose, person, eventId, onSave }) {
         {/* Header */}
         <div className="flex items-start justify-between mb-5">
           <div>
-            <h2 className="text-base font-bold text-foreground">Nueva incidencia</h2>
+            <h2 className="text-base font-bold text-foreground">
+              Nueva incidencia
+            </h2>
             <p className="text-xs text-muted-foreground mt-0.5">
               {person.firstName} {person.lastName}
             </p>
@@ -142,7 +154,10 @@ export function IncidentFormModal({ open, onClose, person, eventId, onSave }) {
           {/* Nota */}
           <div>
             <label className="block text-xs font-medium text-foreground mb-1.5">
-              Nota <span className="text-muted-foreground font-normal">(opcional)</span>
+              Nota{' '}
+              <span className="text-muted-foreground font-normal">
+                (opcional)
+              </span>
             </label>
             <textarea
               value={form.note}
@@ -154,13 +169,17 @@ export function IncidentFormModal({ open, onClose, person, eventId, onSave }) {
           </div>
 
           {/* Error */}
-          {error && (
-            <p className="text-xs text-destructive">{error}</p>
-          )}
+          {error && <p className="text-xs text-destructive">{error}</p>}
 
           {/* Acciones */}
           <div className="flex gap-2 pt-1">
-            <Button type="button" variant="outline" onClick={handleClose} className="flex-1" disabled={saving}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleClose}
+              className="flex-1"
+              disabled={saving}
+            >
               Cancelar
             </Button>
             <Button
