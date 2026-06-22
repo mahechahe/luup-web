@@ -88,6 +88,7 @@ function CollabCard({
       entryTime: collab.attendance?.entryTime ?? null,
       exitTime: collab.attendance?.exitTime ?? null,
       notes: collab.attendance?.notes ?? null,
+      dateRegister: collab.attendance?.dateRegister,
     };
     const res = await upsertAttendanceService(body);
 
@@ -109,6 +110,7 @@ function CollabCard({
       notes: collab.attendance?.notes ?? null,
       uniform: true,
       uniformSize: selectedSize,
+      dateRegister: collab.attendance?.dateRegister,
     };
     const res = await upsertAttendanceService(body);
     if (res.status) {

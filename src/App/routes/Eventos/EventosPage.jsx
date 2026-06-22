@@ -303,7 +303,7 @@ function EventosPage() {
         </div>
 
         {/* ── Tabla ───────────────────────────────────────── */}
-        <Card className="border-border shadow-sm overflow-hidden p-0">
+        <Card className="gap-0 overflow-hidden border-border p-0 shadow-sm">
           <div className="flex items-center justify-between px-5 h-12 border-b border-border">
             <div className="flex items-center gap-2">
               <div className="w-6 h-6 rounded-md bg-[#234465]/10 dark:bg-white/10 flex items-center justify-center">

@@ -1,28 +1,33 @@
 import { Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { useUserStore } from '../context/userStore';
-import { hasAdminAccess } from '../utils/roles';
+import { hasAdminAccess, isClientUser, ROLE_IDS } from '../utils/roles';
 import AppLayout from '../components/AppLayout/AppLayout';
 import ProtectedRoute from './ProtectedRoute';
-import { routesAuth, routesNoAuth } from './routesConfig';
+import { routesAuth, routesNoAuth, routesClient } from './routesConfig';
 import { AppBar } from '../components/AppBar/AppBar';
 
 function RouterComponent() {
   const { userIsLogin, user } = useUserStore();
   const isAdmin = hasAdminAccess(user?.roleId);
+  const isClient = isClientUser(user?.roleId);
 
-  // Filtra rutas de colaboradores si no es admin
   const filteredRoutesAuth = routesAuth.filter((route) => {
+    if (isClient) return false;
+    if (route.workerOnly && user?.roleId !== ROLE_IDS.COLABORADOR) return false;
     if (route.path.startsWith('colaboradores') && !isAdmin) return false;
+    if (route.path.startsWith('inventario') && !isAdmin) return false;
     return true;
   });
+
+  const defaultAuth = isClient ? '/cliente/dashboard' : '/dashboard';
 
   return (
     <Routes>
       {/* Rutas para usuarios no autenticados */}
       <Route
         element={
-          <ProtectedRoute canActive={!userIsLogin} redirectPath="/dashboard" />
+          <ProtectedRoute canActive={!userIsLogin} redirectPath={defaultAuth} />
         }
       >
         {routesNoAuth.map((route) => (
@@ -38,12 +43,12 @@ function RouterComponent() {
         ))}
       </Route>
 
-      {/* Rutas para usuarios autenticados */}
+      {/* Rutas para admin / worker */}
       <Route
         element={
           <ProtectedRoute
-            canActive={userIsLogin}
-            redirectPath="/iniciar-sesion"
+            canActive={userIsLogin && !isClient}
+            redirectPath={userIsLogin ? '/cliente/dashboard' : '/iniciar-sesion'}
           />
         }
       >
@@ -65,8 +70,34 @@ function RouterComponent() {
         </Route>
       </Route>
 
+      {/* Rutas para cliente/visualizador */}
+      <Route
+        element={
+          <ProtectedRoute
+            canActive={userIsLogin && isClient}
+            redirectPath="/iniciar-sesion"
+          />
+        }
+      >
+        <Route element={<AppLayout />}>
+          {routesClient.map((route) => (
+            <Route
+              key={route.path}
+              path={route.path}
+              element={
+                <Suspense fallback={null}>
+                  <AppBar>
+                    <route.component />
+                  </AppBar>
+                </Suspense>
+              }
+            />
+          ))}
+        </Route>
+      </Route>
+
       {userIsLogin ? (
-        <Route path="*" element={<Navigate to="/dashboard" />} />
+        <Route path="*" element={<Navigate to={defaultAuth} />} />
       ) : (
         <Route path="*" element={<Navigate to="/iniciar-sesion" />} />
       )}

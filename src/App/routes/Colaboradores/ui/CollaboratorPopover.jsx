@@ -1,6 +1,22 @@
 import { PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { PopoverRow } from './PopoverRow';
 
+function CollaboratorAvatar({ user, className = 'h-9 w-9', textClassName = 'text-xs' }) {
+  return (
+    <span className={`relative flex shrink-0 items-center justify-center overflow-hidden rounded-xl bg-brand/10 font-bold text-brand ${className} ${textClassName}`}>
+      <span>{user.firstName?.[0]}{user.lastName?.[0]}</span>
+      {user.photoUrl && (
+        <img
+          src={user.photoUrl}
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover"
+          onError={(event) => { event.currentTarget.style.display = 'none'; }}
+        />
+      )}
+    </span>
+  );
+}
+
 export function CollaboratorPopover({
   user,
   isActive,
@@ -14,27 +30,30 @@ export function CollaboratorPopover({
 
   return (
     <PopoverTrigger asChild>
-      <button className="text-left group">
-        <span className="font-semibold text-foreground group-hover:underline block">
-          {user.firstName} {user.lastName}
-        </span>
-        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-          <span className="text-xs text-muted-foreground">
-            {roleLabel}
+      <button className="group flex items-center gap-3 text-left">
+        <CollaboratorAvatar user={user} />
+        <span className="min-w-0">
+          <span className="block truncate font-semibold text-foreground group-hover:underline">
+            {user.firstName} {user.lastName}
           </span>
-          {gLabel && gClass && (
-            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded border ${gClass}`}>
-              {gLabel}
+          <span className="mt-0.5 flex flex-wrap items-center gap-1.5">
+            <span className="text-xs text-muted-foreground">
+              {roleLabel}
             </span>
-          )}
-          <span className={`md:hidden text-[10px] font-semibold px-1.5 py-0.5 rounded border ${
-            isActive
-              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-              : 'bg-red-50 text-red-600 border-red-200'
-          }`}>
-            {isActive ? 'Activo' : 'Inactivo'}
+            {gLabel && gClass && (
+              <span className={`rounded border px-1.5 py-0.5 text-[10px] font-semibold ${gClass}`}>
+                {gLabel}
+              </span>
+            )}
+            <span className={`rounded border px-1.5 py-0.5 text-[10px] font-semibold md:hidden ${
+              isActive
+                ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                : 'border-red-200 bg-red-50 text-red-600'
+            }`}>
+              {isActive ? 'Activo' : 'Inactivo'}
+            </span>
           </span>
-        </div>
+        </span>
       </button>
     </PopoverTrigger>
   );
@@ -49,9 +68,11 @@ export function CollaboratorPopoverContent({
   return (
     <PopoverContent className="w-72 p-0 overflow-hidden" align="start">
       <div className="bg-[#234465] px-4 py-3 flex items-center gap-3">
-        <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center shrink-0 text-white font-bold text-sm">
-          {user.firstName?.[0]}{user.lastName?.[0]}
-        </div>
+        <CollaboratorAvatar
+          user={user}
+          className="h-10 w-10 bg-white/20 text-white ring-1 ring-white/25"
+          textClassName="text-sm"
+        />
         <div className="min-w-0">
           <p className="font-semibold text-white text-sm truncate">{user.firstName} {user.lastName}</p>
           <p className="text-xs text-white/60 truncate">{roleLabel}</p>

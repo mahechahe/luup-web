@@ -136,6 +136,7 @@ export default function AttendanceEditModal({
       notes: form.notes.trim() || null,
       uniform: !!form.uniformSize,
       uniformSize: form.uniformSize || null,
+      dateRegister: collaborator.attendance?.dateRegister,
     };
 
     const res = await upsertAttendanceService(body);

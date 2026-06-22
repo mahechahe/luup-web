@@ -4,6 +4,75 @@ import axios from 'axios';
 const { BASE_URL, ENDPOINTS } = constants;
 const USER_URL = `${BASE_URL}/${ENDPOINTS.USER}`;
 const COLLABORATOR_URL = `${BASE_URL}/${ENDPOINTS.COLLABORATOR}`;
+const RATINGS_URL = `${BASE_URL}/${ENDPOINTS.RATINGS}`;
+
+export const getOwnCollaboratorProfileService = async () => {
+  try {
+    const { data } = await axios.get(`${COLLABORATOR_URL}/me`);
+    return { status: true, profile: data?.data ?? null, errors: null };
+  } catch (error) {
+    return {
+      status: false,
+      profile: null,
+      errors:
+        error?.response?.data?.message ||
+        error?.response?.data?.data?.message ||
+        'Error al obtener tu perfil.',
+    };
+  }
+};
+
+export const updateOwnCollaboratorPhotoService = async (file) => {
+  try {
+    const formData = new FormData();
+    formData.append('photo', file);
+    const { data } = await axios.put(`${COLLABORATOR_URL}/me/photo`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return { status: true, photoUrl: data?.data?.photoUrl ?? null, errors: null };
+  } catch (error) {
+    return {
+      status: false,
+      photoUrl: null,
+      errors:
+        error?.response?.data?.message ||
+        error?.response?.data?.data?.message ||
+        'Error al actualizar tu foto.',
+    };
+  }
+};
+
+export const getCollaboratorRatingSummaryService = async (userId) => {
+  try {
+    const { data } = await axios.get(`${RATINGS_URL}/collaborator/${userId}/summary`);
+    return { status: true, summary: data?.data?.data ?? null, errors: null };
+  } catch (error) {
+    return {
+      status: false,
+      summary: null,
+      errors: error?.response?.data?.data?.message ?? 'Error al obtener resumen de calificaciones.',
+    };
+  }
+};
+
+export const getCollaboratorRatingHistoryService = async (userId, { page = 1, limit = 20 } = {}) => {
+  try {
+    const { data } = await axios.post(`${RATINGS_URL}/collaborator/${userId}/history`, { page, limit });
+    return {
+      status: true,
+      ratings: data?.data?.data?.ratings ?? [],
+      pagination: data?.data?.data?.pagination ?? null,
+      errors: null,
+    };
+  } catch (error) {
+    return {
+      status: false,
+      ratings: [],
+      pagination: null,
+      errors: error?.response?.data?.data?.message ?? 'Error al obtener historial de calificaciones.',
+    };
+  }
+};
 
 /**
  * Obtiene la lista paginada de colaboradores con filtros opcionales.
@@ -146,6 +215,26 @@ export const getCollaboratorDetailService = async (collaboratorId) => {
 // services/collaboratorServices.js
 
 // services/collaboratorServices.js
+
+export const updateCollaboratorPhotoService = async (collaboratorId, file) => {
+  try {
+    const formData = new FormData();
+    formData.append('photo', file);
+    const { data } = await axios.put(
+      `${COLLABORATOR_URL}/${collaboratorId}/photo`,
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data' } }
+    );
+    return { status: true, photoUrl: data?.data?.photoUrl ?? null, errors: null };
+  } catch (error) {
+    return {
+      status: false,
+      photoUrl: null,
+      errors:
+        error?.response?.data?.message || 'Error al actualizar la foto de perfil.',
+    };
+  }
+};
 
 export const deleteCollaboratorService = async (collaboratorId) => {
   try {

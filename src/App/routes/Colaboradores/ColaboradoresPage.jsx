@@ -138,7 +138,7 @@ function ColaboradoresPage() {
           }}
         />
 
-        <Card className="border-border shadow-sm overflow-hidden p-0">
+        <Card className="gap-0 overflow-hidden border-border p-0 shadow-sm">
           <ColaboradoresTable
             loading={loading}
             users={users}

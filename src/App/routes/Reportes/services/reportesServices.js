@@ -112,6 +112,53 @@ export const getWasteLogsReportService = async (eventId, zoneId = null) => {
   }
 };
 
+export const getWasteDistributionsReportService = async (zones = []) => {
+  if (zones.length === 0) {
+    return {
+      status: true,
+      summaries: [],
+      partial: false,
+      failedZones: [],
+      errors: null,
+    };
+  }
+
+  const results = await Promise.allSettled(
+    zones.map((zone) =>
+      axios
+        .get(`${EVENTS_URL}/zones/${zone.id}/waste/distributions`)
+        .then((res) => ({
+          zone: { id: zone.id, name: zone.name },
+          summary: res.data?.data ?? null,
+        }))
+    )
+  );
+
+  const summaries = results.flatMap((result) =>
+    result.status === 'fulfilled' && result.value.summary ? [result.value] : []
+  );
+  const failedZones = getFailedZones(results, zones);
+
+  if (summaries.length === 0) {
+    return {
+      status: false,
+      summaries: [],
+      partial: false,
+      failedZones,
+      errors:
+        'No se pudo consultar la distribución de ningún centro de acopio.',
+    };
+  }
+
+  return {
+    status: true,
+    summaries,
+    partial: failedZones.length > 0,
+    failedZones,
+    errors: null,
+  };
+};
+
 export const getTruckExitsReportService = async (eventId) => {
   try {
     const { data: zonesResp } = await axios.get(
@@ -247,7 +294,14 @@ export const generateAttendanceExcelService = async (body) => {
 
 export const getAttendanceReportService = async (body) => {
   try {
-    const { data } = await axios.post(`${EVENTS_URL}/attendance/report`, body);
+    const cleanBody = { ...body };
+    if (cleanBody.attended === null || cleanBody.attended === undefined) {
+      delete cleanBody.attended;
+    }
+    const { data } = await axios.post(
+      `${EVENTS_URL}/attendance/report`,
+      cleanBody
+    );
     const payload = data?.data?.data;
     return {
       status: true,
@@ -258,6 +312,13 @@ export const getAttendanceReportService = async (body) => {
         total: 0,
         totalPages: 1,
       },
+      totals: payload?.totals ?? {
+        total: 0,
+        attended: 0,
+        notAttended: 0,
+        withLunch: 0,
+        withInventory: 0,
+      },
       errors: null,
     };
   } catch (error) {
@@ -265,6 +326,13 @@ export const getAttendanceReportService = async (body) => {
       status: false,
       collaborators: [],
       pagination: { page: 1, limit: body.limit ?? 25, total: 0, totalPages: 1 },
+      totals: {
+        total: 0,
+        attended: 0,
+        notAttended: 0,
+        withLunch: 0,
+        withInventory: 0,
+      },
       errors:
         error?.response?.data?.data?.message ||
         'Error al obtener el reporte de asistencias.',

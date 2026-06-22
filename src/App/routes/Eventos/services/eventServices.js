@@ -262,6 +262,86 @@ export const getZoneWasteHistoryService = async (zoneId) => {
   }
 };
 
+export const getWasteDistributionsService = async (zoneId) => {
+  try {
+    const res = await axios.get(
+      `${EVENTS_URL}/zones/${zoneId}/waste/distributions`,
+    );
+    paramShowMessageApi(res);
+    return { status: true, summary: res.data?.data ?? null, errors: null };
+  } catch (error) {
+    paramShowMessageApi(error?.response);
+    return {
+      status: false,
+      summary: null,
+      errors:
+        error?.response?.data?.message ||
+        'Error al obtener la distribución de kilogramos.',
+    };
+  }
+};
+
+export const createWasteDistributionService = async (zoneId, body) => {
+  try {
+    const res = await axios.post(
+      `${EVENTS_URL}/zones/${zoneId}/waste/distributions`,
+      body,
+    );
+    paramShowMessageApi(res);
+    return { status: true, summary: res.data?.data ?? null, errors: null };
+  } catch (error) {
+    paramShowMessageApi(error?.response);
+    return {
+      status: false,
+      summary: null,
+      errors: error?.response?.data?.message || 'Error al guardar la distribución.',
+    };
+  }
+};
+
+export const updateWasteDistributionService = async (
+  zoneId,
+  distributionId,
+  body,
+) => {
+  try {
+    const res = await axios.put(
+      `${EVENTS_URL}/zones/${zoneId}/waste/distributions/${distributionId}`,
+      body,
+    );
+    paramShowMessageApi(res);
+    return { status: true, summary: res.data?.data ?? null, errors: null };
+  } catch (error) {
+    paramShowMessageApi(error?.response);
+    return {
+      status: false,
+      summary: null,
+      errors:
+        error?.response?.data?.message || 'Error al actualizar la distribución.',
+    };
+  }
+};
+
+export const deleteWasteDistributionService = async (
+  zoneId,
+  distributionId,
+) => {
+  try {
+    const res = await axios.delete(
+      `${EVENTS_URL}/zones/${zoneId}/waste/distributions/${distributionId}`,
+    );
+    paramShowMessageApi(res);
+    return { status: true, summary: res.data?.data ?? null, errors: null };
+  } catch (error) {
+    paramShowMessageApi(error?.response);
+    return {
+      status: false,
+      summary: null,
+      errors: error?.response?.data?.message || 'Error al eliminar la distribución.',
+    };
+  }
+};
+
 export const getWasteSignedUrlService = async (zoneId, logId) => {
   try {
     const res = await axios.get(
@@ -322,9 +402,13 @@ export const upsertAttendanceService = async (body) => {
     const mm = String(today.getMonth() + 1).padStart(2, '0');
     const dd = String(today.getDate()).padStart(2, '0');
     const yyyy = today.getFullYear();
+    const requestedDate = body.dateRegister;
+    const dateRegister = /^\d{4}-\d{2}-\d{2}$/.test(requestedDate ?? '')
+      ? `${requestedDate.slice(5, 7)}-${requestedDate.slice(8, 10)}-${requestedDate.slice(0, 4)}`
+      : requestedDate || `${mm}-${dd}-${yyyy}`;
     const { data } = await axios.put(`${EVENTS_URL}/attendance/upsert`, {
       ...body,
-      dateRegister: `${mm}-${dd}-${yyyy}`,
+      dateRegister,
     });
     return { status: true, data: data?.data, errors: null };
   } catch (error) {

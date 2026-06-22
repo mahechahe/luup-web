@@ -1,8 +1,8 @@
 export const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 
 export const constants = {
-  BASE_URL: 'http://localhost:3000/api/v1',
-  // BASE_URL: '/api/v1',
+  // BASE_URL: 'http://localhost:3000/api/v1',
+  BASE_URL: '/api/v1',
   ENDPOINTS: {
     COMPANY: 'company',
     SHARED: 'shared',
@@ -21,5 +21,6 @@ export const constants = {
     PROFESSIONAL_SHOWCASES: 'professional-showcases',
     SUSCRIPTIONS: 'suscriptions',
     LOCATION: 'location',
+    RATINGS: 'ratings',
   },
 };

@@ -145,6 +145,9 @@ export default function AttendanceCollaboratorCard({ collaborator }) {
   const uniformSize = collaborator.attendances.find(
     (a) => a.uniformSize
   )?.uniformSize;
+  const uniformReturned =
+    hasUniform &&
+    collaborator.attendances.filter((a) => a.uniform).every((a) => a.returnedUniform);
   const hasInventory = collaborator.inventoryItems.length > 0;
   const attendanceCount = collaborator.attendances.length;
   const initials = `${collaborator.firstName?.[0] ?? ''}${
@@ -225,9 +228,16 @@ export default function AttendanceCollaboratorCard({ collaborator }) {
             </span>
 
             {hasUniform && (
-              <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-400">
+              <span
+                className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full ${
+                  uniformReturned
+                    ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400'
+                    : 'bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400'
+                }`}
+              >
                 <Shirt className="w-3 h-3" />
-                Uniforme{uniformSize ? ` ${uniformSize}` : ''}
+                {uniformReturned ? 'Devuelto' : 'Uniforme pendiente'}
+                {uniformSize ? ` ${uniformSize}` : ''}
               </span>
             )}
 
@@ -301,6 +311,11 @@ export default function AttendanceCollaboratorCard({ collaborator }) {
                       {item.returnedQuantity > 0 && (
                         <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400 font-medium">
                           {item.returnedQuantity} dev.
+                        </span>
+                      )}
+                      {item.usedQuantity > 0 && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 font-medium">
+                          {item.usedQuantity} usad.
                         </span>
                       )}
                       {item.damagedQuantity > 0 && (

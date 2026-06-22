@@ -15,6 +15,7 @@ import {
   RefreshCw,
   Search,
   Shirt,
+  Star,
   User,
   UtensilsCrossed,
   X,
@@ -23,6 +24,7 @@ import { useEffect, useState } from 'react';
 import { getStation4RecordsService } from '../../services/eventServices';
 import { AttendanceHistoryModal } from '../components/AttendanceHistoryModal';
 import { CheckoutModal } from '../components/CheckoutModal';
+import { RatingModal } from '../components/RatingModal';
 
 const PAGE_SIZE = 25;
 
@@ -70,7 +72,7 @@ function AttendancePill({ icon: Icon, label, received, detail }) {
   );
 }
 
-function CollabCheckoutCard({ collab, onCheckout }) {
+function CollabCheckoutCard({ collab, onCheckout, onRate }) {
   const att = collab.attendance ?? {};
   const items = collab.inventoryItems ?? [];
   const [itemsExpanded, setItemsExpanded] = useState(false);
@@ -346,35 +348,40 @@ function CollabCheckoutCard({ collab, onCheckout }) {
           </div>
         )}
 
-        {/* Checkout */}
-        {isCheckedOut ? (
-          <div className="flex items-center gap-2 rounded-xl bg-rose-50 dark:bg-rose-900/30 border border-rose-200 dark:border-rose-800 px-3 py-2.5">
-            <DoorOpen className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="text-[11px] font-semibold text-rose-700 dark:text-rose-300">
-                Check-out registrado
-              </p>
-              <p className="text-[10px] text-rose-600/70 dark:text-rose-400/70">
-                Salida: {exitTime}
-                {att.returnedUniform != null && (
-                  <>
-                    {' '}
-                    · Uniforme:{' '}
-                    {att.returnedUniform ? 'devuelto' : 'no devuelto'}
-                  </>
-                )}
-              </p>
+        {/* Checkout + Calificar */}
+        <div className="flex items-center gap-2">
+          {isCheckedOut ? (
+            <div className="flex items-center gap-2 flex-1 rounded-xl bg-rose-50 dark:bg-rose-900/30 border border-rose-200 dark:border-rose-800 px-3 py-2.5 min-w-0">
+              <DoorOpen className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
+              <div className="min-w-0">
+                <p className="text-[11px] font-semibold text-rose-700 dark:text-rose-300">
+                  Check-out registrado
+                </p>
+                <p className="text-[10px] text-rose-600/70 dark:text-rose-400/70 truncate">
+                  Salida: {exitTime}
+                  {att.returnedUniform != null && (
+                    <> · Unif.: {att.returnedUniform ? 'devuelto' : 'no dev.'}</>
+                  )}
+                </p>
+              </div>
             </div>
-          </div>
-        ) : (
+          ) : (
+            <button
+              onClick={() => onCheckout(collab)}
+              className="flex-1 h-10 rounded-xl bg-[#DD7419] hover:bg-[#DD7419]/90 text-white text-sm font-semibold transition flex items-center justify-center gap-2"
+            >
+              <DoorOpen className="w-4 h-4" />
+              Checkout
+            </button>
+          )}
           <button
-            onClick={() => onCheckout(collab)}
-            className="w-full h-10 rounded-xl bg-[#DD7419] hover:bg-[#DD7419]/90 text-white text-sm font-semibold transition flex items-center justify-center gap-2"
+            onClick={() => onRate(collab)}
+            className="h-10 px-4 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-900/20 dark:hover:bg-amber-900/40 text-amber-700 dark:text-amber-300 text-sm font-semibold transition flex items-center gap-1.5 shrink-0"
           >
-            <DoorOpen className="w-4 h-4" />
-            Marcar Checkout
+            <Star className="w-3.5 h-3.5" />
+            Calificar
           </button>
-        )}
+        </div>
       </div>
     </div>
   );
@@ -422,10 +429,17 @@ export const Section4 = ({ eventId }) => {
   const [checkoutCollab, setCheckoutCollab] = useState(null);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [ratingCollab, setRatingCollab] = useState(null);
+  const [ratingOpen, setRatingOpen] = useState(false);
 
   const handleOpenCheckout = (collab) => {
     setCheckoutCollab(collab);
     setCheckoutOpen(true);
+  };
+
+  const handleOpenRating = (collab) => {
+    setRatingCollab(collab);
+    setRatingOpen(true);
   };
 
   const handleCheckedOut = (userId, data) => {
@@ -514,6 +528,13 @@ export const Section4 = ({ eventId }) => {
         open={historyOpen}
         onClose={() => setHistoryOpen(false)}
         eventId={Number(eventId)}
+      />
+      <RatingModal
+        open={ratingOpen}
+        onClose={() => { setRatingOpen(false); setRatingCollab(null); }}
+        eventId={Number(eventId)}
+        collab={ratingCollab}
+        dateRegister={ratingCollab?.attendance?.dateRegister ?? null}
       />
 
       {/* Banner */}
@@ -643,6 +664,7 @@ export const Section4 = ({ eventId }) => {
               key={collab.userId}
               collab={collab}
               onCheckout={handleOpenCheckout}
+              onRate={handleOpenRating}
             />
           ))}
         </div>

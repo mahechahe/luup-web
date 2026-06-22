@@ -18,6 +18,11 @@ export const routesAuth = [
     path: 'dashboard',
     component: lazy(() => import('./Dashboard/Dashboard')),
   },
+  {
+    path: 'mi-perfil',
+    workerOnly: true,
+    component: lazy(() => import('./Perfil/MiPerfilPage')),
+  },
 
   // --- MÓDULO DE INVENTARIO ---
   {
@@ -83,11 +88,31 @@ export const routesAuth = [
   },
 
   {
+    path: 'eventos/:eventId/clientes',
+    component: lazy(() => import('./Eventos/Clientes/EventoClientesPage')),
+  },
+  {
     path: 'eventos/:eventId/worker',
     component: lazy(() => import('./Eventos/WorkerEventoModulesPage')),
   },
   {
     path: 'eventos/:eventId/worker/resumen',
     component: lazy(() => import('./Eventos/WorkerEventoResumenPage')),
+  },
+];
+
+/* Rutas exclusivas para usuarios CLIENT/visualizador */
+export const routesClient = [
+  {
+    path: 'cliente/dashboard',
+    component: lazy(() => import('./Cliente/ClienteDashboardPage')),
+  },
+  {
+    path: 'cliente/eventos',
+    component: lazy(() => import('./Cliente/ClienteEventosPage')),
+  },
+  {
+    path: 'cliente/eventos/:eventId',
+    component: lazy(() => import('./Cliente/ClienteEventoDetailPage')),
   },
 ];

@@ -40,6 +40,7 @@ import {
   getAcopioZonesService,
   getWasteLogsReportService,
 } from '../services/reportesServices';
+import WasteDistributionReportModal from '../components/WasteDistributionReportModal';
 
 const PAGE_SIZE = 100;
 
@@ -380,6 +381,7 @@ export default function IngresosSection({ eventId }) {
   const [page, setPage] = useState(1);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [reportWarning, setReportWarning] = useState(null);
+  const [distributionOpen, setDistributionOpen] = useState(false);
 
   const selectedDate = filters.date
     ? parse(filters.date, 'yyyy-MM-dd', new Date())
@@ -474,7 +476,16 @@ export default function IngresosSection({ eventId }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-end">
+      <div className="flex items-center justify-end gap-2">
+        <Button
+          variant="outline"
+          onClick={() => setDistributionOpen(true)}
+          disabled={acopioZones.length === 0}
+          className="h-10 rounded-xl gap-2 border-[#DD7419]/30 text-[#A6520B] hover:bg-[#DD7419]/10 hover:text-[#8E4508]"
+        >
+          <Scale className="w-4 h-4" />
+          Ver distribución
+        </Button>
         <button
           onClick={() => fetchLogs(filters.zoneId)}
           disabled={loading}
@@ -726,6 +737,12 @@ export default function IngresosSection({ eventId }) {
       ) : (
         <ConsolidadoView logs={logs} />
       )}
+
+      <WasteDistributionReportModal
+        open={distributionOpen}
+        onOpenChange={setDistributionOpen}
+        zones={acopioZones}
+      />
     </div>
   );
 }

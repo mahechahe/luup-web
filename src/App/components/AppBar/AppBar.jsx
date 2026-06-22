@@ -1,13 +1,17 @@
 import { closeSesion } from '@/App/auth/services/authService';
 import { useUserStore } from '@/App/context/userStore';
 import { useTheme } from '@/App/context/themeStore.jsx';
-import { Bell, LogOut, Moon, Sun } from 'lucide-react';
+import { LogOut, Moon, Sun, UserRound } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { isClientUser, getRoleLabel, ROLE_IDS } from '@/App/utils/roles';
 
 export const AppBar = ({ children }) => {
   const navigate = useNavigate();
   const { user } = useUserStore();
   const { theme, toggleTheme } = useTheme();
+  const isClient = isClientUser(user?.roleId);
+  const isWorker = user?.roleId === ROLE_IDS.COLABORADOR;
+  const initials = `${user?.firstName?.[0] ?? ''}${user?.lastName?.[0] ?? ''}`.toUpperCase();
 
   const handleLogout = () => {
     closeSesion();
@@ -50,13 +54,30 @@ export const AppBar = ({ children }) => {
                 {user.firstName} {user.lastName}
               </span>
               <span className="text-xs text-muted-foreground">
-                C.C. {user.username}
+                {isClient ? getRoleLabel(user.roleId) : `C.C. ${user.username}`}
               </span>
             </div>
           )}
         </div>
 
         <div className="flex items-center gap-2">
+          {isWorker && (
+            <button
+              type="button"
+              onClick={() => navigate('/mi-perfil')}
+              className="group flex h-9 items-center gap-2 rounded-xl border border-border bg-background px-1.5 pr-3 text-left transition-colors hover:border-brand/30 hover:bg-brand/5"
+              title="Ir a mi perfil"
+            >
+              <span className="relative flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-brand/10 text-[10px] font-bold text-brand">
+                {initials || <UserRound className="h-3.5 w-3.5" />}
+                {user?.photoUrl && (
+                  <img src={user.photoUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                )}
+              </span>
+              <span className="hidden text-xs font-semibold text-foreground sm:inline">Mi perfil</span>
+            </button>
+          )}
+
           {/* Theme toggle */}
           <button
             type="button"

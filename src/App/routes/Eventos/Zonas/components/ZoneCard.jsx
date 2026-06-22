@@ -17,6 +17,9 @@ import {
   PackageOpen,
   Truck,
   ArrowUpRight,
+  Scale,
+  Pencil,
+  CheckCircle2,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -26,6 +29,7 @@ import { CoordinatorCard } from './CoordinatorCard';
 import { CollaboratorCard } from './CollaboratorCard';
 import { WasteHistoryModal } from './WasteHistoryModal';
 import { TruckExitHistoryModal } from './TruckExitHistoryModal';
+import { WasteDistributionDeleteDialog } from './WasteDistributionDeleteDialog';
 
 const CATEGORY_STYLE = {
   general:
@@ -38,6 +42,17 @@ const CATEGORY_LABEL = {
   general: 'Zona general',
   acopio: 'Centro de Acopio',
 };
+
+const formatKg = (value) =>
+  Number(value ?? 0).toLocaleString('es-CO', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+
+const formatUnits = (value) =>
+  Number(value ?? 0).toLocaleString('es-CO', {
+    maximumFractionDigits: 0,
+  });
 
 function MiniStat({ icon: Icon, value, label, color }) {
   return (
@@ -56,6 +71,8 @@ export function ZoneCard({
   incidents = {},
   wasteEntries = [],
   wasteLoading = false,
+  wasteDistribution,
+  wasteDistributionLoading = false,
   truckExits = [],
   truckExitsLoading = false,
   requirements = [],
@@ -64,12 +81,15 @@ export function ZoneCard({
   onAddIncident,
   onViewHistory,
   onAddWaste,
+  onAddWasteDistribution,
+  onEditWasteDistribution,
+  onDeleteWasteDistribution,
   onAddTruckExit,
   onTransfer,
-  eventRole,
 }) {
   const [showWasteHistory, setShowWasteHistory] = useState(false);
   const [showTruckExitHistory, setShowTruckExitHistory] = useState(false);
+  const [distributionToDelete, setDistributionToDelete] = useState(null);
   const [expanded, setExpanded] = useState(false);
 
   const collaborators = zone.collaborators ?? [];
@@ -133,6 +153,17 @@ export function ZoneCard({
   const netQty = Math.max(0, totalWasteQty - totalExitQty);
   const netKg = Math.max(0, totalWasteKg - totalExitKg);
   const hasNetKg = hasWasteKg || hasExitKg;
+
+  const distributionSummary = wasteDistribution ?? {
+    totalInputKg: totalWasteKg,
+    distributedKg: 0,
+    remainingKg: totalWasteKg,
+    isComplete: false,
+    distributions: [],
+  };
+  const distributionProgress = distributionSummary.totalInputKg > 0
+    ? Math.min(100, (distributionSummary.distributedKg / distributionSummary.totalInputKg) * 100)
+    : 0;
 
   return (
     <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden flex flex-col">
@@ -261,37 +292,57 @@ export function ZoneCard({
           {zone.category === 'acopio' &&
             (zone.wasteLimit != null || zone.weightLimit != null) && (
               <>
-                <div className="px-4 sm:px-6 pt-4 pb-3 grid grid-cols-2 gap-3">
+                <div className="px-4 sm:px-6 py-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {zone.wasteLimit != null && (
-                    <div className="rounded-xl bg-[#DD7419]/8 border border-[#DD7419]/20 px-4 py-3 flex flex-col gap-1">
-                      <div className="flex items-center gap-1.5 text-[#DD7419]">
-                        <Trash2 className="w-4 h-4 shrink-0" />
-                        <span className="text-xs font-semibold uppercase tracking-wide">
-                          Límite basuras
-                        </span>
+                    <div className="relative overflow-hidden min-h-28 rounded-2xl bg-gradient-to-br from-[#DD7419]/14 via-[#DD7419]/8 to-transparent border border-[#DD7419]/25 px-4 py-3.5 flex flex-col justify-between shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+                      <div className="absolute -right-8 -top-10 w-28 h-28 rounded-full bg-[#DD7419]/8" />
+                      <div className="relative flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#DD7419]/75">
+                            Capacidad máxima
+                          </p>
+                          <p className="text-sm font-bold text-foreground mt-0.5">
+                            Límite de basuras
+                          </p>
+                        </div>
+                        <div className="w-8 h-8 rounded-lg bg-[#DD7419] text-white flex items-center justify-center shadow-sm shadow-[#DD7419]/25">
+                          <Trash2 className="w-4 h-4" />
+                        </div>
                       </div>
-                      <p className="text-3xl font-bold text-[#DD7419] leading-none mt-1">
-                        {zone.wasteLimit}
-                      </p>
-                      <p className="text-xs text-[#DD7419]/60 font-medium">
-                        unidades
-                      </p>
+                      <div className="relative flex items-end gap-2 mt-3">
+                        <p className="text-4xl font-black tracking-tight tabular-nums text-[#DD7419] leading-[0.85]">
+                          {formatUnits(zone.wasteLimit)}
+                        </p>
+                        <p className="text-xs font-bold text-[#DD7419]/60 pb-0.5">
+                          unidades
+                        </p>
+                      </div>
                     </div>
                   )}
                   {zone.weightLimit != null && (
-                    <div className="rounded-xl bg-[#DD7419]/8 border border-[#DD7419]/20 px-4 py-3 flex flex-col gap-1">
-                      <div className="flex items-center gap-1.5 text-[#DD7419]">
-                        <Weight className="w-4 h-4 shrink-0" />
-                        <span className="text-xs font-semibold uppercase tracking-wide">
-                          Límite de peso
-                        </span>
+                    <div className="relative overflow-hidden min-h-28 rounded-2xl bg-gradient-to-br from-[#DD7419]/14 via-[#DD7419]/8 to-transparent border border-[#DD7419]/25 px-4 py-3.5 flex flex-col justify-between shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+                      <div className="absolute -right-8 -top-10 w-28 h-28 rounded-full bg-[#DD7419]/8" />
+                      <div className="relative flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#DD7419]/75">
+                            Capacidad máxima
+                          </p>
+                          <p className="text-sm font-bold text-foreground mt-0.5">
+                            Límite de peso
+                          </p>
+                        </div>
+                        <div className="w-8 h-8 rounded-lg bg-[#DD7419] text-white flex items-center justify-center shadow-sm shadow-[#DD7419]/25">
+                          <Weight className="w-4 h-4" />
+                        </div>
                       </div>
-                      <p className="text-3xl font-bold text-[#DD7419] leading-none mt-1">
-                        {zone.weightLimit}
-                      </p>
-                      <p className="text-xs text-[#DD7419]/60 font-medium">
-                        kilogramos
-                      </p>
+                      <div className="relative flex items-end gap-2 mt-3">
+                        <p className="text-4xl font-black tracking-tight tabular-nums text-[#DD7419] leading-[0.85]">
+                          {formatKg(zone.weightLimit)}
+                        </p>
+                        <p className="text-xs font-bold text-[#DD7419]/60 pb-0.5">
+                          kg
+                        </p>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -303,14 +354,23 @@ export function ZoneCard({
           {zone.category === 'acopio' && (
             <>
               <div className="px-4 sm:px-6 py-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-[#DD7419]">
-                    <ClipboardList className="w-4 h-4" />
-                    <span className="text-sm font-bold">Conteo de basuras</span>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-9 h-9 rounded-xl bg-[#DD7419]/12 text-[#DD7419] flex items-center justify-center shrink-0">
+                      <ClipboardList className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-black text-foreground">
+                        Estado del acopio
+                      </p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5 truncate">
+                        Balance entre ingresos y salidas registradas
+                      </p>
+                    </div>
                   </div>
                   <button
                     onClick={onAddWaste}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#DD7419] text-white text-xs font-semibold hover:bg-[#DD7419]/90 transition"
+                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#DD7419] text-white text-xs font-bold hover:bg-[#C96514] hover:-translate-y-0.5 shadow-sm shadow-[#DD7419]/20 transition-all shrink-0"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     Registrar entrada
@@ -330,39 +390,74 @@ export function ZoneCard({
                   </div>
                 ) : (
                   <>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="rounded-xl bg-[#DD7419]/8 border border-[#DD7419]/20 px-4 py-3">
-                        <p className="text-[11px] font-semibold text-[#DD7419]/70 uppercase tracking-wide flex items-center gap-1">
-                          <Trash2 className="w-3 h-3" /> En acopio
-                        </p>
-                        <p className="text-3xl font-bold text-[#DD7419] leading-none mt-1">
-                          {netQty}
-                        </p>
-                        <p className="text-xs text-[#DD7419]/50 mt-0.5">
-                          unidades netas · {totalWasteQty} ingresadas
-                        </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="relative overflow-hidden min-h-28 rounded-2xl bg-gradient-to-br from-[#DD7419]/14 via-[#DD7419]/7 to-transparent border border-[#DD7419]/25 p-4 flex flex-col justify-between">
+                        <div className="absolute -right-7 -bottom-8 w-24 h-24 rounded-full border-[16px] border-[#DD7419]/5" />
+                        <div className="relative flex items-center gap-2 text-[#DD7419]">
+                          <div className="w-7 h-7 rounded-lg bg-[#DD7419]/15 flex items-center justify-center">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </div>
+                          <p className="text-[10px] font-black uppercase tracking-[0.14em]">
+                            Unidades en acopio
+                          </p>
+                        </div>
+                        <div className="relative mt-3">
+                          <p className="text-4xl font-black tracking-tight tabular-nums text-[#DD7419] leading-none">
+                            {formatUnits(netQty)}
+                          </p>
+                          <div className="flex items-center gap-1.5 mt-2 text-[11px]">
+                            <span className="font-bold text-foreground">
+                              {formatUnits(totalWasteQty)}
+                            </span>
+                            <span className="text-muted-foreground">
+                              unidades ingresadas en total
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                      <div className="rounded-xl bg-[#DD7419]/8 border border-[#DD7419]/20 px-4 py-3">
-                        <p className="text-[11px] font-semibold text-[#DD7419]/70 uppercase tracking-wide flex items-center gap-1">
-                          <Weight className="w-3 h-3" /> Peso en acopio
-                        </p>
-                        <p className="text-3xl font-bold text-[#DD7419] leading-none mt-1">
-                          {hasNetKg ? netKg.toFixed(1) : '—'}
-                        </p>
-                        <p className="text-xs text-[#DD7419]/50 mt-0.5">
-                          kg · {hasWasteKg ? totalWasteKg.toFixed(1) : '—'} kg
-                          entradas
-                        </p>
+                      <div className="relative overflow-hidden min-h-28 rounded-2xl bg-gradient-to-br from-[#DD7419]/14 via-[#DD7419]/7 to-transparent border border-[#DD7419]/25 p-4 flex flex-col justify-between">
+                        <div className="absolute -right-7 -bottom-8 w-24 h-24 rounded-full border-[16px] border-[#DD7419]/5" />
+                        <div className="relative flex items-center gap-2 text-[#DD7419]">
+                          <div className="w-7 h-7 rounded-lg bg-[#DD7419]/15 flex items-center justify-center">
+                            <Weight className="w-3.5 h-3.5" />
+                          </div>
+                          <p className="text-[10px] font-black uppercase tracking-[0.14em]">
+                            Peso actual en acopio
+                          </p>
+                        </div>
+                        <div className="relative mt-3">
+                          <div className="flex items-end gap-1.5">
+                            <p className="text-4xl font-black tracking-tight tabular-nums text-[#DD7419] leading-none">
+                              {hasNetKg ? formatKg(netKg) : '—'}
+                            </p>
+                            {hasNetKg && (
+                              <span className="text-xs font-black text-[#DD7419]/65 pb-1">
+                                kg
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1.5 mt-2 text-[11px]">
+                            <span className="font-bold text-foreground">
+                              {hasWasteKg ? formatKg(totalWasteKg) : '—'} kg
+                            </span>
+                            <span className="text-muted-foreground">
+                              ingresados en total
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     </div>
                     {wasteEntries.length > 0 ? (
                       <button
                         onClick={() => setShowWasteHistory(true)}
-                        className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border border-[#DD7419]/30 text-[#DD7419] text-xs font-semibold hover:bg-[#DD7419]/8 transition"
+                        className="w-full flex items-center justify-center gap-2 px-3 py-3 rounded-xl border border-[#DD7419]/25 bg-[#DD7419]/5 text-[#DD7419] text-xs font-bold hover:bg-[#DD7419]/10 hover:border-[#DD7419]/45 transition"
                       >
                         <History className="w-3.5 h-3.5" />
-                        Ver historial · {wasteEntries.length}{' '}
-                        {wasteEntries.length === 1 ? 'entrada' : 'entradas'}
+                        Ver historial
+                        <span className="rounded-full bg-[#DD7419]/12 px-2 py-0.5 tabular-nums">
+                          {wasteEntries.length}{' '}
+                          {wasteEntries.length === 1 ? 'entrada' : 'entradas'}
+                        </span>
                       </button>
                     ) : (
                       <p className="text-xs text-muted-foreground italic text-center py-1">
@@ -376,18 +471,171 @@ export function ZoneCard({
             </>
           )}
 
+          {/* Distribución del peso bruto ingresado */}
+          {zone.category === 'acopio' && (
+            <>
+              <div className="px-4 sm:px-6 py-4 space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 text-[#A6520B] min-w-0">
+                    <Scale className="w-4 h-4 shrink-0" />
+                    <span className="text-sm font-bold truncate">
+                      Distribución de kilogramos
+                    </span>
+                  </div>
+                  <button
+                    onClick={onAddWasteDistribution}
+                    disabled={
+                      wasteDistributionLoading ||
+                      !wasteDistribution ||
+                      distributionSummary.remainingKg <= 0
+                    }
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#A6520B] text-white text-xs font-semibold hover:bg-[#8E4508] transition disabled:opacity-45 disabled:cursor-not-allowed"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    Agregar categoría
+                  </button>
+                </div>
+
+                {wasteDistributionLoading ? (
+                  <div className="rounded-xl border border-[#DD7419]/15 p-4 space-y-3">
+                    <Skeleton className="h-3 w-40 bg-[#DD7419]/15" />
+                    <Skeleton className="h-2 w-full bg-[#DD7419]/15" />
+                    <Skeleton className="h-12 w-full bg-[#DD7419]/10" />
+                  </div>
+                ) : (
+                  <>
+                    <div className="rounded-xl border border-[#DD7419]/20 bg-gradient-to-br from-[#DD7419]/10 via-[#DD7419]/5 to-transparent p-4">
+                      <div className="grid grid-cols-3 gap-3">
+                        <div>
+                          <p className="text-[9px] uppercase tracking-wider font-bold text-muted-foreground">
+                            Ingresado
+                          </p>
+                          <p className="text-sm sm:text-base font-black tabular-nums text-foreground mt-0.5">
+                            {formatKg(distributionSummary.totalInputKg)}
+                            <span className="text-[10px] font-semibold text-muted-foreground ml-0.5">kg</span>
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[9px] uppercase tracking-wider font-bold text-muted-foreground">
+                            Distribuido
+                          </p>
+                          <p className="text-sm sm:text-base font-black tabular-nums text-[#A6520B] mt-0.5">
+                            {formatKg(distributionSummary.distributedKg)}
+                            <span className="text-[10px] font-semibold ml-0.5">kg</span>
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[9px] uppercase tracking-wider font-bold text-muted-foreground">
+                            Pendiente
+                          </p>
+                          <p className="text-sm sm:text-base font-black tabular-nums text-[#DD7419] mt-0.5">
+                            {formatKg(distributionSummary.remainingKg)}
+                            <span className="text-[10px] font-semibold ml-0.5">kg</span>
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 h-2 rounded-full bg-[#DD7419]/15 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-[#DD7419] to-[#A6520B] transition-all duration-500"
+                          style={{ width: `${distributionProgress}%` }}
+                        />
+                      </div>
+                      <div className="mt-1.5 flex items-center justify-between text-[10px] font-semibold">
+                        <span className="text-muted-foreground">
+                          {distributionProgress.toFixed(1)}% clasificado
+                        </span>
+                        {distributionSummary.isComplete && (
+                          <span className="flex items-center gap-1 text-emerald-600">
+                            <CheckCircle2 className="w-3 h-3" /> Completa
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {distributionSummary.distributions.length > 0 ? (
+                      <div
+                        className="max-h-[11.5rem] space-y-2 overflow-y-auto overscroll-contain pr-1 [scrollbar-width:thin] [scrollbar-color:rgba(221,116,25,0.45)_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#DD7419]/35 hover:[&::-webkit-scrollbar-thumb]:bg-[#DD7419]/55"
+                        role="list"
+                        aria-label="Categorías de la distribución de kilogramos"
+                      >
+                        {distributionSummary.distributions.map((distribution, index) => (
+                          <div
+                            key={distribution.id}
+                            className="group flex items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5 hover:border-[#DD7419]/30 transition"
+                            role="listitem"
+                          >
+                            <div className="w-7 h-7 rounded-lg bg-[#DD7419]/10 text-[#DD7419] flex items-center justify-center text-[10px] font-black shrink-0">
+                              {String(index + 1).padStart(2, '0')}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs font-bold text-foreground truncate">
+                                {distribution.category}
+                              </p>
+                              <p className="text-[10px] text-muted-foreground">
+                                Categoría de residuo
+                              </p>
+                            </div>
+                            <p className="text-sm font-black tabular-nums text-[#A6520B] shrink-0">
+                              {formatKg(distribution.weightKg)} <span className="text-[10px]">kg</span>
+                            </p>
+                            <div className="flex items-center gap-0.5 shrink-0">
+                              <button
+                                onClick={() => onEditWasteDistribution(distribution)}
+                                className="w-7 h-7 rounded-md text-muted-foreground hover:text-[#A6520B] hover:bg-[#DD7419]/10 flex items-center justify-center transition"
+                                aria-label={`Editar ${distribution.category}`}
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => setDistributionToDelete(distribution)}
+                                className="w-7 h-7 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 flex items-center justify-center transition"
+                                aria-label={`Eliminar ${distribution.category}`}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="rounded-xl border border-dashed border-[#DD7419]/25 px-4 py-5 text-center">
+                        <Scale className="w-5 h-5 text-[#DD7419]/45 mx-auto mb-1.5" />
+                        <p className="text-xs font-semibold text-muted-foreground">
+                          {distributionSummary.totalInputKg > 0
+                            ? 'Aún no hay kilogramos distribuidos'
+                            : 'Registra peso de entrada para comenzar'}
+                        </p>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+              <div className="mx-4 sm:mx-6 border-t border-border" />
+            </>
+          )}
+
           {/* Salidas de camión */}
           {zone.category === 'acopio' && (
             <>
               <div className="px-4 sm:px-6 py-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-[#0891B2]">
-                    <Truck className="w-4 h-4" />
-                    <span className="text-sm font-bold">Salidas de camión</span>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-8 h-8 rounded-lg bg-[#0891B2]/12 text-[#0891B2] flex items-center justify-center shrink-0">
+                      <Truck className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-black text-foreground">
+                        Salidas de camión
+                      </p>
+                      <p className="text-[10px] text-muted-foreground truncate">
+                        Material retirado del centro de acopio
+                      </p>
+                    </div>
                   </div>
                   <button
                     onClick={onAddTruckExit}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0891B2] text-white text-xs font-semibold hover:bg-[#0891B2]/85 transition"
+                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#0891B2] text-white text-xs font-bold hover:bg-[#077C98] hover:-translate-y-0.5 shadow-sm shadow-[#0891B2]/20 transition-all shrink-0"
                   >
                     <ArrowUpRight className="w-3.5 h-3.5" />
                     Registrar salida
@@ -407,38 +655,59 @@ export function ZoneCard({
                   </div>
                 ) : (
                   <>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="rounded-xl bg-[#0891B2]/8 border border-[#0891B2]/20 px-4 py-3">
-                        <p className="text-[11px] font-semibold text-[#0891B2]/70 uppercase tracking-wide flex items-center gap-1">
-                          <PackageOpen className="w-3 h-3" /> Total retiradas
-                        </p>
-                        <p className="text-3xl font-bold text-[#0891B2] leading-none mt-1">
-                          {totalExitQty}
-                        </p>
-                        <p className="text-xs text-[#0891B2]/50 mt-0.5">
-                          bolsas
-                        </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="relative overflow-hidden min-h-[5.75rem] rounded-2xl bg-gradient-to-br from-[#0891B2]/14 via-[#0891B2]/7 to-transparent border border-[#0891B2]/25 px-4 py-3.5 flex flex-col justify-between">
+                        <div className="absolute -right-6 -bottom-9 w-24 h-24 rounded-full border-[16px] border-[#0891B2]/5" />
+                        <div className="relative flex items-center gap-2 text-[#0891B2]">
+                          <div className="w-6 h-6 rounded-md bg-[#0891B2]/14 flex items-center justify-center">
+                            <PackageOpen className="w-3 h-3" />
+                          </div>
+                          <p className="text-[10px] font-black uppercase tracking-[0.14em]">
+                            Total retirado
+                          </p>
+                        </div>
+                        <div className="relative flex items-end gap-1.5 mt-2">
+                          <p className="text-4xl font-black tracking-tight tabular-nums text-[#0891B2] leading-none">
+                            {formatUnits(totalExitQty)}
+                          </p>
+                          <span className="text-[10px] font-bold text-[#0891B2]/60 pb-0.5">
+                            bolsas
+                          </span>
+                        </div>
                       </div>
-                      <div className="rounded-xl bg-[#0891B2]/8 border border-[#0891B2]/20 px-4 py-3">
-                        <p className="text-[11px] font-semibold text-[#0891B2]/70 uppercase tracking-wide flex items-center gap-1">
-                          <Weight className="w-3 h-3" /> Peso retirado
-                        </p>
-                        <p className="text-3xl font-bold text-[#0891B2] leading-none mt-1">
-                          {hasExitKg ? totalExitKg.toFixed(1) : '—'}
-                        </p>
-                        <p className="text-xs text-[#0891B2]/50 mt-0.5">
-                          kilogramos
-                        </p>
+                      <div className="relative overflow-hidden min-h-[5.75rem] rounded-2xl bg-gradient-to-br from-[#0891B2]/14 via-[#0891B2]/7 to-transparent border border-[#0891B2]/25 px-4 py-3.5 flex flex-col justify-between">
+                        <div className="absolute -right-6 -bottom-9 w-24 h-24 rounded-full border-[16px] border-[#0891B2]/5" />
+                        <div className="relative flex items-center gap-2 text-[#0891B2]">
+                          <div className="w-6 h-6 rounded-md bg-[#0891B2]/14 flex items-center justify-center">
+                            <Weight className="w-3 h-3" />
+                          </div>
+                          <p className="text-[10px] font-black uppercase tracking-[0.14em]">
+                            Peso retirado
+                          </p>
+                        </div>
+                        <div className="relative flex items-end gap-1.5 mt-2">
+                          <p className="text-4xl font-black tracking-tight tabular-nums text-[#0891B2] leading-none">
+                            {hasExitKg ? formatKg(totalExitKg) : '—'}
+                          </p>
+                          {hasExitKg && (
+                            <span className="text-[10px] font-bold text-[#0891B2]/60 pb-0.5">
+                              kg
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                     {truckExits.length > 0 ? (
                       <button
                         onClick={() => setShowTruckExitHistory(true)}
-                        className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border border-[#0891B2]/30 text-[#0891B2] text-xs font-semibold hover:bg-[#0891B2]/8 transition"
+                        className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border border-[#0891B2]/25 bg-[#0891B2]/5 text-[#0891B2] text-xs font-bold hover:bg-[#0891B2]/10 hover:border-[#0891B2]/45 transition"
                       >
                         <History className="w-3.5 h-3.5" />
-                        Ver historial · {truckExits.length}{' '}
-                        {truckExits.length === 1 ? 'salida' : 'salidas'}
+                        Ver historial
+                        <span className="rounded-full bg-[#0891B2]/12 px-2 py-0.5 tabular-nums">
+                          {truckExits.length}{' '}
+                          {truckExits.length === 1 ? 'salida' : 'salidas'}
+                        </span>
                       </button>
                     ) : (
                       <p className="text-xs text-muted-foreground italic text-center py-1">
@@ -623,6 +892,15 @@ export function ZoneCard({
         onClose={() => setShowTruckExitHistory(false)}
         zone={zone}
         exits={truckExits}
+      />
+
+      <WasteDistributionDeleteDialog
+        open={distributionToDelete !== null}
+        onClose={() => setDistributionToDelete(null)}
+        distribution={distributionToDelete}
+        onConfirm={(distribution) =>
+          onDeleteWasteDistribution(distribution.id)
+        }
       />
     </div>
   );

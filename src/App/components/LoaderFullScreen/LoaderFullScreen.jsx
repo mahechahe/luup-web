@@ -2,13 +2,14 @@ import { Shield } from 'lucide-react';
 
 function LoaderFullScreen() {
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-white">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-background text-foreground transition-colors duration-300">
       {/* Background pattern */}
-      <div className="absolute inset-0 opacity-5">
+      <div className="absolute inset-0 text-primary opacity-[0.08]">
         <div
           className="absolute inset-0"
           style={{
-            backgroundImage: `radial-gradient(circle at 25px 25px, #3377f5 2px, transparent 0)`,
+            backgroundImage:
+              'radial-gradient(circle at 25px 25px, currentColor 2px, transparent 0)',
             backgroundSize: '50px 50px',
           }}
         />
@@ -19,15 +20,15 @@ function LoaderFullScreen() {
         {/* Loader Animation */}
         <div className="relative">
           {/* Outer rotating ring */}
-          <div className="w-24 h-24 rounded-full border-4 border-gray-100" />
+          <div className="w-24 h-24 rounded-full border-4 border-muted" />
 
           {/* Inner rotating ring */}
-          <div className="absolute inset-0 w-24 h-24 rounded-full border-4 border-transparent border-t-[#3377f5] animate-spin" />
+          <div className="absolute inset-0 w-24 h-24 rounded-full border-4 border-transparent border-t-primary animate-spin" />
 
           {/* Center icon */}
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-12 h-12 rounded-full bg-[#3377f5]/10 flex items-center justify-center">
-              <Shield className="w-6 h-6 text-[#3377f5] animate-pulse" />
+            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+              <Shield className="w-6 h-6 text-primary animate-pulse" />
             </div>
           </div>
 
@@ -37,7 +38,7 @@ function LoaderFullScreen() {
               {[0, 1, 2, 3, 4, 5].map((i) => (
                 <div
                   key={i}
-                  className="absolute w-2 h-2 bg-[#3377f5] rounded-full animate-ping"
+                  className="absolute w-2 h-2 bg-primary rounded-full animate-ping"
                   style={{
                     top: '50%',
                     left: '50%',
@@ -55,15 +56,17 @@ function LoaderFullScreen() {
 
         {/* Security message */}
         <div className="text-center">
-          <h2 className="text-xl font-semibold text-gray-900">
+          <h2 className="text-xl font-semibold text-foreground">
             Verificando token...
           </h2>
-          <p className="text-sm text-gray-500 mt-2">
+          <p className="text-sm text-muted-foreground mt-2">
             Verificando credenciales de forma segura...
           </p>
           <div className="flex items-center justify-center mt-2 space-x-1">
-            <Shield className="w-4 h-4 text-gray-400" />
-            <span className="text-xs text-gray-400">Conexión segura SSL</span>
+            <Shield className="w-4 h-4 text-muted-foreground/70" />
+            <span className="text-xs text-muted-foreground/70">
+              Conexión segura SSL
+            </span>
           </div>
         </div>
       </div>

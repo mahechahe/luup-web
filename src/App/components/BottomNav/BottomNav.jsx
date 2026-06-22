@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useUserStore } from '@/App/context/userStore';
-import { hasAdminAccess } from '@/App/utils/roles';
+import { hasAdminAccess, isClientUser } from '@/App/utils/roles';
 import {
   BarChart3,
   Calendar,
@@ -8,6 +8,7 @@ import {
   Home,
   Package,
   UserCheck,
+  LayoutDashboard,
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 
@@ -34,17 +35,24 @@ const NAV_ITEMS = [
   },
 ];
 
+const CLIENT_NAV_ITEMS = [
+  { label: 'Dashboard', path: '/cliente/dashboard', icon: LayoutDashboard },
+  { label: 'Mis Eventos', path: '/cliente/eventos', icon: Calendar },
+];
+
 export default function BottomNav() {
   const { user } = useUserStore();
   const [isVisible, setIsVisible] = useState(true);
 
-  const visibleItems = NAV_ITEMS.filter(
-    (item) => !item.adminOnly || hasAdminAccess(user?.roleId)
-  );
+  const isClient = isClientUser(user?.roleId);
+
+  const visibleItems = isClient
+    ? CLIENT_NAV_ITEMS
+    : NAV_ITEMS.filter((item) => !item.adminOnly || hasAdminAccess(user?.roleId));
 
   return (
     <div
-      className="fixed bottom-0 left-0 right-0 z-50"
+      className="fixed bottom-0 left-0 right-0 z-40"
       style={{
         paddingBottom: 'env(safe-area-inset-bottom)',
         transform: isVisible
@@ -76,7 +84,9 @@ export default function BottomNav() {
         style={{ boxShadow: '0 -4px 24px rgba(0,0,0,0.07)' }}
       >
         <ul
-          className="grid h-16 w-full max-w-[30rem] mx-auto px-2 gap-1"
+          className={`grid h-16 w-full mx-auto px-2 gap-1 ${
+            visibleItems.length <= 2 ? 'max-w-60' : 'max-w-[30rem]'
+          }`}
           style={{
             gridTemplateColumns: `repeat(${visibleItems.length}, minmax(0, 1fr))`,
           }}
