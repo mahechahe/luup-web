@@ -2,6 +2,7 @@ import { useState } from 'react';
 import {
   X,
   Trash2,
+  Wrench,
   Weight,
   ClipboardList,
   Calendar,
@@ -123,23 +124,38 @@ export function WasteHistoryModal({ open, onClose, zone, entries = [] }) {
                   key={entry.id ?? i}
                   className="flex items-start gap-3 px-4 py-3 rounded-xl border border-border bg-muted/30"
                 >
-                  <div className="w-7 h-7 rounded-lg bg-[#DD7419]/15 flex items-center justify-center shrink-0 mt-0.5">
-                    <Trash2 className="w-3.5 h-3.5 text-[#DD7419]" />
-                  </div>
+                  {entry.entryType === 'tools' ? (
+                    <div className="w-7 h-7 rounded-lg bg-[#234465]/15 dark:bg-[#7493B2]/20 flex items-center justify-center shrink-0 mt-0.5">
+                      <Wrench className="w-3.5 h-3.5 text-[#234465] dark:text-[#7493B2]" />
+                    </div>
+                  ) : (
+                    <div className="w-7 h-7 rounded-lg bg-[#DD7419]/15 flex items-center justify-center shrink-0 mt-0.5">
+                      <Trash2 className="w-3.5 h-3.5 text-[#DD7419]" />
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
-                      <p className="text-sm font-semibold text-foreground">
-                        {entry.quantity || 0}{' '}
-                        <span className="font-normal text-muted-foreground">
-                          {entry.quantity === 1 ? 'unidad' : 'unidades'}
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${
+                          entry.entryType === 'tools'
+                            ? 'bg-[#234465]/10 dark:bg-[#7493B2]/20 text-[#234465] dark:text-[#7493B2]'
+                            : 'bg-[#DD7419]/10 text-[#DD7419]'
+                        }`}>
+                          {entry.entryType === 'tools' ? 'Herramienta' : 'Bolsa'}
                         </span>
-                        {entry.weightKg != null && (
-                          <span className="text-muted-foreground font-normal">
-                            {' '}
-                            · {entry.weightKg} kg
+                        <p className="text-sm font-semibold text-foreground">
+                          {entry.quantity || 0}{' '}
+                          <span className="font-normal text-muted-foreground">
+                            {entry.quantity === 1 ? 'unidad' : 'unidades'}
                           </span>
-                        )}
-                      </p>
+                          {entry.weightKg != null && (
+                            <span className="text-muted-foreground font-normal">
+                              {' '}
+                              · {entry.weightKg} kg
+                            </span>
+                          )}
+                        </p>
+                      </div>
                       <span className="text-[11px] text-muted-foreground font-medium shrink-0">
                         #{sorted.length - i}
                       </span>

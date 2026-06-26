@@ -9,6 +9,7 @@ import {
   RefreshCw,
   Scale,
   Trash2,
+  Wrench,
   X,
 } from 'lucide-react';
 import { format, parse } from 'date-fns';
@@ -147,11 +148,26 @@ function WasteLogCard({ log, colorIndex }) {
             <span className="text-xs text-muted-foreground font-medium">
               {dateStr} · {timeStr}
             </span>
+            <div className="flex items-center gap-2 flex-wrap">
+              {log.entryType === 'tools' ? (
+                <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#234465]/10 dark:bg-[#7493B2]/20 text-[#234465] dark:text-[#7493B2]">
+                  <Wrench className="w-3 h-3" />
+                  Herramienta
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#DD7419]/10 text-[#DD7419]">
+                  <Trash2 className="w-3 h-3" />
+                  Bolsa
+                </span>
+              )}
+            </div>
             <div className="flex items-center gap-3 flex-wrap">
               {log.quantity != null && (
                 <span className="inline-flex items-center gap-1 text-sm font-semibold text-foreground">
                   <Package2 className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                  {log.quantity} bolsa{log.quantity !== 1 ? 's' : ''}
+                  {log.quantity} {log.entryType === 'tools'
+                    ? `herramienta${log.quantity !== 1 ? 's' : ''}`
+                    : `bolsa${log.quantity !== 1 ? 's' : ''}`}
                 </span>
               )}
               {log.weightKg != null && (

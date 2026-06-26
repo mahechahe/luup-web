@@ -20,7 +20,11 @@ import {
   Scale,
   Pencil,
   CheckCircle2,
+  ImageIcon,
+  Loader2,
+  X,
 } from 'lucide-react';
+import { getRequirementSignedUrlService } from '../../services/eventServices';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RoleSectionLabel } from './RoleSectionLabel';
@@ -63,6 +67,95 @@ function MiniStat({ icon: Icon, value, label, color }) {
         {label}
       </span>
     </div>
+  );
+}
+
+function RequirementCard({ requirement: r, zoneId }) {
+  const [signedUrl, setSignedUrl] = useState(null);
+  const [photoLoading, setPhotoLoading] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+
+  const handleViewPhoto = async () => {
+    setLightboxOpen(true);
+    setSignedUrl(null);
+    setPhotoLoading(true);
+    const res = await getRequirementSignedUrlService(zoneId, r.id);
+    setSignedUrl(res.status ? res.url : null);
+    setPhotoLoading(false);
+  };
+
+  const closeLightbox = () => {
+    setLightboxOpen(false);
+    setSignedUrl(null);
+    setPhotoLoading(false);
+  };
+
+  return (
+    <>
+      <div className="rounded-xl border border-[#234465]/15 bg-[#234465]/5 px-3 py-3">
+        <p className="text-sm text-foreground leading-snug">{r.note}</p>
+        <div className="flex items-center justify-between mt-1.5">
+          <p className="text-[11px] text-muted-foreground">
+            {r.creator.firstName} {r.creator.lastName}
+            {' · '}
+            {new Date(r.createdAt).toLocaleString('es-CO', {
+              day: '2-digit',
+              month: 'short',
+              hour: '2-digit',
+              minute: '2-digit',
+            })}
+          </p>
+          {r.photoUrl && (
+            <button
+              type="button"
+              onClick={handleViewPhoto}
+              className="flex items-center gap-1 text-[11px] font-semibold text-[#234465] dark:text-[#7493B2] hover:opacity-70 transition shrink-0"
+            >
+              <ImageIcon className="w-3 h-3" />
+              Ver foto
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Lightbox */}
+      {lightboxOpen && (
+        <div className="fixed inset-0 z-[210] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/85" onClick={closeLightbox} />
+          <div className="relative z-10 w-full max-w-lg mx-4">
+            <button
+              type="button"
+              onClick={closeLightbox}
+              className="absolute -top-10 right-0 w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <div className="rounded-xl overflow-hidden bg-black flex items-center justify-center min-h-48">
+              {photoLoading ? (
+                <div className="flex flex-col items-center gap-2 py-16 text-white/60">
+                  <Loader2 className="w-6 h-6 animate-spin" />
+                  <span className="text-xs">Cargando imagen…</span>
+                </div>
+              ) : signedUrl ? (
+                <img
+                  src={signedUrl}
+                  alt="Foto del requerimiento"
+                  className="w-full max-h-[70vh] object-contain"
+                />
+              ) : (
+                <div className="flex flex-col items-center gap-2 py-16 text-white/60">
+                  <ImageIcon className="w-6 h-6" />
+                  <span className="text-xs">No se pudo cargar la imagen</span>
+                </div>
+              )}
+            </div>
+            <div className="mt-3 px-1 text-white/70 text-xs">
+              <span>{r.note}</span>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -756,22 +849,7 @@ export function ZoneCard({
                 ) : requirements.length > 0 ? (
                   <div className="space-y-2">
                     {requirements.map((r) => (
-                      <div
-                        key={r.id}
-                        className="rounded-xl border border-[#234465]/15 bg-[#234465]/5 px-3 py-3"
-                      >
-                        <p className="text-sm text-foreground leading-snug">{r.note}</p>
-                        <p className="text-[11px] text-muted-foreground mt-1.5">
-                          {r.creator.firstName} {r.creator.lastName}
-                          {' · '}
-                          {new Date(r.createdAt).toLocaleString('es-CO', {
-                            day: '2-digit',
-                            month: 'short',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </p>
-                      </div>
+                      <RequirementCard key={r.id} requirement={r} zoneId={zone.id} />
                     ))}
                   </div>
                 ) : (

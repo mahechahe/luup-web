@@ -292,6 +292,64 @@ export const generateAttendanceExcelService = async (body) => {
   }
 };
 
+export const getZonesWithIncidentsService = async (eventId) => {
+  try {
+    const { data } = await axios.get(`${EVENTS_URL}/zones/${eventId}`);
+    return {
+      status: true,
+      zones: data?.data?.zones ?? [],
+      errors: null,
+    };
+  } catch (error) {
+    return {
+      status: false,
+      zones: [],
+      errors: error?.response?.data?.message || 'Error al obtener las zonas.',
+    };
+  }
+};
+
+export const getZoneRequirementsService = async (zoneId) => {
+  try {
+    const { data } = await axios.get(
+      `${EVENTS_URL}/zones/${zoneId}/requirements`
+    );
+    return {
+      status: true,
+      requirements: data?.data?.requirements ?? [],
+      errors: null,
+    };
+  } catch (error) {
+    return {
+      status: false,
+      requirements: [],
+      errors:
+        error?.response?.data?.message ||
+        'Error al obtener los requerimientos.',
+    };
+  }
+};
+
+export const getRequirementSignedUrlService = async (zoneId, requirementId) => {
+  try {
+    const { data } = await axios.get(
+      `${EVENTS_URL}/zones/${zoneId}/requirements/${requirementId}/signed-url`
+    );
+    return {
+      status: true,
+      url: data?.data?.url ?? null,
+      errors: null,
+    };
+  } catch (error) {
+    return {
+      status: false,
+      url: null,
+      errors:
+        error?.response?.data?.message || 'Error al obtener la URL de la foto.',
+    };
+  }
+};
+
 export const getAttendanceReportService = async (body) => {
   try {
     const cleanBody = { ...body };

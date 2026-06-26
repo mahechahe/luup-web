@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import {
   Loader2,
   Trash2,
+  Wrench,
   Minus,
   Plus,
   RotateCcw,
@@ -30,6 +31,7 @@ const BAG_COLORS = [
 const RESET_FORM = { quantity: 0, weightKg: '', note: '', bagColor: null };
 
 export function WasteFormModal({ open, onClose, zone, onSave }) {
+  const [entryType, setEntryType] = useState('bags');
   const [form, setForm] = useState(RESET_FORM);
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
@@ -38,19 +40,19 @@ export function WasteFormModal({ open, onClose, zone, onSave }) {
 
   const cameraInputRef = useRef(null);
 
-  // ¿El usuario ha tocado alguno de los 3 campos?
+  const isBags = entryType === 'bags';
+
+  // ¿El usuario ha tocado alguno de los campos?
   const anyFieldFilled =
     form.quantity > 0 ||
     form.weightKg !== '' ||
-    form.bagColor !== null;
+    (isBags && form.bagColor !== null);
 
-  // Si tocó algo → los 3 son obligatorios, foto opcional
-  // Si no tocó nada → foto obligatoria
   const fieldsRequired = anyFieldFilled;
   const photoRequired = !anyFieldFilled;
 
   const isValid = anyFieldFilled
-    ? form.quantity > 0 && form.weightKg !== '' && form.bagColor !== null
+    ? form.quantity > 0 && form.weightKg !== '' && (isBags ? form.bagColor !== null : true)
     : imageFile !== null;
 
   const addQty = (n) =>
@@ -108,9 +110,10 @@ export function WasteFormModal({ open, onClose, zone, onSave }) {
     setError(null);
 
     const res = await createWasteEntryService(zone.id, {
+      entryType,
       quantity: form.quantity,
       weightKg: form.weightKg !== '' ? parseFloat(form.weightKg) : null,
-      bagColor: form.bagColor ?? null,
+      bagColor: isBags ? (form.bagColor ?? null) : null,
       note: form.note.trim() || null,
       file: imageFile ?? undefined,
     });
@@ -129,6 +132,7 @@ export function WasteFormModal({ open, onClose, zone, onSave }) {
   };
 
   const handleClose = () => {
+    setEntryType('bags');
     setForm(RESET_FORM);
     removeImage();
     setError(null);
@@ -163,8 +167,42 @@ export function WasteFormModal({ open, onClose, zone, onSave }) {
         >
           <div className="px-5 space-y-5 pb-5">
 
-            {/* ── Color de bolsa ── */}
-            <div>
+            {/* ── Tipo de registro ── */}
+            <div className="flex rounded-xl border border-border overflow-hidden">
+              <button
+                type="button"
+                onClick={() => {
+                  setEntryType('bags');
+                  setForm((f) => ({ ...f, bagColor: null }));
+                }}
+                className={`flex-1 flex items-center justify-center gap-2 h-10 text-xs font-semibold transition-all ${
+                  entryType === 'bags'
+                    ? 'bg-[#DD7419] text-white'
+                    : 'text-muted-foreground hover:bg-muted'
+                }`}
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Bolsas
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEntryType('tools');
+                  setForm((f) => ({ ...f, bagColor: null }));
+                }}
+                className={`flex-1 flex items-center justify-center gap-2 h-10 text-xs font-semibold transition-all ${
+                  entryType === 'tools'
+                    ? 'bg-[#234465] text-white'
+                    : 'text-muted-foreground hover:bg-muted'
+                }`}
+              >
+                <Wrench className="w-3.5 h-3.5" />
+                Herramientas
+              </button>
+            </div>
+
+            {/* ── Color de bolsa (solo para bolsas) ── */}
+            {isBags && <div>
               <p className="text-xs font-semibold text-foreground mb-3">
                 Color de bolsa{' '}
                 {fieldsRequired
@@ -195,7 +233,7 @@ export function WasteFormModal({ open, onClose, zone, onSave }) {
                   />
                 ))}
               </div>
-            </div>
+            </div>}
 
             <div className="border-t border-border" />
 
@@ -419,7 +457,7 @@ export function WasteFormModal({ open, onClose, zone, onSave }) {
                   Guardando…
                 </span>
               ) : (
-                `Registrar ${form.quantity > 0 ? form.quantity : ''}`
+                `Registrar ${isBags ? 'bolsas' : 'herramientas'} ${form.quantity > 0 ? `(${form.quantity})` : ''}`
               )}
             </Button>
           </div>

@@ -8,6 +8,7 @@ import AsistenciasSection from './sections/AsistenciasSection';
 import IngresosSection from './sections/IngresosSection';
 import SalidasSection from './sections/SalidasSection';
 import FotosSection from './sections/FotosSection';
+import ZonasSection from './sections/ZonasSection';
 
 export default function ReporteEventoPage() {
   const { eventId } = useParams();
@@ -31,30 +32,36 @@ export default function ReporteEventoPage() {
         />
 
         <Tabs defaultValue="asistencias" className="w-full">
-          <TabsList className="w-full h-10 rounded-xl bg-muted p-1">
+          <TabsList className="w-full h-10 rounded-xl bg-muted p-1 grid grid-cols-5">
             <TabsTrigger
               value="asistencias"
-              className="flex-1 rounded-lg text-sm font-medium data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+              className="rounded-lg text-xs font-medium data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm"
             >
               Asistencias
             </TabsTrigger>
             <TabsTrigger
               value="ingresos"
-              className="flex-1 rounded-lg text-sm font-medium data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+              className="rounded-lg text-xs font-medium data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm"
             >
               Ingresos
             </TabsTrigger>
             <TabsTrigger
               value="salidas"
-              className="flex-1 rounded-lg text-sm font-medium data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+              className="rounded-lg text-xs font-medium data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm"
             >
               Salidas
             </TabsTrigger>
             <TabsTrigger
               value="fotos"
-              className="flex-1 rounded-lg text-sm font-medium data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+              className="rounded-lg text-xs font-medium data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm"
             >
               Fotos
+            </TabsTrigger>
+            <TabsTrigger
+              value="zonas"
+              className="rounded-lg text-xs font-medium data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+            >
+              Zonas
             </TabsTrigger>
           </TabsList>
 
@@ -72,6 +79,10 @@ export default function ReporteEventoPage() {
 
           <TabsContent value="fotos" className="mt-4">
             <FotosSection eventId={eventId} />
+          </TabsContent>
+
+          <TabsContent value="zonas" className="mt-4">
+            <ZonasSection eventId={eventId} />
           </TabsContent>
         </Tabs>
       </div>

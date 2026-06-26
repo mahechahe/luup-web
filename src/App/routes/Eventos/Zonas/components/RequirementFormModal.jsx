@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Loader2, ClipboardList } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { Camera, ClipboardList, ImagePlus, Loader2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -10,13 +10,31 @@ import {
 import { createRequirementService } from '../../services/eventServices';
 
 const MAX_CHARS = 1000;
+const ACCEPTED = 'image/png,image/jpeg,image/jpg';
 
 export function RequirementFormModal({ open, onClose, zone, onSave }) {
   const [note, setNote] = useState('');
+  const [photo, setPhoto] = useState(null);      // File object
+  const [preview, setPreview] = useState(null);  // object URL for preview
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 
+  const fileInputRef = useRef(null);
+  const cameraInputRef = useRef(null);
+
   const isValid = note.trim().length > 0 && note.length <= MAX_CHARS;
+
+  const handleFile = (file) => {
+    if (!file) return;
+    setPhoto(file);
+    setPreview(URL.createObjectURL(file));
+  };
+
+  const removePhoto = () => {
+    setPhoto(null);
+    if (preview) URL.revokeObjectURL(preview);
+    setPreview(null);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -24,7 +42,7 @@ export function RequirementFormModal({ open, onClose, zone, onSave }) {
     setSaving(true);
     setError(null);
 
-    const res = await createRequirementService(zone.id, { note: note.trim() });
+    const res = await createRequirementService(zone.id, { note: note.trim(), file: photo ?? undefined });
 
     if (!res.status) {
       setError(res.errors);
@@ -34,12 +52,14 @@ export function RequirementFormModal({ open, onClose, zone, onSave }) {
 
     onSave(zone.id, res.requirement);
     setNote('');
+    removePhoto();
     setSaving(false);
     onClose();
   };
 
   const handleClose = () => {
     setNote('');
+    removePhoto();
     setError(null);
     onClose();
   };
@@ -68,7 +88,7 @@ export function RequirementFormModal({ open, onClose, zone, onSave }) {
               <textarea
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
-                rows={5}
+                rows={4}
                 maxLength={MAX_CHARS}
                 placeholder="Describe el requerimiento o nota de seguimiento…"
                 autoFocus
@@ -77,6 +97,62 @@ export function RequirementFormModal({ open, onClose, zone, onSave }) {
               <p className={`text-[11px] mt-1 text-right ${note.length > MAX_CHARS ? 'text-destructive' : 'text-muted-foreground'}`}>
                 {note.length}/{MAX_CHARS}
               </p>
+            </div>
+
+            {/* Foto opcional */}
+            <div>
+              <p className="text-xs font-semibold text-foreground mb-1.5">Foto <span className="text-muted-foreground font-normal">(opcional)</span></p>
+
+              {preview ? (
+                <div className="relative w-full rounded-lg overflow-hidden border border-border">
+                  <img src={preview} alt="preview" className="w-full max-h-40 object-cover" />
+                  <button
+                    type="button"
+                    onClick={removePhoto}
+                    className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/60 flex items-center justify-center"
+                  >
+                    <X className="w-3.5 h-3.5 text-white" />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  {/* Cámara (solo móvil) */}
+                  <button
+                    type="button"
+                    onClick={() => cameraInputRef.current?.click()}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg border border-dashed border-[#234465]/40 text-[#234465] text-xs font-medium hover:bg-[#234465]/5 transition"
+                  >
+                    <Camera className="w-4 h-4" />
+                    Tomar foto
+                  </button>
+                  {/* Archivo */}
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg border border-dashed border-border text-muted-foreground text-xs font-medium hover:bg-muted/50 transition"
+                  >
+                    <ImagePlus className="w-4 h-4" />
+                    Adjuntar
+                  </button>
+                </div>
+              )}
+
+              {/* Inputs ocultos */}
+              <input
+                ref={cameraInputRef}
+                type="file"
+                accept={ACCEPTED}
+                capture="environment"
+                className="hidden"
+                onChange={(e) => handleFile(e.target.files?.[0])}
+              />
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept={ACCEPTED}
+                className="hidden"
+                onChange={(e) => handleFile(e.target.files?.[0])}
+              />
             </div>
 
             {error && <p className="text-xs text-destructive">{error}</p>}

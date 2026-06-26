@@ -206,17 +206,19 @@ export const createWasteEntryService = async (zoneId, body) => {
 
     if (body.file) {
       payload = new FormData();
+      payload.append('entryType', body.entryType ?? 'bags');
       if (body.quantity != null) payload.append('quantity', body.quantity);
       if (body.weightKg != null) payload.append('weightKg', body.weightKg);
-      if (body.bagColor)         payload.append('bagColor', body.bagColor);  // ← nuevo
+      if (body.bagColor)         payload.append('bagColor', body.bagColor);
       if (body.note)             payload.append('note', body.note);
       payload.append('file', body.file);
       headers = { 'Content-Type': 'multipart/form-data' };
     } else {
       payload = {
+        entryType: body.entryType ?? 'bags',
         quantity:  body.quantity  ?? null,
         weightKg:  body.weightKg  ?? null,
-        bagColor:  body.bagColor  ?? null,  // ← nuevo
+        bagColor:  body.bagColor  ?? null,
         note:      body.note      ?? null,
       };
     }
@@ -800,9 +802,21 @@ export const getTruckExitSignedUrlService = async (zoneId, exitId) => {
   }
 };
 
-export const createRequirementService = async (zoneId, { note }) => {
+export const createRequirementService = async (zoneId, { note, file }) => {
   try {
-    const res = await axios.post(`${EVENTS_URL}/zones/${zoneId}/requirements`, { note });
+    let payload;
+    let headers = {};
+
+    if (file) {
+      payload = new FormData();
+      payload.append('note', note);
+      payload.append('file', file);
+      headers = { 'Content-Type': 'multipart/form-data' };
+    } else {
+      payload = { note };
+    }
+
+    const res = await axios.post(`${EVENTS_URL}/zones/${zoneId}/requirements`, payload, { headers });
     return {
       status: true,
       requirement: res.data?.data?.requirement ?? null,
@@ -815,6 +829,17 @@ export const createRequirementService = async (zoneId, { note }) => {
       requirement: null,
       errors: error?.response?.data?.message || 'Error al registrar el requerimiento.',
     };
+  }
+};
+
+export const getRequirementSignedUrlService = async (zoneId, requirementId) => {
+  try {
+    const res = await axios.get(
+      `${EVENTS_URL}/zones/${zoneId}/requirements/${requirementId}/signed-url`
+    );
+    return { status: true, url: res.data?.data?.url ?? null };
+  } catch (error) {
+    return { status: false, url: null };
   }
 };
 

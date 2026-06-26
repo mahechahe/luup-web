@@ -51,6 +51,48 @@ export const deleteInventoryAssignmentService = async (collaboratorItemId) => {
   }
 };
 
+export const updateInventoryItemCollaboratorService = async ({
+  collaboratorItemId,
+  returnedQuantity,
+  usedQuantity,
+  damagedQuantity,
+  createdBy,
+}) => {
+  try {
+    const { data } = await axios.patch(`${INVENTORY_URL}/collaborator`, {
+      collaboratorItemId,
+      returnedQuantity,
+      usedQuantity,
+      damagedQuantity,
+      createdBy,
+    });
+    return { status: true, data: data?.data, errors: null };
+  } catch (error) {
+    return {
+      status: false,
+      data: null,
+      errors:
+        error?.response?.data?.message || 'Error al actualizar el inventario.',
+    };
+  }
+};
+
+export const getInventoryItemHistoryService = async (collaboratorItemId) => {
+  try {
+    const { data } = await axios.get(
+      `${INVENTORY_URL}/collaborator/${collaboratorItemId}/history`
+    );
+    return { status: true, data: data?.data, errors: null };
+  } catch (error) {
+    return {
+      status: false,
+      data: null,
+      errors:
+        error?.response?.data?.message || 'Error al obtener el historial.',
+    };
+  }
+};
+
 export const getInventoryListService = async ({ page = 1, nombre } = {}) => {
   try {
     const body = { page };

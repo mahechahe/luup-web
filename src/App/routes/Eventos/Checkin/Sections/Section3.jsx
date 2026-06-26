@@ -12,6 +12,7 @@ import {
   Loader2,
   Package,
   PackageOpen,
+  Pencil,
   Plus,
   RefreshCw,
   Search,
@@ -36,8 +37,15 @@ import {
   getStation3RecordsService,
 } from '../../services/eventServices';
 import { deleteInventoryAssignmentService } from '../../services/inventoryServices';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { InventoryModal } from '../components/InventoryModal';
 import { AddInventoryModal } from '../components/AddInventoryModal';
+import { EditInventoryItemModal } from '../components/EditInventoryItemModal';
 import { useUserStore } from '@/App/context/userStore';
 import { hasAdminAccess } from '@/App/utils/roles';
 
@@ -74,11 +82,24 @@ function CollabCard({
   onRequestConfirm,
   onAddMore,
   onDeleteItem,
+  onEditItem,
   isAdmin,
 }) {
   const items = collab.inventoryItems ?? [];
   const hasItems = items.length > 0;
   const [itemsExpanded, setItemsExpanded] = useState(false);
+  const [showAllItems, setShowAllItems] = useState(false);
+
+  const pendingItems = items.filter((item) => {
+    const returned = item.returnedQuantity ?? 0;
+    const used = item.usedQuantity ?? 0;
+    const damaged = item.damagedQuantity ?? 0;
+    const pending =
+      item.pendingQuantity ?? item.quantity - returned - used - damaged;
+    return pending > 0;
+  });
+  const hiddenCount = items.length - pendingItems.length;
+
   const allReturned =
     hasItems && items.every((i) => i.returnedQuantity >= i.quantity);
   const entryTime = formatTime(collab.attendance?.entryTime);
@@ -174,70 +195,206 @@ function CollabCard({
         {/* Inventario */}
         {hasItems ? (
           <div>
-            <button
+            <div
+              className="w-full flex items-center justify-between gap-2 rounded-xl bg-muted/30 px-3 py-2.5 hover:bg-muted/50 transition cursor-pointer"
               onClick={() => setItemsExpanded((v) => !v)}
-              className="w-full flex items-center justify-between gap-2 rounded-xl bg-muted/30 px-3 py-2.5 hover:bg-muted/50 transition"
             >
               <div className="flex items-center gap-2">
                 <Package className="w-3.5 h-3.5 text-[#DD7419] shrink-0" />
                 <span className="text-[11px] font-semibold text-foreground">
                   {itemsExpanded ? 'Ocultar ítems' : 'Ver ítems'}
                 </span>
-                <span
-                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                    allReturned
-                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
-                      : 'bg-[#DD7419]/10 text-[#DD7419]'
-                  }`}
-                >
-                  {items.length} {items.length === 1 ? 'ítem' : 'ítems'}
-                </span>
+                {pendingItems.length > 0 && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#DD7419]/10 text-[#DD7419]">
+                    {pendingItems.length} pendiente{pendingItems.length !== 1 ? 's' : ''}
+                  </span>
+                )}
               </div>
-              <ChevronDown
-                className="w-3.5 h-3.5 text-muted-foreground transition-transform duration-200"
-                style={{
-                  transform: itemsExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                }}
-              />
-            </button>
+              <div className="flex items-center gap-2">
+                {hiddenCount > 0 && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowAllItems(true);
+                    }}
+                    className="text-[10px] font-semibold text-muted-foreground hover:text-foreground underline underline-offset-2 transition"
+                  >
+                    Ver todos ({items.length})
+                  </button>
+                )}
+                <ChevronDown
+                  className="w-3.5 h-3.5 text-muted-foreground transition-transform duration-200"
+                  style={{
+                    transform: itemsExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                  }}
+                />
+              </div>
+            </div>
 
             {itemsExpanded && (
               <div className="mt-2 space-y-2">
-                {items.map((item) => {
-                  const returned = item.returnedQuantity ?? 0;
-                  const used = item.usedQuantity ?? 0;
-                  const damaged = item.damagedQuantity ?? 0;
-                  const pending =
-                    item.pendingQuantity ??
-                    item.quantity - returned - used - damaged;
-                  const complete = pending === 0;
-                  return (
-                    <div
-                      key={item.id}
-                      className="rounded-xl bg-muted/40 px-3 py-3 space-y-2.5"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <div className="w-6 h-6 rounded-lg bg-[#DD7419]/10 flex items-center justify-center shrink-0">
-                            <Package className="w-3 h-3 text-[#DD7419]" />
+                {pendingItems.length === 0 ? (
+                  <div className="flex items-center gap-2 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 px-3 py-2.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    <p className="text-[11px] text-emerald-700 dark:text-emerald-300 font-medium">
+                      Todos los ítems están completos
+                    </p>
+                  </div>
+                ) : (
+                  pendingItems.map((item) => {
+                    const returned = item.returnedQuantity ?? 0;
+                    const used = item.usedQuantity ?? 0;
+                    const damaged = item.damagedQuantity ?? 0;
+                    const pending =
+                      item.pendingQuantity ??
+                      item.quantity - returned - used - damaged;
+                    return (
+                      <div
+                        key={item.id}
+                        className="rounded-xl bg-muted/40 px-3 py-3 space-y-2.5"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className="w-6 h-6 rounded-lg bg-[#DD7419]/10 flex items-center justify-center shrink-0">
+                              <Package className="w-3 h-3 text-[#DD7419]" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-[12px] font-semibold text-foreground truncate">
+                                {item.itemName}
+                              </p>
+                              {item.dateRegister && (
+                                <div className="flex items-center gap-1 mt-0.5">
+                                  <Calendar className="w-2.5 h-2.5 text-muted-foreground shrink-0" />
+                                  <p className="text-[10px] text-muted-foreground">
+                                    Fecha de registro: {item.dateRegister}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
                           </div>
-                          <div className="min-w-0">
-                            <p className="text-[12px] font-semibold text-foreground truncate">
-                              {item.itemName}
-                            </p>
-                            {item.dateRegister && (
-                              <div className="flex items-center gap-1 mt-0.5">
-                                <Calendar className="w-2.5 h-2.5 text-muted-foreground shrink-0" />
-                                <p className="text-[10px] text-muted-foreground">
-                                  Fecha de registro: {item.dateRegister}
-                                </p>
-                              </div>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                              Pendiente
+                            </span>
+                            <button
+                              onClick={() => onEditItem({ collabUserId: collab.userId, item })}
+                              className="w-6 h-6 flex items-center justify-center rounded-md text-muted-foreground hover:bg-[#DD7419]/10 hover:text-[#DD7419] transition"
+                              title="Registrar devolución"
+                            >
+                              <Pencil className="w-3 h-3" />
+                            </button>
+                            {!isConfirmed && (
+                              <button
+                                onClick={() =>
+                                  onDeleteItem({
+                                    collabUserId: collab.userId,
+                                    itemId: item.id,
+                                    itemName: item.itemName,
+                                  })
+                                }
+                                className="w-6 h-6 flex items-center justify-center rounded-md text-muted-foreground hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-500 transition"
+                                title="Eliminar asignación"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
                             )}
                           </div>
                         </div>
-                        <div className="flex items-center gap-1.5 shrink-0">
+                        <div className="grid grid-cols-5 gap-1.5">
+                          {[
+                            {
+                              label: 'Asignado',
+                              value: item.quantity,
+                              color: 'text-foreground',
+                            },
+                            {
+                              label: 'Devuelto',
+                              value: returned,
+                              color: 'text-emerald-600',
+                            },
+                            {
+                              label: 'Usado',
+                              value: used,
+                              color: 'text-[#234465] dark:text-[#7493B2]',
+                            },
+                            {
+                              label: 'Dañado',
+                              value: damaged,
+                              color:
+                                damaged > 0
+                                  ? 'text-destructive'
+                                  : 'text-muted-foreground',
+                            },
+                            {
+                              label: 'Pendiente',
+                              value: pending,
+                              color: 'text-amber-600',
+                            },
+                          ].map(({ label, value, color }) => (
+                            <div
+                              key={label}
+                              className="bg-background rounded-lg py-2 text-center"
+                            >
+                              <p className="text-[9px] text-muted-foreground uppercase tracking-wide leading-none mb-1">
+                                {label}
+                              </p>
+                              <p className={`text-base font-bold ${color}`}>
+                                {value}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+
+              </div>
+            )}
+
+            {/* Modal — todos los ítems */}
+            <Dialog open={showAllItems} onOpenChange={setShowAllItems}>
+              <DialogContent className="max-w-sm max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle className="text-base">
+                    Todos los ítems — {collab.firstName} {collab.lastName}
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="space-y-2 mt-2">
+                  {items.map((item) => {
+                    const returned = item.returnedQuantity ?? 0;
+                    const used = item.usedQuantity ?? 0;
+                    const damaged = item.damagedQuantity ?? 0;
+                    const pending =
+                      item.pendingQuantity ??
+                      item.quantity - returned - used - damaged;
+                    const complete = pending === 0;
+                    return (
+                      <div
+                        key={item.id}
+                        className="rounded-xl bg-muted/40 px-3 py-3 space-y-2.5"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className="w-6 h-6 rounded-lg bg-[#DD7419]/10 flex items-center justify-center shrink-0">
+                              <Package className="w-3 h-3 text-[#DD7419]" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-[12px] font-semibold text-foreground truncate">
+                                {item.itemName}
+                              </p>
+                              {item.dateRegister && (
+                                <div className="flex items-center gap-1 mt-0.5">
+                                  <Calendar className="w-2.5 h-2.5 text-muted-foreground shrink-0" />
+                                  <p className="text-[10px] text-muted-foreground">
+                                    Fecha de registro: {item.dateRegister}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
                           <span
-                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
                               complete
                                 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
                                 : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
@@ -245,74 +402,59 @@ function CollabCard({
                           >
                             {complete ? 'Completo' : 'Pendiente'}
                           </span>
-                          {!isConfirmed && !complete && (
-                            <button
-                              onClick={() =>
-                                onDeleteItem({
-                                  collabUserId: collab.userId,
-                                  itemId: item.id,
-                                  itemName: item.itemName,
-                                })
-                              }
-                              className="w-6 h-6 flex items-center justify-center rounded-md text-muted-foreground hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-500 transition"
-                              title="Eliminar asignación"
+                        </div>
+                        <div className="grid grid-cols-5 gap-1.5">
+                          {[
+                            {
+                              label: 'Asignado',
+                              value: item.quantity,
+                              color: 'text-foreground',
+                            },
+                            {
+                              label: 'Devuelto',
+                              value: returned,
+                              color: 'text-emerald-600',
+                            },
+                            {
+                              label: 'Usado',
+                              value: used,
+                              color: 'text-[#234465] dark:text-[#7493B2]',
+                            },
+                            {
+                              label: 'Dañado',
+                              value: damaged,
+                              color:
+                                damaged > 0
+                                  ? 'text-destructive'
+                                  : 'text-muted-foreground',
+                            },
+                            {
+                              label: 'Pendiente',
+                              value: pending,
+                              color: complete
+                                ? 'text-emerald-600'
+                                : 'text-amber-600',
+                            },
+                          ].map(({ label, value, color }) => (
+                            <div
+                              key={label}
+                              className="bg-background rounded-lg py-2 text-center"
                             >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          )}
+                              <p className="text-[9px] text-muted-foreground uppercase tracking-wide leading-none mb-1">
+                                {label}
+                              </p>
+                              <p className={`text-base font-bold ${color}`}>
+                                {value}
+                              </p>
+                            </div>
+                          ))}
                         </div>
                       </div>
-                      <div className="grid grid-cols-5 gap-1.5">
-                        {[
-                          {
-                            label: 'Asignado',
-                            value: item.quantity,
-                            color: 'text-foreground',
-                          },
-                          {
-                            label: 'Devuelto',
-                            value: returned,
-                            color: 'text-emerald-600',
-                          },
-                          {
-                            label: 'Usado',
-                            value: used,
-                            color: 'text-[#234465] dark:text-[#7493B2]',
-                          },
-                          {
-                            label: 'Dañado',
-                            value: damaged,
-                            color:
-                              damaged > 0
-                                ? 'text-destructive'
-                                : 'text-muted-foreground',
-                          },
-                          {
-                            label: 'Pendiente',
-                            value: pending,
-                            color: complete
-                              ? 'text-emerald-600'
-                              : 'text-amber-600',
-                          },
-                        ].map(({ label, value, color }) => (
-                          <div
-                            key={label}
-                            className="bg-background rounded-lg py-2 text-center"
-                          >
-                            <p className="text-[9px] text-muted-foreground uppercase tracking-wide leading-none mb-1">
-                              {label}
-                            </p>
-                            <p className={`text-base font-bold ${color}`}>
-                              {value}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+                    );
+                  })}
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
         ) : (
           <div className="flex items-center gap-2 rounded-xl bg-muted/30 px-3 py-2.5">
@@ -424,6 +566,7 @@ export const Section3 = ({ eventId }) => {
   const [confirming, setConfirming] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null); // { collabUserId, itemId, itemName }
   const [deleting, setDeleting] = useState(false);
+  const [editTarget, setEditTarget] = useState(null); // { collabUserId, item }
   const [filters, setFilters] = useState({ name: '', cedula: '' });
   const [filterInput, setFilterInput] = useState({ name: '', cedula: '' });
   const [loading, setLoading] = useState(true);
@@ -514,6 +657,23 @@ export const Section3 = ({ eventId }) => {
     } else {
       toast.error(res.errors ?? 'Error al eliminar la asignación');
     }
+  };
+
+  const handleItemUpdated = ({ collaboratorItemId, returnedQuantity, usedQuantity, damagedQuantity, pendingQuantity }) => {
+    setCollaborators((prev) =>
+      prev.map((c) => {
+        if (c.userId !== editTarget?.collabUserId) return c;
+        return {
+          ...c,
+          inventoryItems: c.inventoryItems.map((i) =>
+            i.id !== collaboratorItemId
+              ? i
+              : { ...i, returnedQuantity, usedQuantity, damagedQuantity, pendingQuantity }
+          ),
+        };
+      })
+    );
+    setEditTarget(null);
   };
 
   const handleClearFilters = () => {
@@ -695,6 +855,7 @@ export const Section3 = ({ eventId }) => {
               onRequestConfirm={setConfirmTarget}
               onAddMore={setAddMoreCollab}
               onDeleteItem={setDeleteTarget}
+              onEditItem={setEditTarget}
             />
           ))}
         </div>
@@ -822,6 +983,14 @@ export const Section3 = ({ eventId }) => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Modal editar ítem — registrar devolución parcial */}
+      <EditInventoryItemModal
+        open={!!editTarget}
+        onOpenChange={(v) => { if (!v) setEditTarget(null); }}
+        item={editTarget?.item ?? null}
+        onUpdated={handleItemUpdated}
+      />
 
       {/* Modal inventario — solo navegación */}
       <InventoryModal open={showInventory} onOpenChange={setShowInventory} />
