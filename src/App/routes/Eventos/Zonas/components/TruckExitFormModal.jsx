@@ -10,6 +10,7 @@ import {
   User,
   CreditCard,
   CarFront,
+  Scale,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -44,7 +45,13 @@ const SectionLabel = ({ children }) => (
   </p>
 );
 
-export function TruckExitFormModal({ open, onClose, zone, onSave }) {
+export function TruckExitFormModal({
+  open,
+  onClose,
+  zone,
+  remainingWeightKg,
+  onSave,
+}) {
   const [form, setForm] = useState(RESET_FORM);
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
@@ -53,12 +60,17 @@ export function TruckExitFormModal({ open, onClose, zone, onSave }) {
 
   const cameraInputRef = useRef(null);
 
+  const hasBalance = typeof remainingWeightKg === 'number';
+  const exceedsWeight =
+    hasBalance && form.weightKg !== '' && parseFloat(form.weightKg) > remainingWeightKg;
+
   const isValid =
     form.quantity > 0 &&
     form.weightKg !== '' &&
     form.driverName.trim() !== '' &&
     form.driverCedula.trim() !== '' &&
-    form.plate.trim() !== '';
+    form.plate.trim() !== '' &&
+    !exceedsWeight;
 
   const addQty = (n) =>
     setForm((f) => ({ ...f, quantity: Math.max(0, f.quantity + n) }));
@@ -177,6 +189,20 @@ export function TruckExitFormModal({ open, onClose, zone, onSave }) {
           className="flex flex-col flex-1 overflow-y-auto"
         >
           <div className="px-5 space-y-6 py-5">
+
+            {/* ── Disponible para sacar ── */}
+            {hasBalance && (
+              <div className="flex items-center gap-3 rounded-xl bg-luup-blue-dark/5 dark:bg-luup-blue-light/10 px-4 py-3">
+                <Scale className="w-4 h-4 text-luup-blue-light shrink-0" />
+                <p className="text-xs text-foreground">
+                  Quedan{' '}
+                  <span className="font-bold">
+                    {remainingWeightKg.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg
+                  </span>{' '}
+                  disponibles para sacar.
+                </p>
+              </div>
+            )}
 
             {/* ── Datos del conductor ── */}
             <div className="space-y-2.5">
@@ -331,6 +357,12 @@ export function TruckExitFormModal({ open, onClose, zone, onSave }) {
                 placeholder="O escribe el valor exacto…"
                 className="w-full h-10 px-3 rounded-lg border border-input bg-secondary text-foreground text-sm placeholder:text-muted-foreground transition-colors hover:border-luup-blue-light/50 focus:outline-none focus:ring-2 focus:ring-luup-orange/20 focus:border-luup-orange"
               />
+
+              {exceedsWeight && (
+                <p className="text-xs text-destructive mt-2">
+                  Supera los {remainingWeightKg.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg disponibles.
+                </p>
+              )}
             </div>
 
             <div className="border-t border-border" />

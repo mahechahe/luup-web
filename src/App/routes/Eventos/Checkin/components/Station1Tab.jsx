@@ -345,22 +345,17 @@ export function Station1Tab({
   collaborators,
   loading,
   eventId,
-  pageSize,
-  currentPage,
   filter,
   onAttendanceUpdated,
   onUniformSaved,
   onEdit,
 }) {
-  const filtered = collaborators.filter((c) => {
+  const paginated = collaborators.filter((c) => {
     const done = !!c.attendance?.attended;
     if (filter === 'done') return done;
     if (filter === 'pending') return !done;
     return true;
   });
-
-  const startIdx = (currentPage - 1) * pageSize;
-  const paginated = filtered.slice(startIdx, startIdx + pageSize);
 
   return (
     <div className="space-y-4">

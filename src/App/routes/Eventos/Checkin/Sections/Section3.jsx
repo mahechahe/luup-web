@@ -4,8 +4,6 @@ import {
   Calendar,
   CheckCircle2,
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   Clock,
   DoorOpen,
   IdCard,
@@ -46,6 +44,7 @@ import {
 import { InventoryModal } from '../components/InventoryModal';
 import { AddInventoryModal } from '../components/AddInventoryModal';
 import { EditInventoryItemModal } from '../components/EditInventoryItemModal';
+import { PaginationControls } from '../components/PaginationControls';
 import { useUserStore } from '@/App/context/userStore';
 import { hasAdminAccess } from '@/App/utils/roles';
 
@@ -824,6 +823,17 @@ export const Section3 = ({ eventId }) => {
         <div className="border-t border-border" />
       </div>
 
+      {!loading && collaborators.length > 0 && (
+        <PaginationControls
+          totalItems={total}
+          pageSize={pageSize}
+          startIdx={startIdx}
+          safePage={safePage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
+      )}
+
       {/* Lista */}
       {loading ? (
         <div className="space-y-2">
@@ -1019,67 +1029,15 @@ export const Section3 = ({ eventId }) => {
 
       {/* Paginación */}
       {!loading && collaborators.length > 0 && (
-        <div className="bg-card rounded-xl border border-border px-3 py-2.5 flex items-center justify-between gap-3 flex-wrap pb-4">
-          <div className="flex items-center gap-3">
-            <p className="text-xs text-muted-foreground">
-              <span className="font-semibold text-foreground">
-                {startIdx + 1}–{Math.min(startIdx + pageSize, total)}
-              </span>{' '}
-              de <span className="font-semibold text-foreground">{total}</span>
-            </p>
-          </div>
-
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              disabled={safePage === 1}
-              className="h-8 w-8 rounded-md border border-border flex items-center justify-center text-muted-foreground hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            {Array.from({ length: totalPages }, (_, i) => i + 1)
-              .filter(
-                (p) =>
-                  totalPages <= 7 ||
-                  p === 1 ||
-                  p === totalPages ||
-                  Math.abs(p - safePage) <= 1
-              )
-              .reduce((acc, p, idx, arr) => {
-                if (idx > 0 && p - arr[idx - 1] > 1) acc.push('...');
-                acc.push(p);
-                return acc;
-              }, [])
-              .map((item, idx) =>
-                item === '...' ? (
-                  <span
-                    key={`e-${idx}`}
-                    className="px-1 text-xs text-muted-foreground"
-                  >
-                    …
-                  </span>
-                ) : (
-                  <button
-                    key={item}
-                    onClick={() => setCurrentPage(item)}
-                    className={`h-8 min-w-8 px-2 rounded-md text-xs font-semibold transition ${
-                      safePage === item
-                        ? 'bg-[#DD7419] text-white'
-                        : 'border border-border text-foreground hover:bg-muted'
-                    }`}
-                  >
-                    {item}
-                  </button>
-                )
-              )}
-            <button
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              disabled={safePage === totalPages}
-              className="h-8 w-8 rounded-md border border-border flex items-center justify-center text-muted-foreground hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
+        <div className="pb-4">
+          <PaginationControls
+            totalItems={total}
+            pageSize={pageSize}
+            startIdx={startIdx}
+            safePage={safePage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
         </div>
       )}
     </>

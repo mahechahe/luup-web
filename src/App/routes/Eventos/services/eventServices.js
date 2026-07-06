@@ -500,7 +500,12 @@ export const getAttendanceRecordsService = async (eventId, filters = {}) => {
   }
 };
 
-export const getEventAttendanceService = async (eventId, filters = {}) => {
+export const getEventAttendanceService = async (
+  eventId,
+  filters = {},
+  page = 1,
+  limit = 25
+) => {
   try {
     const today = new Date();
     const mm = String(today.getMonth() + 1).padStart(2, '0');
@@ -509,6 +514,8 @@ export const getEventAttendanceService = async (eventId, filters = {}) => {
     const body = {
       eventId: Number(eventId),
       dateRegister: `${mm}-${dd}-${yyyy}`,
+      page,
+      limit,
     };
     if (filters.name) body.name = filters.name;
     if (filters.cedula) body.cedula = filters.cedula;
@@ -769,6 +776,8 @@ export const getZoneTruckExitsService = async (zoneId) => {
     return {
       status: true,
       exits: res.data?.data?.exits ?? [],
+      remainingQuantity: res.data?.data?.remainingQuantity ?? 0,
+      remainingWeightKg: res.data?.data?.remainingWeightKg ?? 0,
       errors: null,
     };
   } catch (error) {
@@ -776,6 +785,8 @@ export const getZoneTruckExitsService = async (zoneId) => {
     return {
       status: false,
       exits: [],
+      remainingQuantity: 0,
+      remainingWeightKg: 0,
       errors: error?.response?.data?.message || 'Error al obtener las salidas.',
     };
   }

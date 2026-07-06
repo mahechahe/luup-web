@@ -24,7 +24,8 @@ const STATIONS = [
     label: 'Estación 1',
     sublabel: 'Check-in · Uniforme',
     Icon: ClipboardCheck,
-    activeClass: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 shadow-sm',
+    activeClass:
+      'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 shadow-sm',
     inactiveClass: 'text-foreground hover:bg-muted',
     lockedClass: 'text-muted-foreground/40 cursor-not-allowed',
   },
@@ -33,7 +34,8 @@ const STATIONS = [
     label: 'Estación 2',
     sublabel: 'Maleta · Almuerzo · Refrigerio',
     Icon: Package,
-    activeClass: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300 shadow-sm',
+    activeClass:
+      'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300 shadow-sm',
     inactiveClass: 'text-foreground hover:bg-muted',
     lockedClass: 'text-muted-foreground/40 cursor-not-allowed',
   },
@@ -42,7 +44,8 @@ const STATIONS = [
     label: 'Estación 3',
     sublabel: 'Dotación · Insumos',
     Icon: Boxes,
-    activeClass: 'bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-300 shadow-sm',
+    activeClass:
+      'bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-300 shadow-sm',
     inactiveClass: 'text-foreground hover:bg-muted',
     lockedClass: 'text-muted-foreground/40 cursor-not-allowed',
   },
@@ -51,7 +54,8 @@ const STATIONS = [
     label: 'Estación 4',
     sublabel: 'Check-out',
     Icon: DoorOpen,
-    activeClass: 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300 shadow-sm',
+    activeClass:
+      'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300 shadow-sm',
     inactiveClass: 'text-foreground hover:bg-muted',
     lockedClass: 'text-muted-foreground/40 cursor-not-allowed',
   },
@@ -174,7 +178,9 @@ export default function CheckinPage() {
                   <div className="flex items-center gap-1 sm:gap-1.5">
                     <Icon className="w-3 h-3 sm:w-4 sm:h-4 shrink-0" />
                     <span className="text-[11px] sm:text-sm">{label}</span>
-                    {!accessible && <Lock className="w-2.5 h-2.5 sm:w-3 sm:h-3" />}
+                    {!accessible && (
+                      <Lock className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                    )}
                   </div>
                   <span
                     className={`text-[9px] sm:text-xs font-normal leading-tight text-center ${

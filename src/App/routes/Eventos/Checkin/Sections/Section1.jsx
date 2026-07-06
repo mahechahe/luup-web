@@ -1,15 +1,8 @@
 import { Button } from '@/components/ui/button';
-import {
-  ChevronLeft,
-  ChevronRight,
-  IdCard,
-  RefreshCw,
-  Search,
-  User,
-  X,
-} from 'lucide-react';
+import { IdCard, RefreshCw, Search, User, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Station1Tab } from '../components/Station1Tab';
+import { PaginationControls } from '../components/PaginationControls';
 import { getEventAttendanceService } from '../../services/eventServices';
 import AttendanceEditModal from '../AttendanceEditModal';
 
@@ -25,6 +18,7 @@ export const Section1 = ({ eventId }) => {
   const [loading, setLoading] = useState(true);
   const pageSize = PAGE_SIZE;
   const [editTarget, setEditTarget] = useState(null);
+  const [pagination, setPagination] = useState({ total: 0, totalPages: 1 });
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') handleSearch();
@@ -59,21 +53,27 @@ export const Section1 = ({ eventId }) => {
   };
 
   /* Fetch */
-  const fetchData = (currentFilters = filters) => {
+  const fetchData = (currentFilters = filters, page = currentPage) => {
     setLoading(true);
-    getEventAttendanceService(eventId, currentFilters).then((res) => {
-      if (res.status && res.data)
-        setCollaborators(res.data?.data?.collaborators ?? []);
-      setLoading(false);
-    });
+    getEventAttendanceService(eventId, currentFilters, page, pageSize).then(
+      (res) => {
+        if (res.status && res.data) {
+          setCollaborators(res.data?.data?.collaborators ?? []);
+          setPagination(
+            res.data?.data?.pagination ?? { total: 0, totalPages: 1 }
+          );
+        }
+        setLoading(false);
+      }
+    );
   };
 
   useEffect(() => {
-    fetchData(filters);
-  }, [eventId, filters]); // eslint-disable-line react-hooks/exhaustive-deps
+    fetchData(filters, currentPage);
+  }, [eventId, filters, currentPage]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const totalItems = collaborators.length;
-  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const totalItems = pagination.total;
+  const totalPages = Math.max(1, pagination.totalPages);
   const safePage = Math.min(currentPage, totalPages);
   const startIdx = (safePage - 1) * pageSize;
 
@@ -168,80 +168,34 @@ export const Section1 = ({ eventId }) => {
         </div>
       </div>
 
+      <PaginationControls
+        totalItems={totalItems}
+        pageSize={pageSize}
+        startIdx={startIdx}
+        safePage={safePage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+      />
+
       <Station1Tab
         collaborators={collaborators}
         loading={loading}
         eventId={eventId}
-        pageSize={pageSize}
-        currentPage={safePage}
         filter={statusFilter}
         onAttendanceUpdated={handleAttendanceUpdated}
         onUniformSaved={handleUniformSaved}
         onEdit={setEditTarget}
       />
 
-      <div className="bg-card rounded-xl border border-border px-3 py-2.5 flex items-center justify-between gap-3 flex-wrap pb-4">
-        <div className="flex items-center gap-3">
-          <p className="text-xs text-muted-foreground">
-            <span className="font-semibold text-foreground">
-              {startIdx + 1}–{Math.min(startIdx + pageSize, totalItems)}
-            </span>{' '}
-            de{' '}
-            <span className="font-semibold text-foreground">{totalItems}</span>
-          </p>
-        </div>
-
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-            disabled={safePage === 1}
-            className="h-8 w-8 rounded-md border border-border flex items-center justify-center text-muted-foreground hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-          {Array.from({ length: totalPages }, (_, i) => i + 1)
-            .filter(
-              (p) =>
-                totalPages <= 7 ||
-                p === 1 ||
-                p === totalPages ||
-                Math.abs(p - safePage) <= 1
-            )
-            .reduce((acc, p, idx, arr) => {
-              if (idx > 0 && p - arr[idx - 1] > 1) acc.push('...');
-              acc.push(p);
-              return acc;
-            }, [])
-            .map((item, idx) =>
-              item === '...' ? (
-                <span
-                  key={`e-${idx}`}
-                  className="px-1 text-xs text-muted-foreground"
-                >
-                  …
-                </span>
-              ) : (
-                <button
-                  key={item}
-                  onClick={() => setCurrentPage(item)}
-                  className={`h-8 min-w-8 px-2 rounded-md text-xs font-semibold transition ${
-                    safePage === item
-                      ? 'bg-[#DD7419] text-white'
-                      : 'border border-border text-foreground hover:bg-muted'
-                  }`}
-                >
-                  {item}
-                </button>
-              )
-            )}
-          <button
-            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-            disabled={safePage === totalPages}
-            className="h-8 w-8 rounded-md border border-border flex items-center justify-center text-muted-foreground hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
+      <div className="pb-4">
+        <PaginationControls
+          totalItems={totalItems}
+          pageSize={pageSize}
+          startIdx={startIdx}
+          safePage={safePage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
       </div>
 
       <AttendanceEditModal

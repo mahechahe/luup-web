@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Station2Tab } from '../components/Station2Tab';
+import { PaginationControls } from '../components/PaginationControls';
 import { toast } from 'sonner';
 
 const PAGE_SIZE_OPTIONS = [25, 50, 100];
@@ -24,6 +25,12 @@ export const Section2 = ({ eventId }) => {
   const [filterInput, setFilterInput] = useState({ name: '', cedula: '' });
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 25,
+    total: 0,
+    totalPages: 1,
+  });
 
   /* Functions */
   const handleKeyDown = (e) => {
@@ -66,23 +73,36 @@ export const Section2 = ({ eventId }) => {
   };
 
   /* Fetch */
-  const fetchData = (currentFilters = filters) => {
+  const fetchData = (currentFilters = filters, page = currentPage) => {
     setLoading(true);
-    getAttendanceRecordsService(eventId, currentFilters).then((res) => {
-      if (res.status && res.data)
+    getAttendanceRecordsService(eventId, {
+      ...currentFilters,
+      page,
+      limit: pageSize,
+    }).then((res) => {
+      if (res.status && res.data) {
         setCollaborators(res.data?.data?.collaborators ?? []);
+        setPagination(
+          res.data?.data?.pagination ?? {
+            page: 1,
+            limit: pageSize,
+            total: 0,
+            totalPages: 1,
+          }
+        );
+      }
       setLoading(false);
     });
   };
 
   useEffect(() => {
-    fetchData(filters);
-  }, [eventId, filters]); // eslint-disable-line react-hooks/exhaustive-deps
+    fetchData(filters, currentPage);
+  }, [eventId, filters, currentPage, pageSize]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const hasActiveFilters = filterInput.name !== '' || filterInput.cedula !== '';
 
-  const totalItems = collaborators.length;
-  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const totalItems = pagination.total;
+  const totalPages = Math.max(1, pagination.totalPages);
   const safePage = Math.min(currentPage, totalPages);
   const startIdx = (safePage - 1) * pageSize;
 
@@ -195,6 +215,15 @@ export const Section2 = ({ eventId }) => {
           <span className="font-semibold">asignación confirmada</span>.
         </p>
       </div>
+
+      <PaginationControls
+        totalItems={totalItems}
+        pageSize={pageSize}
+        startIdx={startIdx}
+        safePage={safePage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+      />
 
       {/* Tab */}
       <Station2Tab

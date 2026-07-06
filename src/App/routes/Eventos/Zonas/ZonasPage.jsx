@@ -62,6 +62,7 @@ export default function ZonasPage() {
   const [truckExits, setTruckExits] = useState({});
   const [truckExitsLoading, setTruckExitsLoading] = useState({});
   const [truckExitTarget, setTruckExitTarget] = useState(null);
+  const [truckExitBalances, setTruckExitBalances] = useState({});
 
   const [requirements, setRequirements] = useState({});
   const [requirementsLoading, setRequirementsLoading] = useState({});
@@ -98,7 +99,16 @@ export default function ZonasPage() {
     await Promise.all(
       acopioZones.map(async (zone) => {
         const res = await getZoneTruckExitsService(zone.id);
-        if (res.status) setTruckExits((prev) => ({ ...prev, [zone.id]: res.exits }));
+        if (res.status) {
+          setTruckExits((prev) => ({ ...prev, [zone.id]: res.exits }));
+          setTruckExitBalances((prev) => ({
+            ...prev,
+            [zone.id]: {
+              remainingQuantity: res.remainingQuantity,
+              remainingWeightKg: res.remainingWeightKg,
+            },
+          }));
+        }
         setTruckExitsLoading((prev) => ({ ...prev, [zone.id]: false }));
       })
     );
@@ -201,9 +211,23 @@ export default function ZonasPage() {
     setIncidents((prev) => ({ ...prev, [userId]: [...(prev[userId] ?? []), incident] }));
   };
 
+  const refreshTruckExitBalance = useCallback(async (zoneId) => {
+    const res = await getZoneTruckExitsService(zoneId);
+    if (res.status) {
+      setTruckExitBalances((prev) => ({
+        ...prev,
+        [zoneId]: {
+          remainingQuantity: res.remainingQuantity,
+          remainingWeightKg: res.remainingWeightKg,
+        },
+      }));
+    }
+  }, []);
+
   const handleSaveWaste = (zoneId, entry) => {
     setWasteEntries((prev) => ({ ...prev, [zoneId]: [...(prev[zoneId] ?? []), entry] }));
     fetchWasteDistribution(zoneId);
+    refreshTruckExitBalance(zoneId);
   };
 
   const handleSaveWasteDistribution = (zoneId, summary) => {
@@ -216,8 +240,9 @@ export default function ZonasPage() {
     return res;
   };
 
-  const handleSaveTruckExit = (zoneId, exit) => {
+  const handleSaveTruckExit = async (zoneId, exit) => {
     setTruckExits((prev) => ({ ...prev, [zoneId]: [...(prev[zoneId] ?? []), exit] }));
+    await refreshTruckExitBalance(zoneId);
   };
 
   const handleSaveRequirement = (zoneId, requirement) => {
@@ -449,6 +474,7 @@ export default function ZonasPage() {
         open={truckExitTarget !== null}
         onClose={() => setTruckExitTarget(null)}
         zone={truckExitTarget}
+        remainingWeightKg={truckExitTarget ? truckExitBalances[truckExitTarget.id]?.remainingWeightKg : undefined}
         onSave={handleSaveTruckExit}
       />
 
