@@ -12,6 +12,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useUserStore } from '@/App/context/userStore';
 import { getWorkerCurrentEventService } from '@/App/routes/Eventos/services/eventServices';
+import { getEventDateStatus } from '@/App/routes/Eventos/utils/eventDateStatus';
 import { hasAdminAccess, getRoleLabel } from '@/App/utils/roles';
 
 function getGreeting() {
@@ -106,6 +107,9 @@ function Dashboard() {
     navigate(path);
   };
 
+  const dateStatus = getEventDateStatus(currentEvent);
+  const canEnterEvent = dateStatus === 'active' || dateStatus === 'unknown';
+
   // Decide ruta y label del botón según el contexto del usuario
   const getButtonProps = () => {
     if (isAdmin) {
@@ -113,6 +117,15 @@ function Dashboard() {
     }
     if (!loadingEvent && !currentEvent) {
       return { label: 'Ver mis eventos', path: '/eventos/mis-eventos' };
+    }
+    if (currentEvent && !canEnterEvent) {
+      return {
+        label:
+          dateStatus === 'upcoming'
+            ? 'Evento aún no comienza'
+            : 'Evento finalizado',
+        path: null,
+      };
     }
     const eventId = currentEvent?.eventId ?? currentEvent?.id;
     return {
@@ -195,8 +208,12 @@ function Dashboard() {
                   {isAdmin
                     ? 'Crea eventos, asigna personal y da seguimiento a cada operación desde un solo lugar.'
                     : currentEvent
-                      ? currentEvent.location ||
-                        'Continúa con la operación de tu evento asignado.'
+                      ? !canEnterEvent
+                        ? dateStatus === 'upcoming'
+                          ? 'Podrás ingresar el día del evento.'
+                          : 'Este evento ya finalizó.'
+                        : currentEvent.location ||
+                          'Continúa con la operación de tu evento asignado.'
                       : 'Cuando recibas una nueva asignación aparecerá aquí para que puedas acceder rápidamente.'}
                 </p>
               </div>

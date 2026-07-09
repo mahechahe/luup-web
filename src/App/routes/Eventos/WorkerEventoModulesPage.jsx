@@ -12,6 +12,8 @@ import {
   LogIn,
   LogOut,
   MapPin,
+  Package,
+  Shirt,
   XCircle,
   XCircle as XCircleIcon,
 } from 'lucide-react';
@@ -29,6 +31,49 @@ function formatTime(iso) {
   const d = new Date(iso);
   if (isNaN(d.getTime())) return '—';
   return d.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+}
+
+function formatDate(iso) {
+  if (!iso) return '—';
+  const normalized = iso.toString().replace(' ', 'T');
+  const d = new Date(normalized);
+  if (isNaN(d.getTime())) return '—';
+  return d.toLocaleDateString('es-CO', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  });
+}
+
+/* ── Chip ─────────────────────────────────────────────────── */
+function Chip({ label, value, positive, negative }) {
+  const base =
+    'inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full border';
+  if (value === true)
+    return (
+      <span
+        className={`${base} ${
+          positive ??
+          'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800/60'
+        }`}
+      >
+        <CheckCircle2 className="w-3 h-3" />
+        {label}
+      </span>
+    );
+  if (value === false)
+    return (
+      <span
+        className={`${base} ${
+          negative ??
+          'bg-red-50 text-red-600 border-red-200 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800/60'
+        }`}
+      >
+        <XCircle className="w-3 h-3" />
+        Sin {label.toLowerCase()}
+      </span>
+    );
+  return null;
 }
 
 const ROLE_LABELS = {
@@ -56,9 +101,11 @@ function AttendanceCard({ attendance, loading }) {
   }
 
   const attended = attendance?.attended;
-  const entryTime = attendance?.entryTime;
-  const exitTime = attendance?.exitTime;
   const incidents = attendance?.incidents ?? [];
+  const attendanceRecords = attendance?.attendanceRecords ?? [];
+  const inventoryItems = attendance?.inventoryItems ?? [];
+  const hasRecords = attendanceRecords.length > 0;
+  const hasInventory = inventoryItems.length > 0;
 
   const status =
     attended === null || attended === undefined
@@ -121,34 +168,131 @@ function AttendanceCard({ attendance, loading }) {
           </span>
         </div>
 
-        <div className="grid grid-cols-2 border-y border-border/70 bg-muted/20">
-          <div className="flex items-center gap-3 border-r border-border/70 px-5 py-4 sm:px-6">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10">
-              <LogIn className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+        {/* ── Registros de asistencia ── */}
+        <div className="border-y border-border/70 bg-muted/20 p-5 sm:p-6">
+          <p className="mb-3 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+            <Clock className="w-3.5 h-3.5" />
+            Registros de asistencia{' '}
+            {hasRecords ? `(${attendanceRecords.length})` : ''}
+          </p>
+          {hasRecords ? (
+            <div className="space-y-3">
+              {attendanceRecords.map((rec) => (
+                <div
+                  key={rec.id}
+                  className="rounded-lg bg-card border border-border p-3 space-y-3"
+                >
+                  <div className="flex items-center gap-4 flex-wrap">
+                    {rec.dateRegister && (
+                      <span className="text-xs font-semibold text-foreground">
+                        {formatDate(rec.dateRegister)}
+                      </span>
+                    )}
+                    <div className="flex items-center gap-3">
+                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <LogIn className="w-3.5 h-3.5" />
+                        {formatTime(rec.entryTime)}
+                      </span>
+                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <LogOut className="w-3.5 h-3.5" />
+                        {formatTime(rec.exitTime)}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    <Chip label="Uniforme" value={rec.uniform} />
+                    {rec.uniform && rec.uniformSize && (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full border bg-muted text-muted-foreground border-border">
+                        <Shirt className="w-3 h-3" />
+                        Talla {rec.uniformSize}
+                      </span>
+                    )}
+                    {rec.uniform && rec.returnedUniform === true && (
+                      <Chip label="Devolvió uniforme" value={true} />
+                    )}
+                    {rec.uniform && rec.returnedUniform === false && (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full border bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800/60">
+                        <XCircle className="w-3 h-3" />
+                        No devolvió uniforme
+                      </span>
+                    )}
+                    <Chip label="Snack" value={rec.receivedSnack} />
+                    <Chip label="Almuerzo" value={rec.receivedLunch} />
+                    <Chip label="Maletín" value={rec.receivedSuitcase} />
+                  </div>
+                  {rec.snackDetail && (
+                    <p className="text-xs text-muted-foreground">
+                      Snack: {rec.snackDetail}
+                    </p>
+                  )}
+                  {rec.notes && (
+                    <p className="text-xs text-muted-foreground italic">
+                      &quot;{rec.notes}&quot;
+                    </p>
+                  )}
+                </div>
+              ))}
             </div>
-            <div>
-              <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                Entrada
-              </p>
-              <p className="mt-0.5 text-base font-bold tabular-nums text-foreground">
-                {formatTime(entryTime)}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 px-5 py-4 sm:px-6">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand/10">
-              <LogOut className="h-4 w-4 text-brand" />
-            </div>
-            <div>
-              <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                Salida
-              </p>
-              <p className="mt-0.5 text-base font-bold tabular-nums text-foreground">
-                {formatTime(exitTime)}
-              </p>
-            </div>
-          </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              Sin registros de asistencia.
+            </p>
+          )}
         </div>
+
+        {/* ── Inventario asignado ── */}
+        {hasInventory && (
+          <div className="border-b border-border/70 p-5 sm:p-6">
+            <p className="mb-3 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+              <Package className="w-3.5 h-3.5" />
+              Inventario asignado ({inventoryItems.length})
+            </p>
+            <div className="space-y-2">
+              {inventoryItems.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex items-start justify-between gap-3 rounded-lg bg-muted/40 border border-border px-3 py-2.5"
+                >
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-foreground">
+                      {item.name}
+                    </p>
+                    {item.description && (
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        {item.description}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
+                    <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border">
+                      {item.quantity} asig.
+                    </span>
+                    {item.returnedQuantity > 0 && (
+                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800/60">
+                        {item.returnedQuantity} dev.
+                      </span>
+                    )}
+                    {item.usedQuantity > 0 && (
+                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-800/60">
+                        {item.usedQuantity} usado
+                      </span>
+                    )}
+                    {item.damagedQuantity > 0 && (
+                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-200 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800/60">
+                        {item.damagedQuantity} dañado
+                      </span>
+                    )}
+                    {item.pendingQuantity > 0 && (
+                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800/60">
+                        {item.pendingQuantity} pendiente
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {incidents.length > 0 && (
           <div className="p-5 sm:p-6">

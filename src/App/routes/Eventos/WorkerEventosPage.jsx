@@ -4,17 +4,17 @@ import {
   ChevronRight,
   ArrowLeft,
   CheckCircle2,
+  XCircle,
   Clock,
   MapPin,
   ShieldCheck,
   UserCheck,
   HardHat,
-  Check,
-  X,
-  AlertTriangle,
   LogIn,
   LogOut,
-  FileText,
+  Shirt,
+  Package,
+  AlertTriangle,
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -22,17 +22,10 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog';
-import {
   getWorkerCurrentEventService,
   getWorkerEventHistoryService,
-  getWorkerAttendanceService,
 } from './services/eventServices';
+import { getEventDateStatus } from './utils/eventDateStatus';
 
 const PAGE_LIMIT = 10;
 
@@ -100,16 +93,50 @@ function EventDateDisplay({ event }) {
   return <span>{formatDate(event.date)}</span>;
 }
 
+/* ── Chip ─────────────────────────────────────────────────── */
+function Chip({ label, value, positive, negative }) {
+  const base =
+    'inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full border';
+  if (value === true)
+    return (
+      <span
+        className={`${base} ${
+          positive ??
+          'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800/60'
+        }`}
+      >
+        <CheckCircle2 className="w-3 h-3" />
+        {label}
+      </span>
+    );
+  if (value === false)
+    return (
+      <span
+        className={`${base} ${
+          negative ??
+          'bg-red-50 text-red-600 border-red-200 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800/60'
+        }`}
+      >
+        <XCircle className="w-3 h-3" />
+        Sin {label.toLowerCase()}
+      </span>
+    );
+  return null;
+}
+
 /* ── Skeletons ────────────────────────────────────────────── */
-function SkeletonRow() {
+function HistoryCardSkeleton() {
   return (
-    <tr className="border-b border-border animate-pulse">
-      {['w-40', 'w-24', 'w-32', 'w-20', 'w-24', 'w-24'].map((w, i) => (
-        <td key={i} className="px-4 py-3.5">
-          <div className={`h-3.5 bg-muted rounded-full ${w}`} />
-        </td>
-      ))}
-    </tr>
+    <div className="rounded-xl border border-border bg-card p-4 animate-pulse">
+      <div className="flex items-start gap-3">
+        <div className="w-8 h-8 rounded-lg bg-muted shrink-0" />
+        <div className="flex-1 space-y-2">
+          <div className="h-3.5 bg-muted rounded-full w-40" />
+          <div className="h-3 bg-muted rounded-full w-56" />
+        </div>
+        <div className="h-6 bg-muted rounded-full w-20" />
+      </div>
+    </div>
   );
 }
 
@@ -149,7 +176,7 @@ function Pagination({ page, totalPages, total, limit, onPageChange }) {
     (p) => p === 1 || p === totalPages || Math.abs(p - page) <= 1
   );
   return (
-    <div className="flex items-center justify-between px-5 py-3 border-t border-border flex-wrap gap-2">
+    <div className="flex items-center justify-between px-1 py-3 flex-wrap gap-2">
       <p className="text-xs text-muted-foreground">
         Mostrando{' '}
         <span className="font-semibold text-foreground">
@@ -203,164 +230,254 @@ function Pagination({ page, totalPages, total, limit, onPageChange }) {
   );
 }
 
-/* ── Modal detalle evento ─────────────────────────────────── */
-function EventDetailModal({ event, onClose }) {
-  const [detail, setDetail] = useState(null);
-  const [loading, setLoading] = useState(true);
+/* ── Card: historial de evento (expandible) ──────────────── */
+function WorkerEventHistoryCard({ event }) {
+  const [open, setOpen] = useState(false);
 
-  useEffect(() => {
-    if (!event) return;
-    setLoading(true);
-    getWorkerAttendanceService(event.eventId).then((res) => {
-      if (res.status) setDetail(res.attendance);
-      else toast.error('Error al cargar el detalle.');
-      setLoading(false);
-    });
-  }, [event]);
+  const attendedKey =
+    event.attended === true
+      ? 'true'
+      : event.attended === false
+        ? 'false'
+        : 'null';
+  const attendedConfig = {
+    true: {
+      icon: CheckCircle2,
+      label: 'Asistió',
+      badgeClass:
+        'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800/60',
+      accentClass: 'border-l-emerald-500',
+    },
+    false: {
+      icon: XCircle,
+      label: 'No asistió',
+      badgeClass:
+        'bg-red-50 text-red-600 border-red-200 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800/60',
+      accentClass: 'border-l-red-500',
+    },
+    null: {
+      icon: Clock,
+      label: 'Pendiente',
+      badgeClass: 'bg-muted text-muted-foreground border-border',
+      accentClass: 'border-l-muted-foreground/30',
+    },
+  };
+  const att = attendedConfig[attendedKey];
+  const AttIcon = att.icon;
+
+  const hasRecords = event.attendanceRecords?.length > 0;
+  const hasInventory = event.inventoryItems?.length > 0;
+  const hasIncidents = event.incidents?.length > 0;
 
   return (
-    <Dialog open={!!event} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-lg max-h-[90dvh] flex flex-col gap-0 p-0">
-        <DialogHeader className="px-5 pt-5 pb-4 border-b border-border shrink-0">
-          <p className="text-xs font-semibold text-brand uppercase tracking-wide mb-0.5">
-            Detalle del evento
-          </p>
-          <DialogTitle className="leading-tight">{event?.name}</DialogTitle>
-          <DialogDescription asChild>
-            <div className="flex items-center gap-3 mt-1 flex-wrap">
-              <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                <MapPin className="w-3 h-3" />
-                {event?.location ?? '—'}
-              </span>
-              <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Calendar className="w-3 h-3" />
-                {event && <EventDateDisplay event={event} />}
-              </span>
-            </div>
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
-          {loading ? (
-            <div className="space-y-3 animate-pulse">
-              <div className="h-6 bg-muted rounded-full w-28" />
-              <div className="h-20 bg-muted rounded-xl" />
-              <div className="h-4 bg-muted rounded w-24 mt-2" />
-              <div className="h-16 bg-muted rounded-xl" />
-            </div>
-          ) : !detail ? (
-            <p className="text-sm text-muted-foreground text-center py-8">
-              No se encontró información de asistencia.
+    <div
+      className={`rounded-xl border border-border bg-card overflow-hidden border-l-4 ${att.accentClass}`}
+    >
+      {/* Header */}
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-start justify-between gap-3 px-4 py-3.5 text-left hover:bg-muted/40 transition-colors"
+      >
+        <div className="flex items-start gap-3 min-w-0">
+          <div className="w-8 h-8 rounded-lg bg-brand/10 flex items-center justify-center shrink-0 mt-0.5">
+            <Calendar className="w-4 h-4 text-brand" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-foreground truncate">
+              {event.name}
             </p>
-          ) : (
-            <>
-              <RoleBadge role={event?.role} />
+            <p className="text-xs text-muted-foreground mt-0.5 truncate">
+              {event.location ?? '—'} · <EventDateDisplay event={event} />
+            </p>
+            <div className="mt-1.5 sm:hidden">
+              <RoleBadge role={event.role} />
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="hidden sm:inline-flex">
+            <RoleBadge role={event.role} />
+          </span>
+          <span
+            className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full border ${att.badgeClass}`}
+          >
+            <AttIcon className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">{att.label}</span>
+          </span>
+          <span
+            className={`text-muted-foreground text-xs transition-transform duration-200 ${
+              open ? 'rotate-180' : ''
+            }`}
+          >
+            ▼
+          </span>
+        </div>
+      </button>
 
-              {/* Bloque asistencia */}
-              <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-3">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                  Asistencia
-                </p>
-
-                {detail.attended === true ? (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-semibold">
-                    <Check className="w-3.5 h-3.5" /> Asistió
-                  </span>
-                ) : detail.attended === false ? (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 text-xs font-semibold">
-                    <X className="w-3.5 h-3.5" /> No asistió
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-muted text-muted-foreground border border-border text-xs font-semibold">
-                    Sin registro
-                  </span>
-                )}
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center shrink-0">
-                      <LogIn className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-muted-foreground font-medium">
-                        Entrada
-                      </p>
-                      <p className="text-sm font-bold text-foreground">
-                        {formatTime(detail.entryTime)}
-                      </p>
+      {/* Expanded */}
+      {open && (
+        <div className="border-t border-border divide-y divide-border">
+          {/* ── Registros de asistencia ── */}
+          <div className="px-4 py-4 space-y-3">
+            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5" />
+              Registros de asistencia{' '}
+              {hasRecords ? `(${event.attendanceRecords.length})` : ''}
+            </p>
+            {hasRecords ? (
+              event.attendanceRecords.map((rec) => (
+                <div
+                  key={rec.id}
+                  className="rounded-lg bg-muted/40 border border-border p-3 space-y-3"
+                >
+                  {/* Date + times */}
+                  <div className="flex items-center gap-4 flex-wrap">
+                    {rec.dateRegister && (
+                      <span className="text-xs font-semibold text-foreground">
+                        {formatDate(rec.dateRegister)}
+                      </span>
+                    )}
+                    <div className="flex items-center gap-3">
+                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <LogIn className="w-3.5 h-3.5" />
+                        {formatTime(rec.entryTime)}
+                      </span>
+                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <LogOut className="w-3.5 h-3.5" />
+                        {formatTime(rec.exitTime)}
+                      </span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-900/40 flex items-center justify-center shrink-0">
-                      <LogOut className="w-4 h-4 text-red-600 dark:text-red-400" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-muted-foreground font-medium">
-                        Salida
+                  {/* Chips */}
+                  <div className="flex flex-wrap gap-1.5">
+                    <Chip label="Uniforme" value={rec.uniform} />
+                    {rec.uniform && rec.uniformSize && (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full border bg-muted text-muted-foreground border-border">
+                        <Shirt className="w-3 h-3" />
+                        Talla {rec.uniformSize}
+                      </span>
+                    )}
+                    {rec.uniform && rec.returnedUniform === true && (
+                      <Chip label="Devolvió uniforme" value={true} />
+                    )}
+                    {rec.uniform && rec.returnedUniform === false && (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full border bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800/60">
+                        <XCircle className="w-3 h-3" />
+                        No devolvió uniforme
+                      </span>
+                    )}
+                    <Chip label="Snack" value={rec.receivedSnack} />
+                    <Chip label="Almuerzo" value={rec.receivedLunch} />
+                    <Chip label="Maletín" value={rec.receivedSuitcase} />
+                  </div>
+                  {rec.snackDetail && (
+                    <p className="text-xs text-muted-foreground">
+                      Snack: {rec.snackDetail}
+                    </p>
+                  )}
+                  {rec.notes && (
+                    <p className="text-xs text-muted-foreground italic">
+                      &quot;{rec.notes}&quot;
+                    </p>
+                  )}
+                </div>
+              ))
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Sin registros de asistencia.
+              </p>
+            )}
+          </div>
+
+          {/* ── Inventario ── */}
+          {hasInventory && (
+            <div className="px-4 py-4 space-y-2">
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
+                <Package className="w-3.5 h-3.5" />
+                Inventario asignado ({event.inventoryItems.length})
+              </p>
+              {event.inventoryItems.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex items-start justify-between gap-3 rounded-lg bg-muted/40 border border-border px-3 py-2.5"
+                >
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-foreground">
+                      {item.name}
+                    </p>
+                    {item.description && (
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        {item.description}
                       </p>
-                      <p className="text-sm font-bold text-foreground">
-                        {formatTime(detail.exitTime)}
-                      </p>
-                    </div>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
+                    <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border">
+                      {item.quantity} asig.
+                    </span>
+                    {item.returnedQuantity > 0 && (
+                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800/60">
+                        {item.returnedQuantity} dev.
+                      </span>
+                    )}
+                    {item.usedQuantity > 0 && (
+                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-800/60">
+                        {item.usedQuantity} usado
+                      </span>
+                    )}
+                    {item.damagedQuantity > 0 && (
+                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-200 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800/60">
+                        {item.damagedQuantity} dañado
+                      </span>
+                    )}
+                    {item.pendingQuantity > 0 && (
+                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800/60">
+                        {item.pendingQuantity} pendiente
+                      </span>
+                    )}
                   </div>
                 </div>
-
-                {detail.notes && (
-                  <div className="flex items-start gap-2 pt-2 border-t border-border">
-                    <FileText className="w-3.5 h-3.5 text-muted-foreground mt-0.5 shrink-0" />
-                    <p className="text-xs text-muted-foreground">
-                      {detail.notes}
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* Incidencias */}
-              <div>
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-                  Incidencias ({detail.incidents?.length ?? 0})
-                </p>
-                {!detail.incidents || detail.incidents.length === 0 ? (
-                  <div className="rounded-xl border border-border bg-muted/20 px-4 py-5 text-center">
-                    <p className="text-sm text-muted-foreground">
-                      Sin incidencias registradas.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {detail.incidents.map((inc) => (
-                      <div
-                        key={inc.id}
-                        className="rounded-xl border border-border bg-card p-3 flex items-start gap-3"
-                      >
-                        <div className="w-7 h-7 rounded-lg bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center shrink-0 mt-0.5">
-                          <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-2">
-                            <p className="text-sm font-semibold text-foreground truncate">
-                              {inc.name}
-                            </p>
-                            <span className="text-[10px] text-muted-foreground whitespace-nowrap shrink-0">
-                              {formatTime(inc.time)}
-                            </span>
-                          </div>
-                          {inc.note && (
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                              {inc.note}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </>
+              ))}
+            </div>
           )}
+
+          {/* ── Incidencias ── */}
+          <div className="px-4 py-4 space-y-2">
+            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
+              <AlertTriangle className="w-3.5 h-3.5" />
+              Incidencias {hasIncidents ? `(${event.incidents.length})` : ''}
+            </p>
+            {hasIncidents ? (
+              event.incidents.map((inc) => (
+                <div
+                  key={inc.id}
+                  className="flex items-start gap-2.5 px-3 py-2.5 rounded-lg bg-muted/50 border border-border text-xs"
+                >
+                  <div className="w-1.5 h-1.5 rounded-full bg-brand mt-1 shrink-0" />
+                  <div className="min-w-0">
+                    <span className="font-semibold text-foreground">
+                      {inc.name}
+                    </span>
+                    {inc.time && (
+                      <span className="text-muted-foreground ml-1.5">
+                        · {inc.time}
+                      </span>
+                    )}
+                    {inc.note && (
+                      <p className="text-muted-foreground mt-0.5">{inc.note}</p>
+                    )}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Sin incidencias registradas.
+              </p>
+            )}
+          </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      )}
+    </div>
   );
 }
 
@@ -399,6 +516,9 @@ function CurrentEventCard({ currentEvent, loading, navigate }) {
       </Card>
     );
   }
+  const dateStatus = getEventDateStatus(currentEvent);
+  const canEnter = dateStatus === 'active' || dateStatus === 'unknown';
+
   return (
     <Card className="group relative gap-0 overflow-hidden border-brand/25 bg-gradient-to-br from-brand/[0.09] via-card to-card py-0 shadow-[0_12px_40px_rgba(0,0,0,0.08)] dark:from-brand/[0.11] dark:via-card dark:to-card">
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand/80 to-transparent" />
@@ -441,15 +561,31 @@ function CurrentEventCard({ currentEvent, loading, navigate }) {
           </div>
         </div>
 
-        <div className="flex items-center gap-3 sm:pl-[4.5rem] md:flex-col md:items-end md:pl-0">
-          <RoleBadge role={currentEvent.role} />
-          <Button
-            className="group/button ml-auto min-w-36 gap-2 bg-brand text-brand-foreground shadow-[0_8px_20px_rgba(221,116,25,0.22)] transition-all hover:-translate-y-0.5 hover:bg-brand-dark hover:shadow-[0_12px_24px_rgba(221,116,25,0.3)] sm:ml-0"
-            onClick={() => navigate(`/eventos/${currentEvent.eventId}/worker`)}
-          >
-            Entrar al evento
-            <ChevronRight className="h-4 w-4 transition-transform group-hover/button:translate-x-0.5" />
-          </Button>
+        <div className="flex flex-col items-end gap-2 sm:pl-[4.5rem] md:pl-0">
+          <div className="flex items-center gap-3">
+            <RoleBadge role={currentEvent.role} />
+            <Button
+              className="group/button ml-auto min-w-36 gap-2 bg-brand text-brand-foreground shadow-[0_8px_20px_rgba(221,116,25,0.22)] transition-all hover:-translate-y-0.5 hover:bg-brand-dark hover:shadow-[0_12px_24px_rgba(221,116,25,0.3)] sm:ml-0"
+              disabled={!canEnter}
+              onClick={() =>
+                canEnter && navigate(`/eventos/${currentEvent.eventId}/worker`)
+              }
+            >
+              {dateStatus === 'upcoming'
+                ? 'Aún no comienza'
+                : dateStatus === 'ended'
+                  ? 'Evento finalizado'
+                  : 'Entrar al evento'}
+              <ChevronRight className="h-4 w-4 transition-transform group-hover/button:translate-x-0.5" />
+            </Button>
+          </div>
+          {!canEnter && (
+            <p className="max-w-52 text-right text-[11px] leading-4 text-muted-foreground">
+              {dateStatus === 'upcoming'
+                ? 'Podrás ingresar el día del evento.'
+                : 'Este evento ya finalizó.'}
+            </p>
+          )}
         </div>
       </CardContent>
     </Card>
@@ -469,7 +605,6 @@ function WorkerEventosPage() {
     totalPages: 1,
   });
   const [loadingHistory, setLoadingHistory] = useState(true);
-  const [selectedEvent, setSelectedEvent] = useState(null);
 
   useEffect(() => {
     getWorkerCurrentEventService().then((res) => {
@@ -492,15 +627,6 @@ function WorkerEventosPage() {
   useEffect(() => {
     fetchHistory(1);
   }, [fetchHistory]);
-
-  const HISTORY_COLUMNS = [
-    'Nombre',
-    'Fecha',
-    'Ubicación',
-    'Asistencia',
-    'Horario',
-    'Rol',
-  ];
 
   return (
     <div className="min-h-[calc(100dvh-3rem)] bg-background px-4 pb-6 pt-4 sm:px-6 sm:pb-8 sm:pt-6 lg:px-8">
@@ -557,101 +683,18 @@ function WorkerEventosPage() {
                   }`}
             </div>
           </CardHeader>
-          <CardContent className="p-0">
+          <CardContent className="p-4 sm:p-5">
             {!loadingHistory && history.length === 0 ? (
               <EmptyState />
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="bg-muted/40">
-                      {HISTORY_COLUMNS.map((col) => (
-                        <th
-                          key={col}
-                          className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide whitespace-nowrap border-b border-border"
-                        >
-                          {col}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {loadingHistory
-                      ? Array.from({ length: PAGE_LIMIT }).map((_, i) => (
-                          <SkeletonRow key={i} />
-                        ))
-                      : history.map((ev) => (
-                          <tr
-                            key={ev.eventId}
-                            onClick={() => setSelectedEvent(ev)}
-                            className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors cursor-pointer"
-                          >
-                            <td className="px-4 py-3.5 whitespace-nowrap">
-                              <span className="font-semibold text-foreground">
-                                {ev.name}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3.5 whitespace-nowrap text-muted-foreground">
-                              <EventDateDisplay event={ev} />
-                            </td>
-                            <td className="px-4 py-3.5 text-muted-foreground">
-                              {ev.location ?? '—'}
-                            </td>
-
-                            {/* Asistencia */}
-                            <td className="px-4 py-3.5 whitespace-nowrap">
-                              {ev.attended === true ? (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold">
-                                  <Check className="w-3 h-3" /> Asistió
-                                </span>
-                              ) : ev.attended === false ? (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-200 text-xs font-semibold">
-                                  <X className="w-3 h-3" /> No asistió
-                                </span>
-                              ) : (
-                                <span className="text-xs text-muted-foreground">
-                                  —
-                                </span>
-                              )}
-                            </td>
-
-                            {/* Horario */}
-                            <td className="px-4 py-3.5 whitespace-nowrap">
-                              <div className="flex flex-col gap-0.5 text-xs">
-                                <span className="text-muted-foreground">
-                                  <span className="font-semibold mr-1">E</span>
-                                  <span
-                                    className={
-                                      ev.entryTime
-                                        ? 'text-foreground font-medium'
-                                        : ''
-                                    }
-                                  >
-                                    {formatTime(ev.entryTime)}
-                                  </span>
-                                </span>
-                                <span className="text-muted-foreground">
-                                  <span className="font-semibold mr-1">S</span>
-                                  <span
-                                    className={
-                                      ev.exitTime
-                                        ? 'text-foreground font-medium'
-                                        : ''
-                                    }
-                                  >
-                                    {formatTime(ev.exitTime)}
-                                  </span>
-                                </span>
-                              </div>
-                            </td>
-
-                            <td className="px-4 py-3.5 whitespace-nowrap">
-                              <RoleBadge role={ev.role} />
-                            </td>
-                          </tr>
-                        ))}
-                  </tbody>
-                </table>
+              <div className="space-y-3">
+                {loadingHistory
+                  ? Array.from({ length: 4 }).map((_, i) => (
+                      <HistoryCardSkeleton key={i} />
+                    ))
+                  : history.map((ev) => (
+                      <WorkerEventHistoryCard key={ev.eventId} event={ev} />
+                    ))}
               </div>
             )}
             {!loadingHistory && pagination.totalPages > 1 && (
@@ -666,11 +709,6 @@ function WorkerEventosPage() {
           </CardContent>
         </Card>
       </div>
-
-      <EventDetailModal
-        event={selectedEvent}
-        onClose={() => setSelectedEvent(null)}
-      />
     </div>
   );
 }
