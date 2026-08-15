@@ -1,6 +1,6 @@
 import {
   ArrowLeft, Calendar, MapPin, Leaf, Recycle, Wind, Trees,
-  FileText, ExternalLink, Users, LayoutGrid, Warehouse, Navigation, ArrowRight,
+  FileText, ExternalLink, Users, LayoutGrid, Warehouse, ArrowRight,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -8,26 +8,9 @@ import { toast } from 'sonner';
 import { getClienteEventoSummaryService } from './services/clienteServices';
 import { MODULES } from '../Eventos/eventModules';
 
-/* Módulos visibles solo en la vista de cliente (no aparecen en el hub de admin). */
-const CLIENT_ONLY_MODULES = [
-  {
-    id: 'map-layout',
-    title: 'Mapa en vivo',
-    description: 'Ubicación en tiempo real de los colaboradores dentro del evento.',
-    icon: Navigation,
-    color: '#0ea5e9',
-    index: '02b',
-  },
-];
-
 const CLIENT_MODULES = (() => {
   const withoutClientes = MODULES.filter((m) => m.id !== 'clientes');
-  const canvasIdx = withoutClientes.findIndex((m) => m.id === 'canvas');
-  return [
-    ...withoutClientes.slice(0, canvasIdx + 1),
-    ...CLIENT_ONLY_MODULES,
-    ...withoutClientes.slice(canvasIdx + 1),
-  ];
+  return withoutClientes;
 })();
 
 /* ─── constants ─── */

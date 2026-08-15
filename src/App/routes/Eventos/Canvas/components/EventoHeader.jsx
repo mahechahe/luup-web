@@ -3,14 +3,16 @@ import { ArrowLeft, Calendar, ClipboardList, MapPin, Save, User } from 'lucide-r
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from './Skeleton';
-import { DATE_TYPE_LABEL, formatDate, IS_ADMIN } from './constants';
+import { DATE_TYPE_LABEL, formatDate } from './constants';
 import { useUserStore } from '@/App/context/userStore';
+import { hasAdminAccess } from '@/App/utils/roles';
 import { EventStatusBadge } from './EventStatusBadge';
 import { ChangeEventStatusModal } from './ChangeEventStatusModal';
 import { EventStatusHistoryModal } from './EventStatusHistoryModal';
 
 export function EventoHeader({ loading, event, onBack, onSave, onBulkAssignment }) {
   const user = useUserStore((state) => state.user);
+  const isAdmin = hasAdminAccess(user?.roleId);
   const fullName =
     [user?.firstName, user?.lastName].filter(Boolean).join(' ') || '—';
 
@@ -111,7 +113,7 @@ export function EventoHeader({ loading, event, onBack, onSave, onBulkAssignment 
         )}
 
         {/* Acciones — solo visibles en desktop */}
-        {!loading && (onBulkAssignment || (IS_ADMIN && onSave)) && (
+        {!loading && (onBulkAssignment || (isAdmin && onSave)) && (
           <div className="hidden sm:flex items-center gap-2 shrink-0">
             {onBulkAssignment && (
               <Button
@@ -123,7 +125,7 @@ export function EventoHeader({ loading, event, onBack, onSave, onBulkAssignment 
                 Asignación masiva
               </Button>
             )}
-            {IS_ADMIN && onSave && (
+            {isAdmin && onSave && (
               <Button
                 onClick={onSave}
                 className="bg-[#DD7419] hover:bg-[#DD7419]/90 text-white flex items-center gap-2"
@@ -156,7 +158,7 @@ export function EventoHeader({ loading, event, onBack, onSave, onBulkAssignment 
       )}
 
       {/* Acciones — debajo de los datos en móvil */}
-      {!loading && (onBulkAssignment || (IS_ADMIN && onSave)) && (
+      {!loading && (onBulkAssignment || (isAdmin && onSave)) && (
         <div className="sm:hidden mt-3 flex flex-col gap-2">
           {onBulkAssignment && (
             <Button
@@ -168,7 +170,7 @@ export function EventoHeader({ loading, event, onBack, onSave, onBulkAssignment 
               Asignación masiva
             </Button>
           )}
-          {IS_ADMIN && onSave && (
+          {isAdmin && onSave && (
             <Button
               onClick={onSave}
               className="w-full bg-[#DD7419] hover:bg-[#DD7419]/90 text-white gap-2"

@@ -289,7 +289,7 @@ export default function CheckinPage() {
 
           <DaySummary day={days.selectedDay} />
 
-          <StationTimings eventId={eventId} date={days.selected} />
+          {/* <StationTimings eventId={eventId} date={days.selected} /> */}
 
           {activeStation === 1 && <Section1 {...stationProps} />}
           {activeStation === 2 && <Section2 {...stationProps} />}

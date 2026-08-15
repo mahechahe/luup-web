@@ -38,6 +38,7 @@ import {
 import { Input } from '@/components/ui/input';
 import {
   Popover,
+  PopoverAnchor,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
@@ -145,16 +146,184 @@ const ZoneOption = ({ zone }) => (
   </span>
 );
 
-const assignmentRow = (assignment) => ({
-  ...assignment,
-  rowId: `assignment-${assignment.assignmentId}`,
-  assignmentId: Number(assignment.assignmentId),
-  userId: Number(assignment.user.userId),
-  zoneId: Number(assignment.zone.zoneId),
-  defaultShiftId: Number(assignment.defaultShiftId),
-  dailyOverrides: assignment.dailyOverrides ?? [],
-  isNew: false,
-});
+const ZoneMultiSelect = ({
+  value = [],
+  zones,
+  onValueChange,
+  className = '',
+}) => {
+  const selectedIds = value.map(Number);
+  const selectedZones = zones.filter((zone) =>
+    selectedIds.includes(Number(zone.zoneId))
+  );
+
+  return (
+    <div className={`min-w-0 space-y-1.5 ${className}`}>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            className="h-9 w-full justify-between gap-2 text-left font-normal"
+          >
+            <span className="min-w-0 truncate">
+              {selectedZones.length === 0
+                ? 'Seleccionar zonas…'
+                : selectedZones.length === 1
+                  ? selectedZones[0].name
+                  : `${selectedZones.length} zonas seleccionadas`}
+            </span>
+            <span className="text-xs text-muted-foreground">▾</span>
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent
+          align="start"
+          className="w-[min(320px,calc(100vw-2rem))] p-1"
+        >
+          <div className="max-h-64 overflow-y-auto">
+            {zones.map((zone) => {
+              const zoneId = Number(zone.zoneId);
+              const selected = selectedIds.includes(zoneId);
+              return (
+                <button
+                  key={zone.zoneId}
+                  type="button"
+                  onClick={() =>
+                    onValueChange(
+                      selected
+                        ? selectedIds.filter((id) => id !== zoneId)
+                        : [...selectedIds, zoneId]
+                    )
+                  }
+                  className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-sm hover:bg-muted"
+                >
+                  <span
+                    className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
+                      selected
+                        ? 'border-primary bg-primary text-primary-foreground'
+                        : 'border-border'
+                    }`}
+                  >
+                    {selected && <Check className="h-3 w-3" />}
+                  </span>
+                  <ZoneOption zone={zone} />
+                </button>
+              );
+            })}
+          </div>
+        </PopoverContent>
+      </Popover>
+      {selectedZones.length > 0 && (
+        <div className="flex flex-wrap gap-x-2.5 gap-y-1 px-1 text-[11px] leading-4 text-muted-foreground">
+          {selectedZones.map((zone) => (
+            <span
+              key={zone.zoneId}
+              className="inline-flex min-w-0 max-w-full items-center gap-1.5"
+              title={zone.name}
+            >
+              <span
+                className="h-2 w-2 shrink-0 rounded-full border border-foreground/20"
+                style={{ backgroundColor: zone.color || '#7493b2' }}
+                aria-hidden="true"
+              />
+              <span className="max-w-[10rem] truncate">{zone.name}</span>
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const ConflictPopover = ({ reasons, label = 'Conflicto' }) => (
+  <Popover>
+    <PopoverTrigger asChild>
+      <button
+        type="button"
+        aria-label={`Ver motivo: ${label}`}
+        className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-1 text-xs font-semibold text-red-700 transition-colors hover:bg-red-100 dark:bg-red-500/10 dark:text-red-300 dark:hover:bg-red-500/20"
+      >
+        <X className="h-3 w-3" />
+        {label}
+        <Info className="h-3 w-3 opacity-70" />
+      </button>
+    </PopoverTrigger>
+    <PopoverContent
+      align="start"
+      sideOffset={8}
+      className="w-[min(360px,calc(100vw-2rem))] overflow-hidden p-0"
+    >
+      <div className="border-b border-border bg-red-50/70 px-3.5 py-3 dark:bg-red-500/10">
+        <div className="flex items-start gap-2.5">
+          <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300">
+            <Info className="h-4 w-4" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-sm font-bold text-foreground">
+              Revisa esta asignación
+            </p>
+            <p className="mt-0.5 text-xs leading-4 text-muted-foreground">
+              Corrige estos puntos antes de guardar.
+            </p>
+          </div>
+        </div>
+      </div>
+      <div className="space-y-2.5 p-3.5">
+        {reasons.map((reason, index) => (
+          <div key={`${reason}-${index}`} className="flex items-start gap-2.5">
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-[11px] font-bold text-foreground">
+              {index + 1}
+            </span>
+            <p className="text-xs leading-5 text-foreground">{reason}</p>
+          </div>
+        ))}
+      </div>
+    </PopoverContent>
+  </Popover>
+);
+
+const assignmentRow = (assignment) => {
+  const assignmentEntries = assignment.assignments?.length
+    ? assignment.assignments
+    : [
+        {
+          assignmentId: assignment.assignmentId,
+          zone: assignment.zone,
+          defaultShiftId: assignment.defaultShiftId,
+          dailyOverrides: assignment.dailyOverrides ?? [],
+        },
+      ];
+  const zones = assignmentEntries.map((entry) => entry.zone);
+
+  return {
+    ...assignment,
+    rowId: `assignment-${assignment.assignmentId}`,
+    assignmentId: Number(assignment.assignmentId),
+    assignmentIds: (
+      assignment.assignmentIds ??
+      assignmentEntries.map((entry) => entry.assignmentId)
+    ).map(Number),
+    assignments: assignmentEntries.map((entry) => ({
+      ...entry,
+      assignmentId: Number(entry.assignmentId),
+      zone: { ...entry.zone, zoneId: Number(entry.zone.zoneId) },
+      defaultShiftId: Number(entry.defaultShiftId),
+      dailyOverrides: entry.dailyOverrides ?? [],
+    })),
+    userId: Number(assignment.user.userId),
+    zones,
+    zoneIds: zones.map((zone) => Number(zone.zoneId)),
+    zoneId: Number(zones[0]?.zoneId ?? 0) || '',
+    defaultShiftId: Number(assignment.defaultShiftId),
+    dailyOverrides: assignment.dailyOverrides ?? [],
+    isNew: false,
+  };
+};
+
+const rowZoneIds = (row) =>
+  (row.zoneIds?.length ? row.zoneIds : row.zoneId ? [row.zoneId] : []).map(
+    Number
+  );
 
 const formatDate = (date) => {
   if (!date) return '';
@@ -219,6 +388,7 @@ export default function AsignacionMasivaPage() {
   const searchInputRef = useRef(null);
   const inlineSearchRefs = useRef({});
   const [inlineSearchRowId, setInlineSearchRowId] = useState(null);
+  const [inlineSearchInstanceId, setInlineSearchInstanceId] = useState(null);
   const [inlineSearchText, setInlineSearchText] = useState('');
   const [inlineCollaborators, setInlineCollaborators] = useState([]);
   const [inlineSearchingCollaborators, setInlineSearchingCollaborators] =
@@ -344,26 +514,78 @@ export default function AsignacionMasivaPage() {
     );
 
   const roleOptionsFor = (row) => {
-    const zone = getZone(row.zoneId);
+    const selectedZones = rowZoneIds(row).map(getZone).filter(Boolean);
     return ROLE_OPTIONS.filter(
       (role) =>
-        role.value !== 'responsable_acopio' || zone?.category === 'acopio'
+        role.value !== 'responsable_acopio' ||
+        (selectedZones.length > 0 &&
+          selectedZones.every((zone) => zone.category === 'acopio'))
     );
   };
 
   const duplicateUserIds = useMemo(() => {
+    const rowsByUser = new Map();
+    rows.forEach((row) => {
+      if (!row.userId) return;
+      const userRows = rowsByUser.get(row.userId) ?? [];
+      userRows.push(row);
+      rowsByUser.set(row.userId, userRows);
+    });
+
+    const conflicts = new Set();
+    rowsByUser.forEach((userRows, userId) => {
+      const nonCoordinatorRows = userRows.filter(
+        (row) => row.role !== 'coordinador'
+      );
+      const coordinatorRows = userRows.filter(
+        (row) => row.role === 'coordinador'
+      );
+
+      const coordinatorZoneIds = coordinatorRows.flatMap((row) =>
+        rowZoneIds(row).map(String)
+      );
+      const hasRepeatedCoordinatorZone =
+        new Set(coordinatorZoneIds).size !== coordinatorZoneIds.length;
+
+      if (
+        nonCoordinatorRows.length > 1 ||
+        (nonCoordinatorRows.length > 0 && coordinatorRows.length > 0) ||
+        coordinatorRows.length > 1 ||
+        hasRepeatedCoordinatorZone
+      ) {
+        conflicts.add(userId);
+      }
+    });
+
+    return conflicts;
+  }, [rows]);
+
+  const duplicateZoneRoleKeys = useMemo(() => {
     const counts = new Map();
     rows.forEach((row) => {
-      if (!row.userId || row.role === 'coordinador') return;
-      counts.set(row.userId, (counts.get(row.userId) ?? 0) + 1);
+      if (row.role !== 'supervisor' && row.role !== 'coordinador') {
+        return;
+      }
+      rowZoneIds(row).forEach((zoneId) => {
+        const key = `${zoneId}:${row.role}`;
+        counts.set(key, (counts.get(key) ?? 0) + 1);
+      });
     });
+
     return new Set(
-      [...counts.entries()].filter(([, count]) => count > 1).map(([id]) => id)
+      [...counts.entries()]
+        .filter(([, count]) => count > 1)
+        .map(([key]) => key)
     );
   }, [rows]);
 
   const rowIsComplete = (row) =>
-    Boolean(row.userId && row.zoneId && row.role && row.defaultShiftId);
+    Boolean(
+      row.userId &&
+        rowZoneIds(row).length > 0 &&
+        row.role &&
+        row.defaultShiftId
+    );
 
   const totalPages = Math.max(1, workspace?.pagination?.totalPages ?? 1);
   const safePage = Math.min(page, totalPages);
@@ -385,12 +607,38 @@ export default function AsignacionMasivaPage() {
       current.map((row) => {
         if (row.rowId !== rowId) return row;
         const next = { ...row, [field]: value };
+
+        if (field === 'zoneId') {
+          next.zoneIds = value ? [Number(value)] : [];
+          next.zoneId = value ? Number(value) : '';
+        }
+        if (field === 'zoneIds') {
+          next.zoneIds = [...new Set(value.map(Number))];
+          next.zoneId = next.zoneIds[0] ?? '';
+        }
+        if (field === 'role' && value !== 'coordinador') {
+          next.zoneIds = rowZoneIds(next).slice(0, 1);
+          next.zoneId = next.zoneIds[0] ?? '';
+        }
+
         if (
-          field === 'zoneId' &&
+          (field === 'zoneId' || field === 'zoneIds' || field === 'role') &&
           next.role === 'responsable_acopio' &&
-          getZone(value)?.category !== 'acopio'
+          !rowZoneIds(next).every(
+            (zoneId) => getZone(zoneId)?.category === 'acopio'
+          )
         ) {
           next.role = 'colaborador';
+          next.zoneIds = rowZoneIds(next).slice(0, 1);
+          next.zoneId = next.zoneIds[0] ?? '';
+        }
+        if (
+          field === 'zoneId' ||
+          field === 'zoneIds' ||
+          field === 'role' ||
+          field === 'defaultShiftId'
+        ) {
+          next.hasMixedSchedule = false;
         }
         return next;
       })
@@ -399,19 +647,20 @@ export default function AsignacionMasivaPage() {
 
   const closeInlineSearch = () => {
     setInlineSearchRowId(null);
+    setInlineSearchInstanceId(null);
     setInlineSearchText('');
     setInlineCollaborators([]);
     setInlineSearchingCollaborators(false);
   };
 
   const assignCollaboratorToRow = (rowId, collaborator) => {
-    if (
-      rows.some(
-        (row) =>
-          row.rowId !== rowId &&
-          Number(row.userId) === Number(collaborator.userId)
-      )
-    ) {
+    const existingUserRows = rows.filter(
+      (row) =>
+        row.rowId !== rowId &&
+        Number(row.userId) === Number(collaborator.userId)
+    );
+
+    if (existingUserRows.length > 0) {
       toast.error('Este colaborador ya está en la tabla.');
       return;
     }
@@ -431,10 +680,14 @@ export default function AsignacionMasivaPage() {
   };
 
   const addCollaborator = (collaborator) => {
-    if (
-      rows.some((row) => Number(row.userId) === Number(collaborator.userId))
-    ) {
-      toast.error('Este colaborador ya está en la tabla.');
+    const existingUserRows = rows.filter(
+      (row) => Number(row.userId) === Number(collaborator.userId)
+    );
+
+    if (existingUserRows.length > 0) {
+      toast.error(
+        'Esta persona ya tiene una fila. Agrega las zonas desde esa misma fila.'
+      );
       return;
     }
 
@@ -454,9 +707,12 @@ export default function AsignacionMasivaPage() {
         userId: collaborator.userId,
         user: collaborator,
         zoneId: '',
+        zoneIds: [],
         role: 'colaborador',
         defaultShiftId: '',
         dailyOverrides: [],
+        assignmentIds: [],
+        assignments: [],
         isNew: true,
       },
       ...current,
@@ -481,13 +737,16 @@ export default function AsignacionMasivaPage() {
     if (!deleteTarget) return;
     setDeleting(true);
     try {
-      const result = await deleteEventAssignmentService(
-        eventId,
-        deleteTarget.assignmentId
-      );
-      if (!result.status) {
-        toast.error(getApiError(result.errors));
-        return;
+      const assignmentIds = deleteTarget.assignmentIds?.length
+        ? deleteTarget.assignmentIds
+        : [deleteTarget.assignmentId];
+
+      for (const assignmentId of assignmentIds) {
+        const result = await deleteEventAssignmentService(eventId, assignmentId);
+        if (!result.status) {
+          toast.error(getApiError(result.errors));
+          return;
+        }
       }
       setDeleteTarget(null);
       await loadWorkspace(workspaceQuery);
@@ -509,19 +768,26 @@ export default function AsignacionMasivaPage() {
       current.map((row) => {
         if (!selectedRows.includes(row.rowId)) return row;
         const next = { ...row };
-        if (bulkZoneId) next.zoneId = Number(bulkZoneId);
+        if (bulkZoneId) {
+          next.zoneIds = [Number(bulkZoneId)];
+          next.zoneId = Number(bulkZoneId);
+        }
         if (bulkShiftId) next.defaultShiftId = Number(bulkShiftId);
         if (
           bulkRole &&
           (bulkRole !== 'responsable_acopio' ||
-            getZone(next.zoneId)?.category === 'acopio')
+            getZone(next.zoneIds?.[0])?.category === 'acopio')
         )
           next.role = bulkRole;
         if (
           next.role === 'responsable_acopio' &&
-          getZone(next.zoneId)?.category !== 'acopio'
+          getZone(next.zoneIds?.[0])?.category !== 'acopio'
         )
           next.role = 'colaborador';
+        if (next.role !== 'coordinador') {
+          next.zoneIds = rowZoneIds(next).slice(0, 1);
+          next.zoneId = next.zoneIds[0] ?? '';
+        }
         return next;
       })
     );
@@ -541,9 +807,13 @@ export default function AsignacionMasivaPage() {
       {
         rowId,
         assignmentId: undefined,
+        assignmentIds: [],
+        assignments: [],
         userId: '',
         user: null,
-        zoneId: Number(row.zoneId),
+        zoneId: Number(rowZoneIds(row)[0]),
+        zoneIds: [...rowZoneIds(row)],
+        zones: row.zones ?? [],
         role: row.role,
         defaultShiftId: Number(row.defaultShiftId),
         dailyOverrides: (row.dailyOverrides ?? []).map((override) => ({
@@ -558,11 +828,15 @@ export default function AsignacionMasivaPage() {
     setSearchText('');
     setCollaborators([]);
     setInlineSearchRowId(rowId);
+    setInlineSearchInstanceId(null);
     setInlineSearchText('');
     setInlineCollaborators([]);
-    window.requestAnimationFrame(() =>
-      inlineSearchRefs.current[rowId]?.focus()
-    );
+    window.requestAnimationFrame(() => {
+      const input = [`desktop-${rowId}`, `mobile-${rowId}`]
+        .map((instanceId) => inlineSearchRefs.current[instanceId])
+        .find((node) => node?.offsetParent !== null);
+      input?.focus();
+    });
     toast.success('Nueva fila creada. Busca un colaborador para asignarlo.');
   };
 
@@ -588,6 +862,7 @@ export default function AsignacionMasivaPage() {
                 shiftId && Number(shiftId) !== Number(row.defaultShiftId)
             )
             .map(([date, shiftId]) => ({ date, shiftId: Number(shiftId) })),
+          hasMixedSchedule: false,
         };
       })
     );
@@ -606,23 +881,78 @@ export default function AsignacionMasivaPage() {
       );
       return;
     }
-    if (duplicateUserIds.size) {
+    if (duplicateUserIds.size || duplicateZoneRoleKeys.size) {
       toast.error(
-        'Hay colaboradores repetidos con una asignación incompatible.'
+        'Hay personas repetidas o más de un supervisor/coordinador en la misma zona.'
       );
       return;
     }
+
+    const mixedScheduleRow = rows.find((row) => row.hasMixedSchedule);
+    if (mixedScheduleRow) {
+      toast.error(
+        'Una fila tiene turnos distintos entre sus zonas. Elige un único turno para toda la fila.'
+      );
+      return;
+    }
+
+    const deletedAssignmentIds = [];
+    const payload = rows.flatMap((row) => {
+      const zoneIds = rowZoneIds(row);
+      const originalAssignments = row.assignments ?? [];
+      const originalByZone = new Map(
+        originalAssignments.map((assignment) => [
+          Number(assignment.zone.zoneId),
+          Number(assignment.assignmentId),
+        ])
+      );
+      const reusableIds = (row.assignmentIds ?? []).map(Number);
+      const usedIds = new Set();
+
+      const rowPayload = zoneIds.map((zoneId) => {
+        let assignmentId = originalByZone.get(Number(zoneId));
+        if (assignmentId && usedIds.has(assignmentId)) assignmentId = undefined;
+        if (!assignmentId) {
+          assignmentId = reusableIds.find((id) => !usedIds.has(id));
+        }
+        if (assignmentId) usedIds.add(assignmentId);
+
+        return {
+          ...(assignmentId ? { assignmentId } : {}),
+          userId: Number(row.userId),
+          zoneId: Number(zoneId),
+          role: row.role,
+          defaultShiftId: Number(row.defaultShiftId),
+          dailyOverrides: row.dailyOverrides ?? [],
+        };
+      });
+
+      (row.assignmentIds ?? []).forEach((assignmentId) => {
+        if (!usedIds.has(Number(assignmentId))) {
+          deletedAssignmentIds.push(Number(assignmentId));
+        }
+      });
+
+      return rowPayload;
+    });
+
     setSaving(true);
-    const payload = rows.map((row) => ({
-      ...(row.assignmentId ? { assignmentId: Number(row.assignmentId) } : {}),
-      userId: Number(row.userId),
-      zoneId: Number(row.zoneId),
-      role: row.role,
-      defaultShiftId: Number(row.defaultShiftId),
-      dailyOverrides: row.dailyOverrides ?? [],
-    }));
     const result = await saveEventAssignmentsService(eventId, payload);
     if (result.status) {
+      for (const assignmentId of deletedAssignmentIds) {
+        const deleteResult = await deleteEventAssignmentService(
+          eventId,
+          assignmentId
+        );
+        if (!deleteResult.status) {
+          toast.error(
+            `Las asignaciones se guardaron, pero no se pudo eliminar una zona: ${getApiError(deleteResult.errors)}`
+          );
+          await loadWorkspace(workspaceQuery);
+          setSaving(false);
+          return;
+        }
+      }
       toast.success('Asignaciones guardadas correctamente.');
       await loadWorkspace(workspaceQuery);
     } else {
@@ -686,7 +1016,7 @@ export default function AsignacionMasivaPage() {
     setRefreshing(false);
   };
 
-  const renderCollaboratorField = (row) => {
+  const renderCollaboratorField = (row, view) => {
     if (row.user) {
       return (
         <div className="flex min-w-0 items-center gap-2.5">
@@ -706,24 +1036,28 @@ export default function AsignacionMasivaPage() {
       );
     }
 
+    const instanceId = `${view}-${row.rowId}`;
+
     return (
       <Popover
-        open={inlineSearchRowId === row.rowId}
+        modal={false}
+        open={inlineSearchInstanceId === instanceId}
         onOpenChange={(open) => {
-          if (!open && inlineSearchRowId === row.rowId) {
+          if (!open && inlineSearchInstanceId === instanceId) {
             closeInlineSearch();
           }
         }}
       >
-        <PopoverTrigger asChild>
+        <PopoverAnchor asChild>
           <div className="relative w-full min-w-0">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-primary" />
             <Input
               ref={(node) => {
+                const inputKey = instanceId;
                 if (node) {
-                  inlineSearchRefs.current[row.rowId] = node;
+                  inlineSearchRefs.current[inputKey] = node;
                 } else {
-                  delete inlineSearchRefs.current[row.rowId];
+                  delete inlineSearchRefs.current[inputKey];
                 }
               }}
               value={
@@ -735,9 +1069,11 @@ export default function AsignacionMasivaPage() {
                   setInlineSearchText('');
                   setInlineCollaborators([]);
                 }
+                setInlineSearchInstanceId(instanceId);
               }}
               onChange={(event) => {
                 setInlineSearchRowId(row.rowId);
+                setInlineSearchInstanceId(instanceId);
                 setInlineSearchText(event.target.value);
               }}
               placeholder="Buscar colaborador…"
@@ -745,10 +1081,12 @@ export default function AsignacionMasivaPage() {
               className="h-9 pl-8 pr-2 text-sm"
             />
           </div>
-        </PopoverTrigger>
+        </PopoverAnchor>
         <PopoverContent
           align="start"
           sideOffset={6}
+          onOpenAutoFocus={(event) => event.preventDefault()}
+          onCloseAutoFocus={(event) => event.preventDefault()}
           className="w-[min(280px,calc(100vw-2rem))] max-w-[calc(100vw-2rem)] overflow-hidden p-1"
         >
           {inlineSearchingCollaborators ? (
@@ -794,17 +1132,94 @@ export default function AsignacionMasivaPage() {
     );
   };
 
-  const renderAssignmentStatus = (row) => {
+  const conflictReasonsFor = (row) => {
+    const reasons = [];
     const duplicate = duplicateUserIds.has(row.userId);
-    const complete = rowIsComplete(row);
+    const duplicateZoneRole =
+      (row.role === 'supervisor' || row.role === 'coordinador') &&
+      rowZoneIds(row).some((zoneId) =>
+        duplicateZoneRoleKeys.has(`${zoneId}:${row.role}`)
+      );
+
+    if (duplicateZoneRole) {
+      const roleLabel =
+        row.role === 'coordinador' ? 'coordinador' : 'supervisor';
+      const conflictingZones = rowZoneIds(row)
+        .filter((zoneId) =>
+          duplicateZoneRoleKeys.has(`${zoneId}:${row.role}`)
+        )
+        .map((zoneId) => getZone(zoneId)?.name)
+        .filter(Boolean);
+      const zoneLabel = conflictingZones.length
+        ? ` ${conflictingZones.join(', ')}`
+        : '';
+      reasons.push(
+        `La zona${conflictingZones.length > 1 ? 's' : ''}${zoneLabel} ya tiene otro ${roleLabel} asignado.`
+      );
+      reasons.push(
+        `Cada zona admite como máximo un ${roleLabel}. Si necesitas cambiarlo, elimina o modifica la otra fila.`
+      );
+    }
 
     if (duplicate) {
-      return (
-        <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-1 text-xs font-semibold text-red-700 dark:bg-red-500/10 dark:text-red-300">
-          <X className="h-3 w-3" />
-          Repetido
-        </span>
+      const userRows = rows.filter(
+        (item) => Number(item.userId) === Number(row.userId)
       );
+      const coordinatorRows = userRows.filter(
+        (item) => item.role === 'coordinador'
+      );
+      const nonCoordinatorRows = userRows.filter(
+        (item) => item.role !== 'coordinador'
+      );
+      const hasRepeatedCoordinatorZone =
+        new Set(
+          coordinatorRows.flatMap((item) => rowZoneIds(item).map(String))
+        ).size !== coordinatorRows.flatMap((item) => rowZoneIds(item)).length;
+
+      if (coordinatorRows.length > 1 || hasRepeatedCoordinatorZone) {
+        reasons.push(
+          'Un coordinador puede cubrir varias zonas, pero debe mantenerse en una sola fila y no repetir la misma zona.'
+        );
+      }
+      if (coordinatorRows.length > 0 && nonCoordinatorRows.length > 0) {
+        reasons.push(
+          'La misma persona no puede combinar el rol de coordinador con otro rol en el mismo evento.'
+        );
+      }
+      if (nonCoordinatorRows.length > 1) {
+        reasons.push(
+          'Una persona que no es coordinador solo puede tener una zona y un rol en el evento.'
+        );
+      }
+    }
+
+    if (row.hasMixedSchedule) {
+      reasons.push(
+        'Las zonas de esta fila tienen turnos predeterminados o cambios diarios diferentes.'
+      );
+      reasons.push(
+        'Elige un único turno y una única configuración diaria para toda la fila.'
+      );
+    }
+
+    return reasons;
+  };
+
+  const renderAssignmentStatus = (row) => {
+    const duplicate = duplicateUserIds.has(row.userId);
+    const duplicateZoneRole =
+      (row.role === 'supervisor' || row.role === 'coordinador') &&
+      rowZoneIds(row).some((zoneId) =>
+        duplicateZoneRoleKeys.has(`${zoneId}:${row.role}`)
+      );
+    const complete = rowIsComplete(row);
+
+    if (duplicate || duplicateZoneRole || row.hasMixedSchedule) {
+      const label =
+        row.hasMixedSchedule && !duplicate && !duplicateZoneRole
+          ? 'Turnos distintos'
+          : 'Conflicto';
+      return <ConflictPopover label={label} reasons={conflictReasonsFor(row)} />;
     }
     if (complete) {
       return (
@@ -1050,7 +1465,7 @@ export default function AsignacionMasivaPage() {
                   <div className="flex items-center gap-2">
                     <UsersRound className="h-5 w-5 text-foreground" />
                     <h2 className="font-bold text-foreground">
-                      Personas y asignaciones
+                      Personas y filas
                     </h2>
                   </div>
                   <p className="mt-1 text-xs text-muted-foreground">
@@ -1167,7 +1582,7 @@ export default function AsignacionMasivaPage() {
                   )}
                   <span className="whitespace-nowrap text-xs text-muted-foreground">
                     {assignmentTotal}{' '}
-                    {assignmentTotal === 1 ? 'asignación' : 'asignaciones'}
+                    {assignmentTotal === 1 ? 'fila' : 'filas'}
                   </span>
                 </div>
               </div>
@@ -1268,7 +1683,7 @@ export default function AsignacionMasivaPage() {
                     <tr className="border-b border-border bg-card text-left text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
                       <th className="w-10 px-4 py-3"></th>
                       <th className="px-3 py-3">Colaborador</th>
-                      <th className="px-3 py-3">Zona</th>
+                      <th className="px-3 py-3">Zonas</th>
                       <th className="px-3 py-3">Rol</th>
                       <th className="px-3 py-3">Turno predeterminado</th>
                       <th className="px-3 py-3">Configuración diaria</th>
@@ -1314,25 +1729,35 @@ export default function AsignacionMasivaPage() {
                               />
                             </td>
                             <td className="max-w-[230px] px-3 py-3">
-                              {renderCollaboratorField(row)}
+                              {renderCollaboratorField(row, 'desktop')}
                             </td>
-                            <td className="w-[185px] px-3 py-3">
-                              <SelectField
-                                value={row.zoneId}
-                                onValueChange={(value) =>
-                                  updateRow(row.rowId, 'zoneId', value)
-                                }
-                                placeholder="Seleccionar…"
-                              >
-                                {(workspace?.zones ?? []).map((zone) => (
-                                  <SelectItem
-                                    key={zone.zoneId}
-                                    value={String(zone.zoneId)}
-                                  >
-                                    <ZoneOption zone={zone} />
-                                  </SelectItem>
-                                ))}
-                              </SelectField>
+                            <td className="w-[210px] px-3 py-3">
+                              {row.role === 'coordinador' ? (
+                                <ZoneMultiSelect
+                                  value={rowZoneIds(row)}
+                                  zones={workspace?.zones ?? []}
+                                  onValueChange={(value) =>
+                                    updateRow(row.rowId, 'zoneIds', value)
+                                  }
+                                />
+                              ) : (
+                                <SelectField
+                                  value={row.zoneId}
+                                  onValueChange={(value) =>
+                                    updateRow(row.rowId, 'zoneId', value)
+                                  }
+                                  placeholder="Seleccionar…"
+                                >
+                                  {(workspace?.zones ?? []).map((zone) => (
+                                    <SelectItem
+                                      key={zone.zoneId}
+                                      value={String(zone.zoneId)}
+                                    >
+                                      <ZoneOption zone={zone} />
+                                    </SelectItem>
+                                  ))}
+                                </SelectField>
+                              )}
                             </td>
                             <td className="w-[165px] px-3 py-3">
                               <SelectField
@@ -1511,30 +1936,41 @@ export default function AsignacionMasivaPage() {
 
                           {!row.user && (
                             <div className="mt-3 rounded-lg border border-dashed border-border bg-muted/30 p-2.5">
-                              {renderCollaboratorField(row)}
+                              {renderCollaboratorField(row, 'mobile')}
                             </div>
                           )}
 
                           <div className="mt-3 grid gap-3 sm:grid-cols-2">
                             <label className="block text-xs font-semibold text-muted-foreground">
-                              Zona
-                              <SelectField
-                                value={row.zoneId}
-                                onValueChange={(value) =>
-                                  updateRow(row.rowId, 'zoneId', value)
-                                }
-                                placeholder="Seleccionar zona…"
-                                className="mt-1.5 w-full"
-                              >
-                                {(workspace?.zones ?? []).map((zone) => (
-                                  <SelectItem
-                                    key={zone.zoneId}
-                                    value={String(zone.zoneId)}
-                                  >
-                                    <ZoneOption zone={zone} />
-                                  </SelectItem>
-                                ))}
-                              </SelectField>
+                              Zonas
+                              {row.role === 'coordinador' ? (
+                                <ZoneMultiSelect
+                                  value={rowZoneIds(row)}
+                                  zones={workspace?.zones ?? []}
+                                  onValueChange={(value) =>
+                                    updateRow(row.rowId, 'zoneIds', value)
+                                  }
+                                  className="mt-1.5"
+                                />
+                              ) : (
+                                <SelectField
+                                  value={row.zoneId}
+                                  onValueChange={(value) =>
+                                    updateRow(row.rowId, 'zoneId', value)
+                                  }
+                                  placeholder="Seleccionar zona…"
+                                  className="mt-1.5 w-full"
+                                >
+                                  {(workspace?.zones ?? []).map((zone) => (
+                                    <SelectItem
+                                      key={zone.zoneId}
+                                      value={String(zone.zoneId)}
+                                    >
+                                      <ZoneOption zone={zone} />
+                                    </SelectItem>
+                                  ))}
+                                </SelectField>
+                              )}
                             </label>
                             <label className="block text-xs font-semibold text-muted-foreground">
                               Rol
@@ -1626,7 +2062,7 @@ export default function AsignacionMasivaPage() {
                   <span className="font-medium text-foreground">
                     {assignmentTotal}
                   </span>{' '}
-                  asignaciones
+                  filas
                 </span>
               <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-end">
                 <SelectField
@@ -1676,8 +2112,9 @@ export default function AsignacionMasivaPage() {
               </div>
               <div className="flex flex-col items-stretch justify-between gap-3 border-t border-border bg-muted/40 px-4 py-3 sm:flex-row sm:items-center">
                 <p className="text-xs text-muted-foreground">
-                  Una persona conserva su zona durante todo el evento. Solo el
-                  turno puede cambiar por fecha.
+                  Un coordinador puede tener varias zonas en la misma fila. El
+                  turno predeterminado y los cambios diarios se aplican a todas
+                  las zonas seleccionadas.
                 </p>
                 <Button
                   onClick={saveAssignments}
