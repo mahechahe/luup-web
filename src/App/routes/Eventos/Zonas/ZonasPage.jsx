@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Layers, PackageOpen, RefreshCw, Search, X } from 'lucide-react';
+import { Layers, PackageOpen, RefreshCw, Search, X, ClipboardList } from 'lucide-react';
 import {
   getEventoDetailService,
   getEventZonesWithStaffService,
@@ -14,7 +14,8 @@ import {
   deleteWasteDistributionService,
 } from '../services/eventServices';
 import { useUserStore } from '@/App/context/userStore';
-import { hasAdminAccess } from '@/App/utils/roles';
+import { hasAdminAccess, isClientUser } from '@/App/utils/roles';
+import { eventBasePath } from '@/App/utils/eventNav';
 import { EventoHeader } from '../Canvas/components/EventoHeader';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -38,9 +39,12 @@ export default function ZonasPage() {
   const { user } = useUserStore();
 
   const isAdmin = hasAdminAccess(user?.roleId);
+  const isClient = isClientUser(user?.roleId);
   const [eventRole, setEventRole] = useState(null);
   const isCoordinator = eventRole === 'coordinator';
   const canTransfer = isAdmin || isCoordinator;
+  // El cliente ve todo (como un admin) pero nunca puede registrar/editar nada.
+  const canEditZone = !isClient;
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -161,7 +165,7 @@ export default function ZonasPage() {
   };
 
   const fetchZones = useCallback(async () => {
-    const res = isAdmin
+    const res = isAdmin || isClient
       ? await getEventZonesWithStaffService(eventId)
       : await getWorkerZonesService(eventId);
     if (res.status) {
@@ -172,18 +176,18 @@ export default function ZonasPage() {
       fetchWasteDistributions(res.zones);
       fetchRequirements(res.zones);
     }
-  }, [eventId, isAdmin, fetchWasteEntries, fetchTruckExits, fetchWasteDistributions, fetchRequirements]);
+  }, [eventId, isAdmin, isClient, fetchWasteEntries, fetchTruckExits, fetchWasteDistributions, fetchRequirements]);
 
   useEffect(() => {
     const fetchAll = async () => {
-      const zonesPromise = isAdmin
+      const zonesPromise = isAdmin || isClient
         ? getEventZonesWithStaffService(eventId)
         : getWorkerZonesService(eventId);
 
       const [eventRes, zonesRes, workerRes] = await Promise.all([
         getEventoDetailService(eventId),
         zonesPromise,
-        getWorkerCurrentEventService(),
+        isClient ? Promise.resolve({ status: false }) : getWorkerCurrentEventService(),
       ]);
 
       if (eventRes.status) setEvent(eventRes.event);
@@ -199,7 +203,7 @@ export default function ZonasPage() {
       setLoading(false);
     };
     fetchAll();
-  }, [eventId, isAdmin, fetchWasteEntries, fetchTruckExits, fetchWasteDistributions, fetchRequirements]);
+  }, [eventId, isAdmin, isClient, fetchWasteEntries, fetchTruckExits, fetchWasteDistributions, fetchRequirements]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -290,7 +294,7 @@ export default function ZonasPage() {
   const acopios = filterZonesBySearch(zones.filter((z) => z.category === 'acopio'));
 
   const handleBack = () => {
-    if (isAdmin) navigate(`/eventos/${eventId}`);
+    if (isAdmin || isClient) navigate(eventBasePath(eventId, user?.roleId));
     else navigate(`/eventos/${eventId}/worker`);
   };
 
@@ -305,16 +309,16 @@ export default function ZonasPage() {
       wasteDistributionLoading={!!wasteDistributionsLoading[zone.id]}
       truckExits={truckExits[zone.id] ?? []}
       truckExitsLoading={!!truckExitsLoading[zone.id]}
-      onAddIncident={(person) => setIncidentTarget(person)}
+      onAddIncident={canEditZone ? (person) => setIncidentTarget(person) : undefined}
       onViewHistory={(person) => setHistoryTarget(person)}
       requirements={requirements[zone.id] ?? []}
       requirementsLoading={!!requirementsLoading[zone.id]}
-      onAddRequirement={() => setRequirementTarget(zone)}
-      onAddWaste={() => setWasteTarget(zone)}
-      onAddWasteDistribution={() => setWasteDistributionTarget({ zone, distribution: null })}
-      onEditWasteDistribution={(distribution) => setWasteDistributionTarget({ zone, distribution })}
-      onDeleteWasteDistribution={(distributionId) => handleDeleteWasteDistribution(zone.id, distributionId)}
-      onAddTruckExit={() => setTruckExitTarget(zone)}
+      onAddRequirement={canEditZone ? () => setRequirementTarget(zone) : undefined}
+      onAddWaste={canEditZone ? () => setWasteTarget(zone) : undefined}
+      onAddWasteDistribution={canEditZone ? () => setWasteDistributionTarget({ zone, distribution: null }) : undefined}
+      onEditWasteDistribution={canEditZone ? (distribution) => setWasteDistributionTarget({ zone, distribution }) : undefined}
+      onDeleteWasteDistribution={canEditZone ? (distributionId) => handleDeleteWasteDistribution(zone.id, distributionId) : undefined}
+      onAddTruckExit={canEditZone ? () => setTruckExitTarget(zone) : undefined}
       onTransfer={canTransfer ? (person, zoneId) => setTransferTarget({ person, zoneId }) : undefined}
     />
   );
@@ -340,7 +344,7 @@ export default function ZonasPage() {
               ) : (
                 <>
                   <h2 className="text-2xl font-extrabold text-white leading-tight">
-                    {isAdmin ? 'Zonas del evento' : 'Mis Zonas'}
+                    {isAdmin || isClient ? 'Zonas del evento' : 'Mis Zonas'}
                   </h2>
                   <p className="text-sm text-white/60 mt-0.5">
                     {zones.length} zona{zones.length !== 1 ? 's' : ''} configurada{zones.length !== 1 ? 's' : ''}
@@ -349,14 +353,25 @@ export default function ZonasPage() {
               )}
             </div>
           </div>
-          <Button
-            onClick={handleRefresh}
-            disabled={loading || refreshing}
-            className="shrink-0 gap-2 h-9 bg-white/10 border border-white/20 text-white hover:bg-white/20 hover:text-white"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
-            Actualizar
-          </Button>
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:min-w-[174px]">
+            {isAdmin && (
+              <Button
+                onClick={() => navigate(`/eventos/${eventId}/zonas/asignacion-masiva`)}
+                className="w-full gap-2 h-9 bg-[#DD7419] text-white hover:bg-[#c96512]"
+              >
+                <ClipboardList className="w-3.5 h-3.5" />
+                Asignación masiva
+              </Button>
+            )}
+            <Button
+              onClick={handleRefresh}
+              disabled={loading || refreshing}
+              className="w-full gap-2 h-9 bg-white/10 border border-white/20 text-white hover:bg-white/20 hover:text-white"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+              Actualizar
+            </Button>
+          </div>
         </div>
 
         {/* Buscador de personal */}

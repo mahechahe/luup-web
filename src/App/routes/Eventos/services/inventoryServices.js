@@ -1,4 +1,5 @@
 import { constants } from '@/App/utils/constants/apiConstants';
+import { getColombiaDateISO } from '@/App/utils/functions/colombiaDate';
 import axios from 'axios';
 
 const { BASE_URL, ENDPOINTS } = constants;
@@ -12,17 +13,13 @@ export const assignInventoryToCollaboratorService = async ({
   eventId,
 }) => {
   try {
-    const today = new Date();
-    const yyyy = today.getFullYear();
-    const mm = String(today.getMonth() + 1).padStart(2, '0');
-    const dd = String(today.getDate()).padStart(2, '0');
     const { data } = await axios.post(`${INVENTORY_URL}/collaborator`, {
       inventoryItemId,
       userId,
       quantity,
       createdBy,
       eventId,
-      dateRegister: `${yyyy}-${mm}-${dd}`,
+      dateRegister: getColombiaDateISO(),
     });
     return { status: true, data: data?.data, errors: null };
   } catch (error) {
@@ -93,17 +90,38 @@ export const getInventoryItemHistoryService = async (collaboratorItemId) => {
   }
 };
 
-export const getInventoryListService = async ({ page = 1, nombre } = {}) => {
+export const getEventInventoryService = async (eventId) => {
   try {
-    const body = { page };
+    const { data } = await axios.get(`${INVENTORY_URL}/event/${eventId}`);
+    return { status: true, items: data?.data ?? [], errors: null };
+  } catch (error) {
+    return {
+      status: false,
+      items: [],
+      errors:
+        error?.response?.data?.message ||
+        'Error al obtener el inventario del evento.',
+    };
+  }
+};
+
+export const listEventInventoryService = async (
+  eventId,
+  { page = 1, limit = 10, nombre } = {}
+) => {
+  try {
+    const body = { page, limit };
     if (nombre) body.nombre = nombre;
-    const { data } = await axios.post(`${INVENTORY_URL}/list`, body);
+    const { data } = await axios.post(
+      `${INVENTORY_URL}/event/${eventId}/list`,
+      body
+    );
     return {
       status: true,
       items: data?.data?.items ?? [],
       pagination: data?.data?.pagination ?? {
         page: 1,
-        limit: 25,
+        limit,
         total: 0,
         totalPages: 1,
       },
@@ -113,9 +131,52 @@ export const getInventoryListService = async ({ page = 1, nombre } = {}) => {
     return {
       status: false,
       items: [],
-      pagination: { page: 1, limit: 25, total: 0, totalPages: 1 },
+      pagination: { page: 1, limit, total: 0, totalPages: 1 },
       errors:
-        error?.response?.data?.message || 'Error al obtener el inventario.',
+        error?.response?.data?.message ||
+        'Error al obtener el inventario del evento.',
+    };
+  }
+};
+
+export const upsertEventInventoryService = async ({
+  eventId,
+  inventoryItemId,
+  cantidadCargada,
+}) => {
+  try {
+    const { data } = await axios.post(`${INVENTORY_URL}/event/${eventId}`, {
+      inventoryItemId,
+      cantidadCargada,
+    });
+    return { status: true, data: data?.data, errors: null };
+  } catch (error) {
+    return {
+      status: false,
+      data: null,
+      errors:
+        error?.response?.data?.message ||
+        'Error al cargar el inventario del evento.',
+    };
+  }
+};
+
+export const deleteEventInventoryService = async ({
+  eventId,
+  inventoryItemId,
+}) => {
+  try {
+    const { data } = await axios.delete(`${INVENTORY_URL}/event/${eventId}`, {
+      data: { inventoryItemId },
+    });
+    return { status: true, data: data?.data, errors: null };
+  } catch (error) {
+    return {
+      status: false,
+      data: null,
+      errors:
+        error?.response?.data?.message ||
+        'Error al quitar el ítem del inventario del evento.',
     };
   }
 };

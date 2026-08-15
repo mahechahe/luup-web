@@ -1,14 +1,19 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
-  AlertTriangle,
+  ArrowLeftRight,
   ChevronDown,
+  CircleCheck,
   ClipboardList,
+  Coffee,
+  History,
   ImageIcon,
   Loader2,
   MapPin,
   RefreshCw,
   User,
+  UserX,
   Users,
+  UtensilsCrossed,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -29,29 +34,113 @@ const CATEGORY_LABELS = {
   acopio: 'Centro de Acopio',
 };
 
+// Mismo lenguaje visual que ya usa el resto de la app para tipos de
+// novedad (ver IncidentBadge.jsx / IncidentFormModal.jsx): cada tipo tiene
+// su propio ícono y color neutro, en vez de tratar toda nota como alerta.
+const INCIDENT_TYPES = {
+  break: {
+    Icon: Coffee,
+    text: 'text-[#7493B2]',
+    bg: 'bg-[#7493B2]/10',
+  },
+  almuerzo: {
+    Icon: UtensilsCrossed,
+    text: 'text-[#DD7419]',
+    bg: 'bg-[#DD7419]/10',
+  },
+  activo: {
+    Icon: CircleCheck,
+    text: 'text-emerald-600 dark:text-emerald-400',
+    bg: 'bg-emerald-500/10',
+  },
+  inactivo: {
+    Icon: UserX,
+    text: 'text-slate-500 dark:text-slate-400',
+    bg: 'bg-slate-500/10',
+  },
+  'traslado de zona': {
+    Icon: ArrowLeftRight,
+    text: 'text-sky-600 dark:text-sky-400',
+    bg: 'bg-sky-500/10',
+  },
+};
+
+const DEFAULT_INCIDENT_TYPE = {
+  Icon: ClipboardList,
+  text: 'text-muted-foreground',
+  bg: 'bg-muted',
+};
+
+function getIncidentMeta(name) {
+  const key = (name ?? '').trim().toLowerCase();
+  return INCIDENT_TYPES[key] ?? DEFAULT_INCIDENT_TYPE;
+}
+
 function IncidentRow({ incident }) {
+  const meta = getIncidentMeta(incident.name);
+  const Icon = meta.Icon;
+  // Los operadores a veces registran varias actualizaciones dentro de una
+  // sola nota, separadas por "•" — se muestran como lista para que se
+  // puedan leer de un vistazo en vez de un bloque de texto corrido.
+  const noteParts = incident.note
+    ? incident.note
+        .split('•')
+        .map((s) => s.trim())
+        .filter(Boolean)
+    : [];
+
   return (
-    <div className="flex items-start gap-2 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg px-2.5 py-2">
-      <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
-      <div className="flex flex-col gap-0.5 min-w-0">
-        <span className="text-[11px] font-semibold text-amber-800 dark:text-amber-300 leading-tight">
-          {incident.name}
-        </span>
-        <span className="text-[10px] text-amber-600 dark:text-amber-400">
-          {incident.time}
-          {incident.note ? ` · ${incident.note}` : ''}
-        </span>
+    <div className="flex gap-2.5 py-2.5">
+      <div
+        className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${meta.bg}`}
+      >
+        <Icon className={`w-3.5 h-3.5 ${meta.text}`} />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline gap-1.5 flex-wrap">
+          <span className={`text-xs font-semibold ${meta.text}`}>
+            {incident.name}
+          </span>
+          <span className="text-[11px] text-muted-foreground">
+            {incident.time}
+          </span>
+        </div>
+        {noteParts.length > 1 ? (
+          <ul className="mt-1 space-y-1">
+            {noteParts.map((part, i) => (
+              <li
+                key={i}
+                className="text-xs text-muted-foreground leading-relaxed pl-3 relative before:content-['–'] before:absolute before:left-0 before:text-muted-foreground/40"
+              >
+                {part}
+              </li>
+            ))}
+          </ul>
+        ) : noteParts.length === 1 ? (
+          <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+            {noteParts[0]}
+          </p>
+        ) : null}
       </div>
     </div>
   );
 }
 
+const VISIBLE_INCIDENTS = 2;
+
 function PersonRow({ user }) {
   const fullName = `${user.firstName} ${user.lastName}`.trim() || user.cedula;
-  const hasIncidents = user.incidents && user.incidents.length > 0;
+  const incidents = user.incidents ?? [];
+  const hasIncidents = incidents.length > 0;
+  const [showAll, setShowAll] = useState(false);
+
+  const visibleIncidents = showAll
+    ? incidents
+    : incidents.slice(0, VISIBLE_INCIDENTS);
+  const remaining = incidents.length - VISIBLE_INCIDENTS;
 
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex flex-col">
       <div className="flex items-center gap-2 min-w-0">
         <User className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
         <span className="text-sm font-medium text-foreground truncate">
@@ -61,17 +150,36 @@ function PersonRow({ user }) {
           {user.cedula}
         </span>
         {hasIncidents && (
-          <span className="ml-auto text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 shrink-0 whitespace-nowrap">
-            {user.incidents.length} novedad{user.incidents.length !== 1 ? 'es' : ''}
+          <span className="ml-auto text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground shrink-0 whitespace-nowrap">
+            {incidents.length} novedad
+            {incidents.length !== 1 ? 'es' : ''}
           </span>
         )}
       </div>
       {hasIncidents && (
-        <div className="pl-5 flex flex-col gap-1">
-          {user.incidents.map((inc) => (
-            <IncidentRow key={inc.id} incident={inc} />
-          ))}
-        </div>
+        <>
+          <div className="mt-1.5 ml-1.5 pl-4 border-l border-border/60 divide-y divide-border/60">
+            {visibleIncidents.map((inc) => (
+              <IncidentRow key={inc.id} incident={inc} />
+            ))}
+          </div>
+          {!showAll && remaining > 0 && (
+            <button
+              onClick={() => setShowAll(true)}
+              className="ml-1.5 pl-4 mt-1 text-left text-[11px] font-semibold text-brand hover:underline"
+            >
+              Ver {remaining} más
+            </button>
+          )}
+          {showAll && incidents.length > VISIBLE_INCIDENTS && (
+            <button
+              onClick={() => setShowAll(false)}
+              className="ml-1.5 pl-4 mt-1 text-left text-[11px] font-semibold text-muted-foreground hover:underline"
+            >
+              Ver menos
+            </button>
+          )}
+        </>
       )}
     </div>
   );
@@ -109,8 +217,9 @@ function RequirementItem({ req, zoneId }) {
     minute: '2-digit',
     hour12: true,
   });
-  const creatorName =
-    `${req.creator?.firstName ?? ''} ${req.creator?.lastName ?? ''}`.trim();
+  const creatorName = `${req.creator?.firstName ?? ''} ${
+    req.creator?.lastName ?? ''
+  }`.trim();
 
   const handleViewPhoto = async () => {
     setImgOpen(true);
@@ -159,7 +268,9 @@ function RequirementItem({ req, zoneId }) {
             {imgLoading ? (
               <div className="flex flex-col items-center gap-3 py-8">
                 <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-                <p className="text-xs text-muted-foreground">Cargando imagen…</p>
+                <p className="text-xs text-muted-foreground">
+                  Cargando imagen…
+                </p>
               </div>
             ) : imgUrl ? (
               <img
@@ -235,15 +346,17 @@ function ZoneCard({ zone, requirements, requirementsLoading }) {
               {allPersonnel.length !== 1 ? 's' : ''}
             </span>
             {totalIncidents > 0 && (
-              <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-medium">
-                <AlertTriangle className="w-3 h-3" />
+              <span className="flex items-center gap-1 text-muted-foreground font-medium">
+                <History className="w-3 h-3" />
                 {totalIncidents} novedad{totalIncidents !== 1 ? 'es' : ''}
               </span>
             )}
           </div>
         </div>
         <ChevronDown
-          className={`w-4 h-4 text-muted-foreground shrink-0 transition-transform ${expanded ? 'rotate-180' : ''}`}
+          className={`w-4 h-4 text-muted-foreground shrink-0 transition-transform ${
+            expanded ? 'rotate-180' : ''
+          }`}
         />
       </button>
 
@@ -405,13 +518,7 @@ export default function ZonasSection({ eventId }) {
               </span>
             </div>
             <div className="flex flex-col items-center gap-0.5 py-4">
-              <span
-                className={`text-2xl font-bold ${
-                  totalIncidents > 0
-                    ? 'text-amber-600 dark:text-amber-400'
-                    : 'text-foreground'
-                }`}
-              >
+              <span className="text-2xl font-bold text-foreground">
                 {totalIncidents}
               </span>
               <span className="text-[11px] font-medium text-muted-foreground">

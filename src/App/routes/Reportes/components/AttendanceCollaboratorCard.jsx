@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Briefcase,
+  CalendarX2,
   CheckCircle2,
   ChevronDown,
   ChevronUp,
@@ -11,7 +12,9 @@ import {
   Package,
   Shirt,
   UtensilsCrossed,
+  XCircle,
 } from 'lucide-react';
+import { formatDateRegisterShort } from '@/App/utils/functions/colombiaDate';
 
 const ROLE_LABELS = {
   supervisor: 'Supervisor',
@@ -21,28 +24,29 @@ const ROLE_LABELS = {
 };
 
 const ROLE_COLORS = {
-  supervisor:
-    'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
+  supervisor: 'bg-brand/10 text-brand dark:bg-brand/15',
   coordinador:
-    'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+    'bg-luup-blue-dark/10 text-luup-blue-dark dark:bg-luup-blue-light/15 dark:text-luup-blue-light',
   colaborador: 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300',
   responsable_acopio:
     'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
 };
 
 const ROLE_ACCENT = {
-  supervisor: 'border-l-violet-500',
-  coordinador: 'border-l-blue-500',
-  colaborador: 'border-l-slate-400',
+  supervisor: 'border-l-brand',
+  coordinador: 'border-l-luup-blue-dark',
+  colaborador: 'border-l-zinc-300 dark:border-l-zinc-600',
+  responsable_acopio: 'border-l-amber-400 dark:border-l-amber-600',
 };
 
-const AVATAR_COLORS = {
-  supervisor:
-    'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400',
+const AVATAR_GRADIENTS = {
+  supervisor: 'bg-gradient-to-br from-chart-1 to-brand text-white',
   coordinador:
-    'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+    'bg-gradient-to-br from-luup-blue-light to-luup-blue-dark text-white',
   colaborador:
-    'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400',
+    'bg-gradient-to-br from-zinc-300 to-zinc-500 dark:from-zinc-600 dark:to-zinc-800 text-white',
+  responsable_acopio:
+    'bg-gradient-to-br from-amber-300 to-amber-600 text-white',
 };
 
 function formatTime(isoString) {
@@ -52,6 +56,16 @@ function formatTime(isoString) {
     minute: '2-digit',
     hour12: true,
   });
+}
+
+/** Un registro cuenta como "actividad real" del día: llegó, o quedó marcado explícitamente como ausente. */
+function hasRealActivity(attendance) {
+  if (!attendance) return false;
+  return (
+    attendance.attended === false ||
+    attendance.attended === true ||
+    !!attendance.entryTime
+  );
 }
 
 function StatusPill({ icon: Icon, label, active }) {
@@ -69,68 +83,123 @@ function StatusPill({ icon: Icon, label, active }) {
   );
 }
 
-function AttendanceBlock({ attendance, index }) {
+function DayBadge({ dayNumber, tone }) {
+  const toneClasses = {
+    emerald: 'bg-emerald-500 text-white',
+    red: 'bg-red-500 text-white',
+    neutral: 'bg-card border border-border text-muted-foreground',
+    empty: 'border border-dashed border-border text-muted-foreground/50',
+  };
+
+  return (
+    <div
+      className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[9px] font-bold ${toneClasses[tone]}`}
+    >
+      {dayNumber ?? ''}
+    </div>
+  );
+}
+
+function NoRecordBlock({ date, dayNumber }) {
+  const dayLabel = formatDateRegisterShort(date);
+
+  return (
+    <div className="p-3 rounded-xl border border-dashed border-border/70 flex items-center gap-2">
+      <DayBadge dayNumber={dayNumber} tone="empty" />
+      {dayLabel && (
+        <span className="text-[11px] font-semibold text-muted-foreground/60 capitalize shrink-0">
+          {dayLabel}
+        </span>
+      )}
+      <span className="text-xs text-muted-foreground/60 italic ml-auto flex items-center gap-1">
+        <CalendarX2 className="w-3 h-3" />
+        Sin registro
+      </span>
+    </div>
+  );
+}
+
+function AttendanceBlock({ attendance, date, dayNumber }) {
   const entryTime = formatTime(attendance.entryTime);
   const exitTime = formatTime(attendance.exitTime);
-  const isActive = !attendance.exitTime;
+  const didNotAttend = attendance.attended === false;
+  const isActive =
+    !didNotAttend && !!attendance.entryTime && !attendance.exitTime;
+  const dayLabel = formatDateRegisterShort(date ?? attendance.dateRegister);
   const snackLabel = attendance.snackDetail
     ? `Snack: ${attendance.snackDetail}`
     : 'Snack';
 
   return (
-    <div className="p-3 rounded-xl bg-muted/50 flex flex-col gap-2">
+    <div
+      className={`p-3 rounded-xl flex flex-col gap-2 ${
+        didNotAttend ? 'bg-red-50/60 dark:bg-red-950/20' : 'bg-muted/50'
+      }`}
+    >
       <div className="flex items-center gap-2">
-        <div
-          className={`w-2 h-2 rounded-full shrink-0 ${
-            isActive ? 'bg-emerald-500' : 'bg-zinc-400'
-          }`}
+        <DayBadge
+          dayNumber={dayNumber}
+          tone={didNotAttend ? 'red' : isActive ? 'emerald' : 'neutral'}
         />
-        <span className="text-[10px] font-semibold text-muted-foreground">
-          #{index + 1}
-        </span>
-        <div className="flex items-center gap-2 text-sm flex-1 min-w-0">
-          <Clock className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-          <span className="font-semibold text-foreground">
-            {entryTime ?? '—'}
+        {dayLabel && (
+          <span className="text-[11px] font-semibold text-muted-foreground capitalize shrink-0">
+            {dayLabel}
           </span>
-          <span className="text-muted-foreground">→</span>
-          {isActive ? (
-            <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-400 px-2 py-0.5 rounded-full">
-              En evento
+        )}
+
+        <div className="flex items-center gap-2 text-sm flex-1 min-w-0 justify-end">
+          {didNotAttend ? (
+            <span className="text-xs font-semibold text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400 px-2 py-0.5 rounded-full">
+              No asistió
             </span>
           ) : (
-            <span className="font-semibold text-foreground">
-              {exitTime ?? '—'}
-            </span>
+            <>
+              <Clock className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+              <span className="font-semibold text-foreground tabular-nums">
+                {entryTime ?? '—'}
+              </span>
+              <span className="text-muted-foreground">→</span>
+              {isActive ? (
+                <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-400 px-2 py-0.5 rounded-full">
+                  En evento
+                </span>
+              ) : (
+                <span className="font-semibold text-foreground tabular-nums">
+                  {exitTime ?? '—'}
+                </span>
+              )}
+            </>
           )}
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-1.5 pl-4">
-        <StatusPill
-          icon={Briefcase}
-          label="Maletín"
-          active={!!attendance.receivedSuitcase}
-        />
-        <StatusPill
-          icon={UtensilsCrossed}
-          label="Almuerzo"
-          active={!!attendance.receivedLunch}
-        />
-        <StatusPill
-          icon={GlassWater}
-          label={snackLabel}
-          active={!!attendance.receivedSnack}
-        />
-        <StatusPill
-          icon={Shirt}
-          label="Uniforme devuelto"
-          active={!!attendance.returnedUniform}
-        />
-      </div>
+      {!didNotAttend && (
+        <div className="flex flex-wrap gap-1.5 pl-7">
+          <StatusPill
+            icon={Briefcase}
+            label="Maletín"
+            active={!!attendance.receivedSuitcase}
+          />
+          <StatusPill
+            icon={UtensilsCrossed}
+            label="Almuerzo"
+            active={!!attendance.receivedLunch}
+          />
+          <StatusPill
+            icon={GlassWater}
+            label={snackLabel}
+            active={!!attendance.receivedSnack}
+          />
+          <StatusPill
+            icon={Shirt}
+            label="Uniforme devuelto"
+            active={!!attendance.returnedUniform}
+          />
+        </div>
+      )}
 
       {attendance.notes && (
-        <p className="text-xs text-muted-foreground italic pl-4 border-l-2 border-border">
+        <p className="text-xs text-muted-foreground italic pl-7 border-l-2 border-border">
           {attendance.notes}
         </p>
       )}
@@ -138,18 +207,60 @@ function AttendanceBlock({ attendance, index }) {
   );
 }
 
-export default function AttendanceCollaboratorCard({ collaborator }) {
+export default function AttendanceCollaboratorCard({
+  collaborator,
+  eventDays = [],
+}) {
   const [expanded, setExpanded] = useState(false);
-  const hasLunch = collaborator.attendances.some((a) => a.receivedLunch);
   const hasUniform = collaborator.attendances.some((a) => a.uniform);
   const uniformSize = collaborator.attendances.find(
     (a) => a.uniformSize
   )?.uniformSize;
   const uniformReturned =
     hasUniform &&
-    collaborator.attendances.filter((a) => a.uniform).every((a) => a.returnedUniform);
+    collaborator.attendances
+      .filter((a) => a.uniform)
+      .every((a) => a.returnedUniform);
   const hasInventory = collaborator.inventoryItems.length > 0;
-  const attendanceCount = collaborator.attendances.length;
+
+  const dayEntries = useMemo(() => {
+    if (eventDays.length === 0) {
+      return collaborator.attendances
+        .filter(hasRealActivity)
+        .map((attendance) => ({
+          key: attendance.id,
+          date: attendance.dateRegister,
+          dayNumber: null,
+          attendance,
+        }));
+    }
+
+    return eventDays.map((day) => {
+      const attendance = collaborator.attendances.find(
+        (a) => a.dateRegister === day.date
+      );
+      return {
+        key: day.date,
+        date: day.date,
+        dayNumber: day.dayNumber,
+        attendance: hasRealActivity(attendance) ? attendance : null,
+      };
+    });
+  }, [eventDays, collaborator.attendances]);
+
+  const attendedDaysCount = dayEntries.filter(
+    (entry) => entry.attendance && entry.attendance.attended !== false
+  ).length;
+  const totalDays = eventDays.length > 0 ? eventDays.length : dayEntries.length;
+  const notAttendedCount =
+    eventDays.length > 0
+      ? totalDays - attendedDaysCount
+      : dayEntries.filter((entry) => entry.attendance?.attended === false)
+          .length;
+  const lunchCount = dayEntries.filter(
+    (entry) => entry.attendance?.receivedLunch
+  ).length;
+
   const initials = `${collaborator.firstName?.[0] ?? ''}${
     collaborator.lastName?.[0] ?? ''
   }`.toUpperCase();
@@ -157,14 +268,14 @@ export default function AttendanceCollaboratorCard({ collaborator }) {
 
   return (
     <div
-      className={`bg-card border border-border border-l-4 ${
+      className={`group bg-card border border-border border-l-4 ${
         ROLE_ACCENT[role] ?? ROLE_ACCENT.colaborador
-      } rounded-2xl overflow-hidden transition-all hover:shadow-md`}
+      } rounded-2xl overflow-hidden transition-all duration-200 hover:shadow-lg hover:shadow-black/5 hover:border-l-[6px]`}
     >
-      <div className="p-4 flex items-start gap-3">
+      <div className="p-4 flex items-start gap-3.5">
         <div
-          className={`w-11 h-11 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 ${
-            AVATAR_COLORS[role] ?? AVATAR_COLORS.colaborador
+          className={`w-12 h-12 rounded-xl flex items-center justify-center text-sm font-extrabold tracking-wide shrink-0 shadow-sm ring-2 ring-card ${
+            AVATAR_GRADIENTS[role] ?? AVATAR_GRADIENTS.colaborador
           }`}
         >
           {initials || '?'}
@@ -173,24 +284,26 @@ export default function AttendanceCollaboratorCard({ collaborator }) {
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <p className="font-semibold text-sm text-foreground leading-tight">
+              <p className="font-bold text-[15px] text-foreground leading-tight tracking-tight capitalize truncate">
                 {collaborator.firstName} {collaborator.lastName}
               </p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                CC {collaborator.cedula}
-              </p>
+              <div className="flex items-center gap-1.5 mt-1">
+                <span
+                  className={`text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-md shrink-0 ${
+                    ROLE_COLORS[role] ?? ROLE_COLORS.colaborador
+                  }`}
+                >
+                  {ROLE_LABELS[role] ?? role}
+                </span>
+                <span className="text-[11px] text-muted-foreground font-medium tabular-nums truncate">
+                  CC {collaborator.cedula}
+                </span>
+              </div>
             </div>
-            <span
-              className={`text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${
-                ROLE_COLORS[role] ?? ROLE_COLORS.colaborador
-              }`}
-            >
-              {ROLE_LABELS[role] ?? role}
-            </span>
           </div>
 
           {collaborator.zones.length > 0 && (
-            <div className="flex items-center gap-1 mt-1.5">
+            <div className="flex items-center gap-1 mt-2">
               <MapPin className="w-3 h-3 text-muted-foreground shrink-0" />
               <p className="text-xs text-muted-foreground truncate">
                 {collaborator.zones.join(' · ')}
@@ -201,31 +314,44 @@ export default function AttendanceCollaboratorCard({ collaborator }) {
           <div className="flex flex-wrap gap-1.5 mt-2.5">
             <span
               className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full ${
-                attendanceCount > 0
+                attendedDaysCount > 0
                   ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400'
                   : 'bg-muted text-muted-foreground'
               }`}
             >
-              {attendanceCount > 0 ? (
+              {attendedDaysCount > 0 ? (
                 <CheckCircle2 className="w-3 h-3" />
               ) : (
                 <Circle className="w-3 h-3" />
               )}
-              {attendanceCount > 0
-                ? `${attendanceCount} registro${attendanceCount > 1 ? 's' : ''}`
-                : 'Sin registro'}
+              {eventDays.length > 0
+                ? `${attendedDaysCount} de ${totalDays} días`
+                : attendedDaysCount > 0
+                  ? `${attendedDaysCount} registro${
+                      attendedDaysCount > 1 ? 's' : ''
+                    }`
+                  : 'Sin registro'}
             </span>
 
-            <span
-              className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full ${
-                hasLunch
-                  ? 'bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400'
-                  : 'bg-muted text-muted-foreground'
-              }`}
-            >
-              <UtensilsCrossed className="w-3 h-3" />
-              {hasLunch ? 'Almuerzo' : 'Sin almuerzo'}
-            </span>
+            {notAttendedCount > 0 && (
+              <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400">
+                <XCircle className="w-3 h-3" />
+                {notAttendedCount} no asistió
+              </span>
+            )}
+
+            {attendedDaysCount > 0 && (
+              <span
+                className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full ${
+                  lunchCount > 0
+                    ? 'bg-brand/10 text-brand dark:bg-brand/15'
+                    : 'bg-muted text-muted-foreground'
+                }`}
+              >
+                <UtensilsCrossed className="w-3 h-3" />
+                Almuerzo {lunchCount}/{attendedDaysCount}
+              </span>
+            )}
 
             {hasUniform && (
               <span
@@ -242,7 +368,7 @@ export default function AttendanceCollaboratorCard({ collaborator }) {
             )}
 
             {hasInventory && (
-              <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400">
+              <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-luup-blue-dark/10 text-luup-blue-dark dark:bg-luup-blue-light/15 dark:text-luup-blue-light">
                 <Package className="w-3 h-3" />
                 {collaborator.inventoryItems.length} ítem
                 {collaborator.inventoryItems.length > 1 ? 's' : ''}
@@ -254,7 +380,11 @@ export default function AttendanceCollaboratorCard({ collaborator }) {
 
       <button
         onClick={() => setExpanded((value) => !value)}
-        className="w-full flex items-center justify-center gap-1.5 py-2 border-t border-border text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+        className={`w-full flex items-center justify-center gap-1.5 py-2 border-t text-xs font-medium transition-colors ${
+          expanded
+            ? 'border-border bg-muted/40 text-foreground'
+            : 'border-border/70 text-muted-foreground hover:text-brand hover:bg-brand/5'
+        }`}
       >
         {expanded ? (
           <>
@@ -270,18 +400,27 @@ export default function AttendanceCollaboratorCard({ collaborator }) {
       {expanded && (
         <div className="border-t border-border px-4 py-4 flex flex-col gap-5 bg-muted/20">
           <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">
               Asistencia
             </p>
-            {attendanceCount > 0 ? (
+            {dayEntries.length > 0 ? (
               <div className="flex flex-col gap-2">
-                {collaborator.attendances.map((attendance, index) => (
-                  <AttendanceBlock
-                    key={attendance.id}
-                    attendance={attendance}
-                    index={index}
-                  />
-                ))}
+                {dayEntries.map((entry) =>
+                  entry.attendance ? (
+                    <AttendanceBlock
+                      key={entry.key}
+                      attendance={entry.attendance}
+                      date={entry.date}
+                      dayNumber={entry.dayNumber}
+                    />
+                  ) : (
+                    <NoRecordBlock
+                      key={entry.key}
+                      date={entry.date}
+                      dayNumber={entry.dayNumber}
+                    />
+                  )
+                )}
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">
@@ -292,14 +431,14 @@ export default function AttendanceCollaboratorCard({ collaborator }) {
 
           {hasInventory && (
             <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">
                 Inventario asignado
               </p>
               <div className="flex flex-col gap-1.5">
                 {collaborator.inventoryItems.map((item) => (
                   <div
                     key={item.id}
-                    className="flex items-center justify-between bg-card rounded-xl px-3 py-2.5"
+                    className="flex items-center justify-between bg-card border border-border/60 rounded-xl px-3 py-2.5"
                   >
                     <span className="text-sm font-medium text-foreground truncate pr-3">
                       {item.itemName}

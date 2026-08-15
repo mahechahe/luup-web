@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { useUserStore } from '@/App/context/userStore';
+import { formatColombiaDateTime } from '@/App/utils/functions/colombiaDate';
 import {
   updateInventoryItemCollaboratorService,
   getInventoryItemHistoryService,
@@ -43,19 +44,14 @@ function QtyControl({ value, max, onChange }) {
   );
 }
 
-function formatDateTime(isoString) {
-  if (!isoString) return '—';
-  return new Date(isoString).toLocaleString('es-CO', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true,
-  });
-}
+const formatDateTime = (isoString) => formatColombiaDateTime(isoString) ?? '—';
 
-export function EditInventoryItemModal({ open, onOpenChange, item, onUpdated }) {
+export function EditInventoryItemModal({
+  open,
+  onOpenChange,
+  item,
+  onUpdated,
+}) {
   const user = useUserStore((s) => s.user);
 
   const [returned, setReturned] = useState(0);
@@ -71,7 +67,8 @@ export function EditInventoryItemModal({ open, onOpenChange, item, onUpdated }) 
   const existingDamaged = item?.damagedQuantity ?? 0;
   const quantity = item?.quantity ?? 0;
   const pending =
-    item?.pendingQuantity ?? quantity - existingReturned - existingUsed - existingDamaged;
+    item?.pendingQuantity ??
+    quantity - existingReturned - existingUsed - existingDamaged;
 
   const delta = returned + used + damaged;
   const newPending = pending - delta;
@@ -138,15 +135,26 @@ export function EditInventoryItemModal({ open, onOpenChange, item, onUpdated }) 
           <div className="grid grid-cols-4 gap-2">
             {[
               { label: 'Asignado', value: quantity, color: 'text-foreground' },
-              { label: 'Devuelto', value: existingReturned, color: 'text-emerald-600' },
-              { label: 'Usado', value: existingUsed, color: 'text-[#234465] dark:text-[#7493B2]' },
+              {
+                label: 'Devuelto',
+                value: existingReturned,
+                color: 'text-emerald-600',
+              },
+              {
+                label: 'Usado',
+                value: existingUsed,
+                color: 'text-[#234465] dark:text-[#7493B2]',
+              },
               {
                 label: 'Pendiente',
                 value: pending,
                 color: pending === 0 ? 'text-emerald-600' : 'text-amber-600',
               },
             ].map(({ label, value, color }) => (
-              <div key={label} className="bg-muted/40 rounded-xl py-2.5 text-center">
+              <div
+                key={label}
+                className="bg-muted/40 rounded-xl py-2.5 text-center"
+              >
                 <p className="text-[9px] text-muted-foreground uppercase tracking-wide leading-none mb-1">
                   {label}
                 </p>
@@ -165,7 +173,11 @@ export function EditInventoryItemModal({ open, onOpenChange, item, onUpdated }) 
                 <p className="text-[11px] text-muted-foreground font-medium text-center">
                   Devuelto
                 </p>
-                <QtyControl value={returned} max={pending} onChange={setReturned} />
+                <QtyControl
+                  value={returned}
+                  max={pending}
+                  onChange={setReturned}
+                />
               </div>
               <div className="space-y-1.5">
                 <p className="text-[11px] text-muted-foreground font-medium text-center">
@@ -177,7 +189,11 @@ export function EditInventoryItemModal({ open, onOpenChange, item, onUpdated }) 
                 <p className="text-[11px] text-destructive font-medium text-center">
                   Dañado
                 </p>
-                <QtyControl value={damaged} max={pending} onChange={setDamaged} />
+                <QtyControl
+                  value={damaged}
+                  max={pending}
+                  onChange={setDamaged}
+                />
               </div>
             </div>
 
@@ -201,10 +217,14 @@ export function EditInventoryItemModal({ open, onOpenChange, item, onUpdated }) 
                 )}
                 <p className="text-[11px] font-semibold">
                   {newPending < 0
-                    ? `Excede el pendiente por ${Math.abs(newPending)} unidad${Math.abs(newPending) !== 1 ? 'es' : ''}`
+                    ? `Excede el pendiente por ${Math.abs(newPending)} unidad${
+                        Math.abs(newPending) !== 1 ? 'es' : ''
+                      }`
                     : newPending === 0
                       ? 'Ítem completado con esta operación'
-                      : `Quedarán ${newPending} unidad${newPending !== 1 ? 'es' : ''} pendiente${newPending !== 1 ? 's' : ''}`}
+                      : `Quedarán ${newPending} unidad${
+                          newPending !== 1 ? 'es' : ''
+                        } pendiente${newPending !== 1 ? 's' : ''}`}
                 </p>
               </div>
             )}
@@ -237,7 +257,8 @@ export function EditInventoryItemModal({ open, onOpenChange, item, onUpdated }) 
                       <div className="flex items-center gap-1.5 min-w-0">
                         <User className="w-3 h-3 text-muted-foreground shrink-0" />
                         <p className="text-[11px] font-semibold text-foreground truncate">
-                          {record.createdBy?.firstName && record.createdBy?.lastName
+                          {record.createdBy?.firstName &&
+                          record.createdBy?.lastName
                             ? `${record.createdBy.firstName} ${record.createdBy.lastName}`
                             : `Usuario #${record.createdBy?.id ?? '—'}`}
                         </p>
@@ -252,17 +273,20 @@ export function EditInventoryItemModal({ open, onOpenChange, item, onUpdated }) 
                     <div className="flex items-center gap-3">
                       {record.returnedQuantity > 0 && (
                         <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded-full">
-                          +{record.returnedQuantity} devuelto{record.returnedQuantity !== 1 ? 's' : ''}
+                          +{record.returnedQuantity} devuelto
+                          {record.returnedQuantity !== 1 ? 's' : ''}
                         </span>
                       )}
                       {record.usedQuantity > 0 && (
                         <span className="text-[10px] font-semibold text-[#234465] dark:text-[#7493B2] bg-[#234465]/10 dark:bg-[#7493B2]/15 px-2 py-0.5 rounded-full">
-                          +{record.usedQuantity} usado{record.usedQuantity !== 1 ? 's' : ''}
+                          +{record.usedQuantity} usado
+                          {record.usedQuantity !== 1 ? 's' : ''}
                         </span>
                       )}
                       {record.damagedQuantity > 0 && (
                         <span className="text-[10px] font-semibold text-destructive bg-destructive/10 px-2 py-0.5 rounded-full">
-                          +{record.damagedQuantity} dañado{record.damagedQuantity !== 1 ? 's' : ''}
+                          +{record.damagedQuantity} dañado
+                          {record.damagedQuantity !== 1 ? 's' : ''}
                         </span>
                       )}
                     </div>
@@ -288,11 +312,7 @@ export function EditInventoryItemModal({ open, onOpenChange, item, onUpdated }) 
             disabled={saving || !isValid}
             className="flex-1 h-11 rounded-xl bg-[#DD7419] hover:bg-[#DD7419]/90 text-white text-sm font-semibold transition flex items-center justify-center gap-2 disabled:opacity-50"
           >
-            {saving ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              'Guardar'
-            )}
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Guardar'}
           </button>
         </div>
       </DialogContent>

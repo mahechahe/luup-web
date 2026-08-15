@@ -1,6 +1,14 @@
 import { useEffect, useState } from 'react';
-import { Star, X, Loader2, CheckCircle2, Calendar, AlertTriangle } from 'lucide-react';
+import {
+  Star,
+  X,
+  Loader2,
+  CheckCircle2,
+  Calendar,
+  AlertTriangle,
+} from 'lucide-react';
 import { toast } from 'sonner';
+import { formatDateRegisterLong } from '@/App/utils/functions/colombiaDate';
 import {
   getRatingCriteriaService,
   getRatingByEventAndUserService,
@@ -74,7 +82,9 @@ export function RatingModal({ open, onClose, eventId, collab, dateRegister }) {
         setNotes(ratingRes.rating.notes ?? '');
       } else {
         const defaultScores = {};
-        criteriaList.forEach((c) => { defaultScores[c.id] = 0; });
+        criteriaList.forEach((c) => {
+          defaultScores[c.id] = 0;
+        });
         setScores(defaultScores);
       }
 
@@ -145,12 +155,7 @@ export function RatingModal({ open, onClose, eventId, collab, dateRegister }) {
                 <span className="text-xs text-muted-foreground">
                   Registro del{' '}
                   <span className="font-semibold text-foreground">
-                    {new Date(`${dateRegister}T12:00:00`).toLocaleDateString('es-CO', {
-                      weekday: 'long',
-                      day: '2-digit',
-                      month: 'long',
-                      year: 'numeric',
-                    })}
+                    {formatDateRegisterLong(dateRegister)}
                   </span>
                 </span>
               </div>
@@ -178,8 +183,12 @@ export function RatingModal({ open, onClose, eventId, collab, dateRegister }) {
                 <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200 dark:bg-amber-900/20 dark:border-amber-800/60">
                   <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                   <p className="text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
-                    Ya existe una calificación para este registro. Si guardas los cambios,{' '}
-                    <span className="font-semibold">se sobrescribirán las calificaciones anteriores</span>.
+                    Ya existe una calificación para este registro. Si guardas
+                    los cambios,{' '}
+                    <span className="font-semibold">
+                      se sobrescribirán las calificaciones anteriores
+                    </span>
+                    .
                   </p>
                 </div>
               )}
@@ -192,7 +201,9 @@ export function RatingModal({ open, onClose, eventId, collab, dateRegister }) {
                 <span className="flex items-center gap-1.5 text-lg font-bold text-amber-500">
                   <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
                   {allScored ? overallAvg : '—'}
-                  <span className="text-xs font-normal text-muted-foreground">/ 5</span>
+                  <span className="text-xs font-normal text-muted-foreground">
+                    / 5
+                  </span>
                 </span>
               </div>
 

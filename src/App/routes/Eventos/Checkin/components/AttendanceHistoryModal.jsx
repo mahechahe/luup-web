@@ -24,42 +24,28 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
+import {
+  COLOMBIA_TZ,
+  formatColombiaTime,
+} from '@/App/utils/functions/colombiaDate';
 import { getAttendanceHistoryService } from '../../services/eventServices';
+import { roleBadgeClass, roleLabel } from '../utils/collaborators';
 
 /* ── Helpers ─────────────────────────────────────────────── */
-function formatTime(iso) {
-  if (!iso) return '—';
-  return new Date(iso).toLocaleTimeString('es-CO', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true,
-  });
-}
+const formatTime = (iso) => formatColombiaTime(iso) ?? '—';
+
+const dateFormatter = new Intl.DateTimeFormat('es-CO', {
+  timeZone: COLOMBIA_TZ,
+  day: '2-digit',
+  month: 'short',
+  year: 'numeric',
+});
 
 function formatDate(iso) {
   if (!iso) return '—';
-  return new Date(iso).toLocaleDateString('es-CO', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
-}
-
-function roleBadgeClass(role) {
-  if (role === 'supervisor')
-    return 'bg-[#234465]/10 text-[#234465] dark:bg-[#234465]/20 dark:text-[#7493B2]';
-  if (role === 'coordinador') return 'bg-[#DD7419]/10 text-[#DD7419]';
-  return 'bg-[#7493B2]/10 text-[#7493B2]';
-}
-
-function roleLabel(role) {
-  return (
-    {
-      supervisor: 'Supervisor',
-      coordinador: 'Coordinador',
-      colaborador: 'Colaborador',
-    }[role] ?? role
-  );
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '—';
+  return dateFormatter.format(date);
 }
 
 function Pill({ icon: Icon, label, active, detail }) {

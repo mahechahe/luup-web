@@ -17,6 +17,7 @@ import { MapZonesSidebar } from './components/MapZonesSidebar';
 import { TrackingPanel } from './modals/TrackingPanel';
 import { useUserStore } from '@/App/context/userStore';
 import { hasAdminAccess } from '@/App/utils/roles';
+import { eventBasePath } from '@/App/utils/eventNav';
 import { getLiveLocationsService } from './services/mapLayoutServices';
 import { MAPBOX_TOKEN } from '@/App/utils/constants/apiConstants';
 
@@ -758,7 +759,7 @@ export default function MapLayoutPage() {
       <EventoHeader
         loading={loading}
         event={event}
-        onBack={() => navigate(`/eventos/${eventId}`)}
+        onBack={() => navigate(eventBasePath(eventId, user?.roleId))}
         onSave={handleSaveZones}
       />
 

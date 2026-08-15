@@ -84,22 +84,24 @@ export function SupervisorCard({ person, zoneColor, incident, onAddIncident, onV
             <TooltipContent side="top">Ver historial de incidencias</TooltipContent>
           </Tooltip>
 
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={onAddIncident}
-                aria-label="Registrar incidencia"
-                className="flex-1 flex flex-col items-center justify-center gap-1 h-12 rounded-xl text-white transition shadow-sm"
-                style={{ backgroundColor: zoneColor }}
-                onMouseEnter={(e) => e.currentTarget.style.opacity = '0.9'}
-                onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span className="text-[10px] font-semibold leading-none">Incidencia</span>
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="top">Registrar nueva incidencia</TooltipContent>
-          </Tooltip>
+          {onAddIncident && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={onAddIncident}
+                  aria-label="Registrar incidencia"
+                  className="flex-1 flex flex-col items-center justify-center gap-1 h-12 rounded-xl text-white transition shadow-sm"
+                  style={{ backgroundColor: zoneColor }}
+                  onMouseEnter={(e) => e.currentTarget.style.opacity = '0.9'}
+                  onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span className="text-[10px] font-semibold leading-none">Incidencia</span>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top">Registrar nueva incidencia</TooltipContent>
+            </Tooltip>
+          )}
         </div>
       </div>
     </div>

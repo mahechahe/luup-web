@@ -1,4 +1,6 @@
 import { useUserStore } from '@/App/context/userStore';
+import { hasAdminAccess } from '@/App/utils/roles';
+import { eventBasePath } from '@/App/utils/eventNav';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -11,8 +13,16 @@ import {
   UserCheck,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { getEventoDetailService } from '../services/eventServices';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import {
+  getEventShiftsService,
+  getEventoDetailService,
+} from '../services/eventServices';
+import { DaySelector } from './components/DaySelector';
+import { DaySummary } from './components/DaySummary';
+import { StationTimings } from './components/StationTimings';
+import { useEventDays } from './hooks/useEventDays';
+import { STAGES } from './utils/stages';
 import { Section1 } from './Sections/Section1';
 import { Section2 } from './Sections/Section2';
 import { Section3 } from './Sections/Section3';
@@ -63,6 +73,7 @@ const STATIONS = [
 
 export default function CheckinPage() {
   const { eventId } = useParams();
+  const location = useLocation();
   const navigate = useNavigate();
   const { user } = useUserStore();
 
@@ -73,6 +84,33 @@ export default function CheckinPage() {
   const [activeStation, setActiveStation] = useState(defaultTab);
   const [loading, setLoading] = useState(true);
   const [event, setEvent] = useState(null);
+  const [shiftOptions, setShiftOptions] = useState([]);
+  const [shiftId, setShiftId] = useState('');
+
+  // Un evento puede durar varias jornadas; el día seleccionado manda sobre las
+  // cuatro estaciones a la vez.
+  const days = useEventDays(eventId);
+  const stationProps = {
+    eventId,
+    dateRegister: days.selectedDateRegister,
+    day: days.selectedDay,
+    isToday: days.isToday,
+    shiftId,
+    shiftOptions,
+    onShiftChange: setShiftId,
+    // Mover gente cambia los contadores del dia; se recargan al vuelo.
+    onStageChanged: days.refresh,
+  };
+
+  // Cuántos esperan en cada fila. El paso dice dónde está cada persona, así que
+  // el conteo por estación es directo (antes era imposible de calcular).
+  const counts = days.selectedDay?.counts ?? {};
+  const waiting = {
+    1: counts[STAGES.ESTACION_1] ?? 0,
+    2: counts[STAGES.ESTACION_2] ?? 0,
+    3: counts[STAGES.ESTACION_3] ?? 0,
+    4: counts[STAGES.ESTACION_4] ?? 0,
+  };
 
   const [error, setError] = useState(null);
 
@@ -84,11 +122,34 @@ export default function CheckinPage() {
         return;
       }
       setEvent(res.event);
+      setLoading(false);
     });
+  }, [eventId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setShiftId('');
+
+    getEventShiftsService(eventId).then((res) => {
+      if (!cancelled) setShiftOptions(res.status ? res.shifts : []);
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [eventId]);
 
   const handleStationChange = (id) => {
     setActiveStation(id);
+  };
+
+  const handleBack = () => {
+    if (location.key !== 'default' && window.history.length > 1) {
+      navigate(-1);
+      return;
+    }
+
+    navigate(eventBasePath(eventId, user?.roleId));
   };
 
   if (!loading && error) {
@@ -102,7 +163,13 @@ export default function CheckinPage() {
             El evento no existe
           </h2>
           <Button
-            onClick={() => navigate('/eventos/listado')}
+            onClick={() =>
+              navigate(
+                hasAdminAccess(user?.roleId)
+                  ? '/eventos/listado'
+                  : '/cliente/eventos'
+              )
+            }
             className="bg-[#DD7419] hover:bg-[#DD7419]/90"
           >
             Ir al listado
@@ -118,7 +185,7 @@ export default function CheckinPage() {
       <header className="sticky top-0 z-30 border-b border-border bg-card px-4 py-3">
         <div className="flex items-center gap-3">
           <button
-            onClick={() => navigate(`/eventos/${eventId}`)}
+            onClick={handleBack}
             className="h-8 w-8 rounded-md border border-border hover:bg-muted flex items-center justify-center transition shrink-0"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -178,6 +245,18 @@ export default function CheckinPage() {
                   <div className="flex items-center gap-1 sm:gap-1.5">
                     <Icon className="w-3 h-3 sm:w-4 sm:h-4 shrink-0" />
                     <span className="text-[11px] sm:text-sm">{label}</span>
+                    {/* Cuántos están esperando en esta fila el día seleccionado */}
+                    {waiting[id] > 0 && (
+                      <span
+                        className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none ${
+                          isActive
+                            ? 'bg-current/15 text-current'
+                            : 'bg-muted text-muted-foreground'
+                        }`}
+                      >
+                        {waiting[id]}
+                      </span>
+                    )}
                     {!accessible && (
                       <Lock className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                     )}
@@ -201,10 +280,21 @@ export default function CheckinPage() {
       {/* ── Contenido ── */}
       <div className="flex-1">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 py-4 space-y-4">
-          {activeStation === 1 && <Section1 eventId={eventId} />}
-          {activeStation === 2 && <Section2 eventId={eventId} />}
-          {activeStation === 3 && <Section3 eventId={eventId} />}
-          {activeStation === 4 && <Section4 eventId={eventId} />}
+          <DaySelector
+            days={days.days}
+            loading={days.loading}
+            selected={days.selected}
+            onSelect={days.setSelected}
+          />
+
+          <DaySummary day={days.selectedDay} />
+
+          <StationTimings eventId={eventId} date={days.selected} />
+
+          {activeStation === 1 && <Section1 {...stationProps} />}
+          {activeStation === 2 && <Section2 {...stationProps} />}
+          {activeStation === 3 && <Section3 {...stationProps} />}
+          {activeStation === 4 && <Section4 {...stationProps} />}
         </div>
       </div>
     </div>

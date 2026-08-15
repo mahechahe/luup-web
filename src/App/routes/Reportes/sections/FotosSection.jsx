@@ -1,11 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  ImageIcon,
-  RefreshCw,
-  Trash2,
-  Truck,
-  X,
-} from 'lucide-react';
+import { ImageIcon, RefreshCw, Trash2, Truck, X } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Dialog,
@@ -31,12 +25,14 @@ const PAGE_SIZE = 20;
 
 const TYPE_STYLES = {
   ingreso: {
-    badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+    badge:
+      'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
     icon: Trash2,
     label: 'Ingreso',
   },
   salida: {
-    badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+    badge:
+      'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
     icon: Truck,
     label: 'Salida',
   },
@@ -97,7 +93,9 @@ function PhotoCard({ photo }) {
     };
 
     fetchUrl();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [photo.id, photo.type, photo.zoneId]);
 
   return (
@@ -113,7 +111,9 @@ function PhotoCard({ photo }) {
           ) : imgError ? (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
               <ImageIcon className="w-6 h-6 text-muted-foreground/40" />
-              <span className="text-[10px] text-muted-foreground/60">No disponible</span>
+              <span className="text-[10px] text-muted-foreground/60">
+                No disponible
+              </span>
             </div>
           ) : (
             <img
@@ -191,20 +191,26 @@ export default function FotosSection({ eventId }) {
 
   const acopioZones = useMemo(() => {
     const map = {};
-    photos.forEach((p) => { map[p.zoneId] = p.zoneName; });
+    photos.forEach((p) => {
+      map[p.zoneId] = p.zoneName;
+    });
     return Object.entries(map).map(([id, name]) => ({ id, name }));
   }, [photos]);
 
   const filteredPhotos = useMemo(() => {
     return photos.filter((p) => {
       if (filters.type !== 'all' && p.type !== filters.type) return false;
-      if (filters.zoneId !== 'all' && String(p.zoneId) !== filters.zoneId) return false;
+      if (filters.zoneId !== 'all' && String(p.zoneId) !== filters.zoneId)
+        return false;
       return true;
     });
   }, [photos, filters]);
 
   const totalPages = Math.max(1, Math.ceil(filteredPhotos.length / PAGE_SIZE));
-  const pagedPhotos = filteredPhotos.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const pagedPhotos = filteredPhotos.slice(
+    (page - 1) * PAGE_SIZE,
+    page * PAGE_SIZE
+  );
 
   const ingresosCount = useMemo(
     () => photos.filter((p) => p.type === 'ingreso').length,
@@ -277,7 +283,12 @@ export default function FotosSection({ eventId }) {
 
       {!loading && photos.length > 0 && (
         <div className="grid grid-cols-3 gap-2">
-          <StatChip icon={ImageIcon} label="Total fotos" value={photos.length} highlight />
+          <StatChip
+            icon={ImageIcon}
+            label="Total fotos"
+            value={photos.length}
+            highlight
+          />
           <StatChip icon={Trash2} label="Ingresos" value={ingresosCount} />
           <StatChip icon={Truck} label="Salidas" value={salidasCount} />
         </div>
@@ -356,14 +367,17 @@ export default function FotosSection({ eventId }) {
         <>
           <div className="flex items-center justify-between">
             <span className="text-xs text-muted-foreground">
-              {filteredPhotos.length} foto{filteredPhotos.length !== 1 ? 's' : ''}
+              {filteredPhotos.length} foto
+              {filteredPhotos.length !== 1 ? 's' : ''}
               {hasActiveFilters && ' (filtradas)'}
             </span>
           </div>
 
           {filteredPhotos.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
-              <p className="text-sm font-medium text-foreground mb-1">Sin resultados</p>
+              <p className="text-sm font-medium text-foreground mb-1">
+                Sin resultados
+              </p>
               <p className="text-xs text-muted-foreground">
                 No hay fotos con los filtros aplicados.
               </p>

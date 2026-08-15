@@ -1,74 +1,21 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import {
-  MapIcon,
-  ListChecks,
-  UserCheck,
-  BarChart2,
-  Users,
-  ArrowRight,
-} from 'lucide-react';
+import { ArrowRight, Boxes, AlertTriangle } from 'lucide-react';
 import { getEventoDetailService } from './services/eventServices';
+import { listEventInventoryService } from './services/inventoryServices';
 import { EventoHeader } from './Canvas/components/EventoHeader';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 import { useUserStore } from '@/App/context/userStore';
 import { hasAdminAccess } from '@/App/utils/roles';
-
-const MODULES = [
-  {
-    id: 'canvas',
-    title: 'Layout',
-    description:
-      'Diseña y gestiona las zonas del evento sobre el plano del recinto. Asigna colaboradores y coordinadores.',
-    icon: MapIcon,
-    color: '#234465',
-    index: '01',
-  },
-  {
-    id: 'zonas',
-    title: 'Zonas',
-    description:
-      'Visualiza y administra todas las zonas en formato lista. Gestiona personal asignado y capacidades.',
-    icon: ListChecks,
-    color: '#DD7419',
-    index: '02',
-  },
-  {
-    id: 'checkin',
-    title: 'Check-in',
-    description:
-      'Controla asistencia y registros de entrada y salida del personal asignado a las zonas.',
-    icon: UserCheck,
-    color: '#7493B2',
-    index: '03',
-  },
-  {
-    id: 'reporte',
-    title: 'Reporte',
-    description:
-      'Consulta asistencias, ingresos de residuos, salidas de camiones y galería fotográfica.',
-    icon: BarChart2,
-    color: '#4f6d44',
-    index: '04',
-    adminOnly: false,
-  },
-  {
-    id: 'clientes',
-    title: 'Clientes',
-    description:
-      'Gestiona accesos de cliente y asigna el tipo de servicio para este evento.',
-    icon: Users,
-    color: '#0f766e',
-    index: '05',
-    adminOnly: true,
-  },
-];
+import { MODULES } from './eventModules';
 
 export default function EventoModulesPage() {
   const { eventId } = useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [event, setEvent] = useState(null);
+  const [inventoryEmpty, setInventoryEmpty] = useState(false);
   const { user } = useUserStore();
   const isAdmin = hasAdminAccess(user?.roleId);
 
@@ -78,6 +25,13 @@ export default function EventoModulesPage() {
       setLoading(false);
     });
   }, [eventId]);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    listEventInventoryService(eventId, { page: 1, limit: 1 }).then((res) => {
+      if (res.status) setInventoryEmpty(res.pagination.total === 0);
+    });
+  }, [eventId, isAdmin]);
 
   const modules = MODULES.filter((m) => !m.adminOnly || isAdmin).map((m) => ({
     ...m,
@@ -96,6 +50,33 @@ export default function EventoModulesPage() {
       />
 
       <div className="flex-1 max-w-5xl mx-auto w-full px-6 py-10">
+        {/* Alerta: inventario aún no cargado */}
+        {!loading && isAdmin && inventoryEmpty && (
+          <div className="relative flex gap-3 overflow-hidden rounded-xl border border-amber-500/25 bg-amber-50 dark:bg-amber-900/15 px-4 py-3.5 text-foreground shadow-sm mb-6 before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-amber-500">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-500/15">
+              <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+            </div>
+            <div className="flex-1 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-semibold">
+                  Este evento no tiene inventario asignado
+                </p>
+                <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+                  Carga los ítems y cantidades disponibles para este evento
+                  antes de asignarlos a los colaboradores en el check-in.
+                </p>
+              </div>
+              <Button
+                size="sm"
+                className="gap-1.5 shrink-0 bg-amber-600 hover:bg-amber-600/90 text-white"
+                onClick={() => navigate(`/eventos/${eventId}/inventario`)}
+              >
+                <Boxes className="w-4 h-4" /> Cargar inventario
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Section heading */}
         <div className="mb-10">
           {loading ? (

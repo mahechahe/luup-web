@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Boxes,
   ChevronLeft,
   ChevronRight,
   Loader2,
-  Package,
   PackageOpen,
   Plus,
   RefreshCw,
@@ -22,9 +22,10 @@ import {
 import { toast } from 'sonner';
 import {
   assignInventoryToCollaboratorService,
-  getInventoryListService,
+  listEventInventoryService,
 } from '../../services/inventoryServices';
 import { useUserStore } from '@/App/context/userStore';
+import { hasAdminAccess } from '@/App/utils/roles';
 
 const formatCurrency = (value) =>
   new Intl.NumberFormat('es-CO', {
@@ -60,6 +61,8 @@ export function InventoryModal({
   const [saving, setSaving] = useState(false);
   const searchRef = useRef(null);
   const currentUser = useUserStore((state) => state.user);
+  const isAdmin = hasAdminAccess(currentUser?.roleId);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (open) {
@@ -89,7 +92,7 @@ export function InventoryModal({
       if (!entry) return prev;
       const newQty = Math.max(
         1,
-        Math.min(entry.item.cantidad, entry.quantity + delta)
+        Math.min(entry.item.disponible, entry.quantity + delta)
       );
       next.set(id, { ...entry, quantity: newQty });
       return next;
@@ -110,7 +113,7 @@ export function InventoryModal({
     let anyError = false;
     for (const [, { item, quantity }] of selectedItems) {
       const res = await assignInventoryToCollaboratorService({
-        inventoryItemId: item.id,
+        inventoryItemId: item.inventoryItemId,
         userId: collab.userId,
         quantity,
         createdBy: currentUser?.userId,
@@ -134,15 +137,16 @@ export function InventoryModal({
 
   const fetchData = (page = currentPage, nombre = search) => {
     setLoading(true);
-    getInventoryListService({ page, nombre: nombre || undefined }).then(
-      (res) => {
-        if (res.status) {
-          setItems(res.items);
-          setPagination(res.pagination);
-        }
-        setLoading(false);
+    listEventInventoryService(eventId, {
+      page,
+      nombre: nombre || undefined,
+    }).then((res) => {
+      if (res.status) {
+        setItems(res.items);
+        setPagination(res.pagination);
       }
-    );
+      setLoading(false);
+    });
   };
 
   useEffect(() => {
@@ -264,7 +268,7 @@ export function InventoryModal({
                   Descripción
                 </th>
                 <th className="text-center font-semibold text-muted-foreground px-3 py-2 w-16">
-                  Stock
+                  Disponible
                 </th>
                 <th className="text-right font-semibold text-muted-foreground px-3 py-2 hidden sm:table-cell w-28">
                   Precio unit.
@@ -303,14 +307,40 @@ export function InventoryModal({
                       <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
                         <PackageOpen className="w-5 h-5 text-muted-foreground" />
                       </div>
-                      <div>
-                        <p className="text-sm font-semibold text-foreground">
-                          Sin resultados
-                        </p>
-                        <p className="text-[11px] text-muted-foreground mt-0.5">
-                          No se encontraron ítems con ese nombre.
-                        </p>
-                      </div>
+                      {search ? (
+                        <div>
+                          <p className="text-sm font-semibold text-foreground">
+                            Sin resultados
+                          </p>
+                          <p className="text-[11px] text-muted-foreground mt-0.5">
+                            No se encontraron ítems con ese nombre en lo cargado
+                            para este evento.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="max-w-xs">
+                          <p className="text-sm font-semibold text-foreground">
+                            Este evento aún no tiene inventario cargado
+                          </p>
+                          <p className="text-[11px] text-muted-foreground mt-0.5">
+                            {isAdmin
+                              ? 'Carga el inventario del evento antes de asignarlo a los colaboradores.'
+                              : 'Pídele a un administrador que cargue el inventario de este evento.'}
+                          </p>
+                          {isAdmin && (
+                            <Button
+                              size="sm"
+                              className="mt-3 h-8 bg-[#DD7419] hover:bg-[#DD7419]/90 text-white gap-1.5"
+                              onClick={() =>
+                                navigate(`/eventos/${eventId}/inventario`)
+                              }
+                            >
+                              <Boxes className="w-3.5 h-3.5" /> Cargar
+                              inventario
+                            </Button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -321,18 +351,14 @@ export function InventoryModal({
                     <tr
                       key={item.id}
                       className={`border-b border-border/50 transition-colors ${
-                        isSelected
-                          ? 'bg-[#DD7419]/5'
-                          : 'hover:bg-muted/30'
+                        isSelected ? 'bg-[#DD7419]/5' : 'hover:bg-muted/30'
                       }`}
                     >
                       <td className="px-3 py-1.5 text-muted-foreground hidden sm:table-cell">
                         {startIdx + idx + 1}
                       </td>
                       <td className="px-3 py-1.5 font-semibold text-foreground">
-                        <p className="break-words">
-                          {item.nombre}
-                        </p>
+                        <p className="break-words">{item.nombre}</p>
                         {item.descripcion && (
                           <p className="text-[10px] text-muted-foreground truncate max-w-[140px] sm:hidden mt-0.5">
                             {item.descripcion}
@@ -344,7 +370,7 @@ export function InventoryModal({
                       </td>
                       <td className="px-3 py-1.5 text-center">
                         <span className="inline-block font-bold text-[#DD7419] bg-[#DD7419]/10 px-2 py-0.5 rounded-full">
-                          {item.cantidad}
+                          {item.disponible}
                         </span>
                       </td>
                       <td className="px-3 py-1.5 text-right text-muted-foreground font-medium hidden sm:table-cell">
@@ -379,7 +405,6 @@ export function InventoryModal({
         {/* Panel de ítems seleccionados */}
         {mode === 'assign' && selectedCount > 0 && (
           <div className="border-t-2 border-[#DD7419] bg-background px-4 pt-3 pb-3 shrink-0">
-
             {/* Cabecera del panel */}
             <div className="flex items-center justify-between mb-2.5">
               <div className="flex items-center gap-1.5">
@@ -387,7 +412,9 @@ export function InventoryModal({
                   {selectedCount}
                 </span>
                 <p className="text-xs font-semibold text-foreground">
-                  {selectedCount === 1 ? 'ítem seleccionado' : 'ítems seleccionados'}
+                  {selectedCount === 1
+                    ? 'ítem seleccionado'
+                    : 'ítems seleccionados'}
                 </p>
               </div>
               <button
@@ -412,7 +439,10 @@ export function InventoryModal({
                       {item.nombre}
                     </p>
                     <p className="text-[10px] text-muted-foreground mt-0.5">
-                      Stock: <span className="font-semibold text-[#DD7419]">{item.cantidad}</span>
+                      Disponible:{' '}
+                      <span className="font-semibold text-[#DD7419]">
+                        {item.disponible}
+                      </span>
                     </p>
                   </div>
 
@@ -430,7 +460,7 @@ export function InventoryModal({
                     </span>
                     <button
                       onClick={() => updateQuantity(item.id, 1)}
-                      disabled={quantity >= item.cantidad}
+                      disabled={quantity >= item.disponible}
                       className="w-7 h-7 flex items-center justify-center text-[#DD7419] font-bold text-base hover:bg-[#DD7419]/10 disabled:opacity-25 disabled:cursor-not-allowed transition"
                     >
                       +

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { AlertTriangle, Loader2, Shirt, X } from 'lucide-react';
+import { Loader2, Shirt, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -15,62 +15,31 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  colombiaTimeToISO,
+  formatDateRegisterLong,
+  getColombiaTimeRounded,
+  isoToColombiaTime,
+} from '@/App/utils/functions/colombiaDate';
 import { upsertAttendanceService } from '../services/eventServices';
 
-const HOURS = Array.from({ length: 24 }, (_, i) =>
-  String(i).padStart(2, '0')
-);
+const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
 const MINUTES = Array.from({ length: 12 }, (_, i) =>
   String(i * 5).padStart(2, '0')
 );
-
-/* "HH:mm" → ISO con fecha de hoy y offset local */
-function timeToISO(timeStr) {
-  if (!timeStr) return null;
-  const [hours, minutes] = timeStr.split(':').map(Number);
-  if (isNaN(hours) || isNaN(minutes)) return null;
-  const date = new Date();
-  date.setHours(hours, minutes, 0, 0);
-  const tz = -date.getTimezoneOffset();
-  const sign = tz >= 0 ? '+' : '-';
-  const hh = String(Math.floor(Math.abs(tz) / 60)).padStart(2, '0');
-  const mm = String(Math.abs(tz) % 60).padStart(2, '0');
-  const pad = (n) => String(n).padStart(2, '0');
-  return (
-    `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
-    `T${pad(date.getHours())}:${pad(date.getMinutes())}:00${sign}${hh}:${mm}`
-  );
-}
-
-/* ISO → "HH:mm" para input[time] */
-function isoToTime(iso) {
-  if (!iso) return '';
-  const date = new Date(iso);
-  if (isNaN(date.getTime())) return '';
-  const pad = (n) => String(n).padStart(2, '0');
-  return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
-
-/* Hora actual redondeada al múltiplo de 5 min más cercano → "HH:mm" */
-function currentTimeRounded() {
-  const now = new Date();
-  const pad = (n) => String(n).padStart(2, '0');
-  const roundedMin = Math.round(now.getMinutes() / 5) * 5;
-  const h = roundedMin === 60 ? (now.getHours() + 1) % 24 : now.getHours();
-  const m = roundedMin === 60 ? 0 : roundedMin;
-  return `${pad(h)}:${pad(m)}`;
-}
 
 const ATTENDED_OPTIONS = [
   {
     value: true,
     label: 'Sí',
-    activeClass: 'bg-emerald-100 border-emerald-400 text-emerald-700 dark:bg-emerald-900/40 dark:border-emerald-600 dark:text-emerald-300',
+    activeClass:
+      'bg-emerald-100 border-emerald-400 text-emerald-700 dark:bg-emerald-900/40 dark:border-emerald-600 dark:text-emerald-300',
   },
   {
     value: false,
     label: 'No',
-    activeClass: 'bg-red-100 border-red-400 text-red-700 dark:bg-red-900/40 dark:border-red-600 dark:text-red-300',
+    activeClass:
+      'bg-red-100 border-red-400 text-red-700 dark:bg-red-900/40 dark:border-red-600 dark:text-red-300',
   },
 ];
 
@@ -100,7 +69,7 @@ export default function AttendanceEditModal({
         collaborator.uniformSize ?? a?.uniformSize ?? '';
       setForm({
         attended: a?.attended ?? null,
-        entryTime: isoToTime(a?.entryTime) || currentTimeRounded(),
+        entryTime: isoToColombiaTime(a?.entryTime) || getColombiaTimeRounded(),
         notes: a?.notes ?? '',
         uniformSize: currentUniformSize,
       });
@@ -110,14 +79,16 @@ export default function AttendanceEditModal({
 
   if (!collaborator) return null;
 
-  const pendingReturn = collaborator.pendingUniformReturn ?? null;
-  const pendingReturnDate = pendingReturn?.exitTime
-    ? new Date(pendingReturn.exitTime).toLocaleDateString('es-CO', {
-        day: '2-digit',
-        month: 'long',
-        year: 'numeric',
-      })
-    : null;
+  // El uniforme es estado del EVENTO: se entrega un dia y se devuelve otro.
+  const holding = collaborator.uniformHolding ?? null;
+  const deliveredToday =
+    collaborator.uniform === true || collaborator.attendance?.uniform === true;
+  const holdingFromPreviousDay = !!holding && !deliveredToday;
+  const holdingDate = formatDateRegisterLong(holding?.deliveredOn);
+  // No tiene sentido entregar uniforme a quien no asistió, ni entregar uno
+  // nuevo a quien ya tiene uno en su poder de un día anterior: generaría dos
+  // uniformes asignados.
+  const canEditUniform = form.attended !== false && !holdingFromPreviousDay;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -132,7 +103,7 @@ export default function AttendanceEditModal({
       eventId: Number(eventId),
       userId: collaborator.userId,
       attended: form.attended,
-      entryTime: timeToISO(form.entryTime) ?? null,
+      entryTime: colombiaTimeToISO(form.entryTime) ?? null,
       notes: form.notes.trim() || null,
       uniform: !!form.uniformSize,
       uniformSize: form.uniformSize || null,
@@ -181,7 +152,16 @@ export default function AttendanceEditModal({
                 <button
                   key={label}
                   type="button"
-                  onClick={() => setForm((f) => ({ ...f, attended: value }))}
+                  onClick={() =>
+                    setForm((f) => ({
+                      ...f,
+                      attended: value,
+                      uniformSize:
+                        value === false && !holdingFromPreviousDay
+                          ? ''
+                          : f.uniformSize,
+                    }))
+                  }
                   className={`flex-1 py-2 rounded-md text-xs font-medium border transition ${
                     form.attended === value
                       ? activeClass
@@ -203,7 +183,9 @@ export default function AttendanceEditModal({
               <Select
                 value={form.entryTime ? form.entryTime.split(':')[0] : ''}
                 onValueChange={(h) => {
-                  const m = form.entryTime ? form.entryTime.split(':')[1] : '00';
+                  const m = form.entryTime
+                    ? form.entryTime.split(':')[1]
+                    : '00';
                   setForm((f) => ({ ...f, entryTime: `${h}:${m ?? '00'}` }));
                 }}
               >
@@ -212,7 +194,9 @@ export default function AttendanceEditModal({
                 </SelectTrigger>
                 <SelectContent>
                   {HOURS.map((h) => (
-                    <SelectItem key={h} value={h}>{h}</SelectItem>
+                    <SelectItem key={h} value={h}>
+                      {h}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -222,7 +206,9 @@ export default function AttendanceEditModal({
               <Select
                 value={form.entryTime ? form.entryTime.split(':')[1] : ''}
                 onValueChange={(m) => {
-                  const h = form.entryTime ? form.entryTime.split(':')[0] : '00';
+                  const h = form.entryTime
+                    ? form.entryTime.split(':')[0]
+                    : '00';
                   setForm((f) => ({ ...f, entryTime: `${h ?? '00'}:${m}` }));
                 }}
               >
@@ -231,7 +217,9 @@ export default function AttendanceEditModal({
                 </SelectTrigger>
                 <SelectContent>
                   {MINUTES.map((m) => (
-                    <SelectItem key={m} value={m}>{m}</SelectItem>
+                    <SelectItem key={m} value={m}>
+                      {m}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -258,36 +246,29 @@ export default function AttendanceEditModal({
           <div className="border-t border-border" />
 
           {/* Uniforme */}
-          <div className={pendingReturn ? 'opacity-60' : undefined}>
+          <div>
             <div className="flex items-center gap-2 mb-2 flex-wrap">
               <Shirt className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
               <span className="text-xs font-medium text-foreground">
                 Uniforme
               </span>
-              {pendingReturn ? (
-                <span className="text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 px-2 py-0.5 rounded-full">
-                  Bloqueado
+              {!canEditUniform ? (
+                <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">
+                  {holdingFromPreviousDay
+                    ? 'Ya tiene uniforme en su poder'
+                    : 'No aplica · no asistió'}
                 </span>
-              ) : (() => {
-                const assignedSize =
-                  collaborator.uniformSize ??
-                  collaborator.attendance?.uniformSize ??
-                  null;
-                const isAssigned =
-                  !!(collaborator.uniform || collaborator.attendance?.uniform) &&
-                  !!assignedSize;
-                return isAssigned ? (
-                  <span className="text-[10px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 px-2 py-0.5 rounded-full flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
-                    Ya asignado · Talla {assignedSize}
-                  </span>
-                ) : (
-                  <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">
-                    Opcional
-                  </span>
-                );
-              })()}
-              {!pendingReturn && form.uniformSize && (
+              ) : holding ? (
+                <span className="text-[10px] font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500 inline-block" />
+                  En su poder · Talla {holding.size ?? '—'}
+                </span>
+              ) : (
+                <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">
+                  Opcional
+                </span>
+              )}
+              {canEditUniform && form.uniformSize && (
                 <button
                   type="button"
                   onClick={() => setForm((f) => ({ ...f, uniformSize: '' }))}
@@ -298,48 +279,56 @@ export default function AttendanceEditModal({
               )}
             </div>
 
-            {pendingReturn && (
-              <div className="flex items-start gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-xl px-3 py-2.5 mb-3">
-                <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+            {holdingFromPreviousDay && (
+              <div className="flex items-start gap-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl px-3 py-2.5 mb-3">
+                <Shirt className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
                 <div className="min-w-0">
-                  <p className="text-xs font-bold text-amber-800 dark:text-amber-300 leading-snug">
-                    No devolvió el uniforme del checkout anterior
+                  <p className="text-xs font-bold text-blue-800 dark:text-blue-300 leading-snug">
+                    Ya tiene uniforme en su poder
                   </p>
-                  <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-0.5">
-                    Talla <span className="font-bold">{pendingReturn.uniformSize}</span>
-                    {pendingReturnDate && (
-                      <> · <span className="capitalize">{pendingReturnDate}</span></>
+                  <p className="text-[11px] text-blue-700 dark:text-blue-400 mt-0.5">
+                    Talla{' '}
+                    <span className="font-bold">{holding.size ?? '—'}</span>
+                    {holdingDate && (
+                      <>
+                        {' '}
+                        · entregado el{' '}
+                        <span className="capitalize">{holdingDate}</span>
+                      </>
                     )}
+                    . No se puede registrar otro mientras lo tenga.
                   </p>
                 </div>
               </div>
             )}
 
-            <div className="grid grid-cols-6 gap-1.5">
-              {SIZES.map((size) => (
-                <button
-                  key={size}
-                  type="button"
-                  disabled={!!pendingReturn}
-                  onClick={() =>
-                    !pendingReturn &&
-                    setForm((f) => ({
-                      ...f,
-                      uniformSize: f.uniformSize === size ? '' : size,
-                    }))
-                  }
-                  className={`h-9 rounded-lg text-xs font-bold transition-all border-2 ${
-                    pendingReturn
-                      ? 'bg-muted border-border text-muted-foreground cursor-not-allowed'
-                      : form.uniformSize === size
-                      ? 'bg-[#DD7419] border-[#DD7419] text-white'
-                      : 'bg-card border-border text-foreground hover:border-[#DD7419]/50'
-                  }`}
-                >
-                  {size}
-                </button>
-              ))}
-            </div>
+            {canEditUniform ? (
+              <div className="grid grid-cols-6 gap-1.5">
+                {SIZES.map((size) => (
+                  <button
+                    key={size}
+                    type="button"
+                    onClick={() =>
+                      setForm((f) => ({
+                        ...f,
+                        uniformSize: f.uniformSize === size ? '' : size,
+                      }))
+                    }
+                    className={`h-9 rounded-lg text-xs font-bold transition-all border-2 ${
+                      form.uniformSize === size
+                        ? 'bg-[#DD7419] border-[#DD7419] text-white'
+                        : 'bg-card border-border text-foreground hover:border-[#DD7419]/50'
+                    }`}
+                  >
+                    {size}
+                  </button>
+                ))}
+              </div>
+            ) : !holdingFromPreviousDay ? (
+              <p className="text-[11px] text-muted-foreground">
+                La persona no asistió, así que no se le entrega uniforme.
+              </p>
+            ) : null}
           </div>
 
           {error && <p className="text-xs text-destructive">{error}</p>}

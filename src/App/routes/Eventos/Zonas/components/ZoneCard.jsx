@@ -461,13 +461,15 @@ export function ZoneCard({
                       </p>
                     </div>
                   </div>
-                  <button
-                    onClick={onAddWaste}
-                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#DD7419] text-white text-xs font-bold hover:bg-[#C96514] hover:-translate-y-0.5 shadow-sm shadow-[#DD7419]/20 transition-all shrink-0"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    Registrar entrada
-                  </button>
+                  {onAddWaste && (
+                    <button
+                      onClick={onAddWaste}
+                      className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#DD7419] text-white text-xs font-bold hover:bg-[#C96514] hover:-translate-y-0.5 shadow-sm shadow-[#DD7419]/20 transition-all shrink-0"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      Registrar entrada
+                    </button>
+                  )}
                 </div>
                 {wasteLoading ? (
                   <div className="grid grid-cols-2 gap-3">
@@ -575,18 +577,20 @@ export function ZoneCard({
                       Distribución de kilogramos
                     </span>
                   </div>
-                  <button
-                    onClick={onAddWasteDistribution}
-                    disabled={
-                      wasteDistributionLoading ||
-                      !wasteDistribution ||
-                      distributionSummary.remainingKg <= 0
-                    }
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#A6520B] text-white text-xs font-semibold hover:bg-[#8E4508] transition disabled:opacity-45 disabled:cursor-not-allowed"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    Agregar categoría
-                  </button>
+                  {onAddWasteDistribution && (
+                    <button
+                      onClick={onAddWasteDistribution}
+                      disabled={
+                        wasteDistributionLoading ||
+                        !wasteDistribution ||
+                        distributionSummary.remainingKg <= 0
+                      }
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#A6520B] text-white text-xs font-semibold hover:bg-[#8E4508] transition disabled:opacity-45 disabled:cursor-not-allowed"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      Agregar categoría
+                    </button>
+                  )}
                 </div>
 
                 {wasteDistributionLoading ? (
@@ -672,22 +676,24 @@ export function ZoneCard({
                             <p className="text-sm font-black tabular-nums text-[#A6520B] shrink-0">
                               {formatKg(distribution.weightKg)} <span className="text-[10px]">kg</span>
                             </p>
-                            <div className="flex items-center gap-0.5 shrink-0">
-                              <button
-                                onClick={() => onEditWasteDistribution(distribution)}
-                                className="w-7 h-7 rounded-md text-muted-foreground hover:text-[#A6520B] hover:bg-[#DD7419]/10 flex items-center justify-center transition"
-                                aria-label={`Editar ${distribution.category}`}
-                              >
-                                <Pencil className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                onClick={() => setDistributionToDelete(distribution)}
-                                className="w-7 h-7 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 flex items-center justify-center transition"
-                                aria-label={`Eliminar ${distribution.category}`}
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
+                            {onEditWasteDistribution && onDeleteWasteDistribution && (
+                              <div className="flex items-center gap-0.5 shrink-0">
+                                <button
+                                  onClick={() => onEditWasteDistribution(distribution)}
+                                  className="w-7 h-7 rounded-md text-muted-foreground hover:text-[#A6520B] hover:bg-[#DD7419]/10 flex items-center justify-center transition"
+                                  aria-label={`Editar ${distribution.category}`}
+                                >
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => setDistributionToDelete(distribution)}
+                                  className="w-7 h-7 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 flex items-center justify-center transition"
+                                  aria-label={`Eliminar ${distribution.category}`}
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -726,13 +732,15 @@ export function ZoneCard({
                       </p>
                     </div>
                   </div>
-                  <button
-                    onClick={onAddTruckExit}
-                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#0891B2] text-white text-xs font-bold hover:bg-[#077C98] hover:-translate-y-0.5 shadow-sm shadow-[#0891B2]/20 transition-all shrink-0"
-                  >
-                    <ArrowUpRight className="w-3.5 h-3.5" />
-                    Registrar salida
-                  </button>
+                  {onAddTruckExit && (
+                    <button
+                      onClick={onAddTruckExit}
+                      className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#0891B2] text-white text-xs font-bold hover:bg-[#077C98] hover:-translate-y-0.5 shadow-sm shadow-[#0891B2]/20 transition-all shrink-0"
+                    >
+                      <ArrowUpRight className="w-3.5 h-3.5" />
+                      Registrar salida
+                    </button>
+                  )}
                 </div>
                 {truckExitsLoading ? (
                   <div className="grid grid-cols-2 gap-3">
@@ -828,6 +836,7 @@ export function ZoneCard({
                       </span>
                     )}
                   </div>
+                  {onAddRequirement && (
                   <button
                     onClick={onAddRequirement}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#234465] text-white text-xs font-semibold hover:bg-[#234465]/85 transition"
@@ -835,6 +844,7 @@ export function ZoneCard({
                     <Plus className="w-3.5 h-3.5" />
                     Agregar
                   </button>
+                  )}
                 </div>
 
                 {requirementsLoading ? (
@@ -875,7 +885,7 @@ export function ZoneCard({
                 <CoordinatorCard
                   person={zone.coordinator}
                   incident={getLatest(zone.coordinator.userId)}
-                  onAddIncident={() => onAddIncident(zone.coordinator)}
+                  onAddIncident={onAddIncident ? () => onAddIncident(zone.coordinator) : undefined}
                   onViewHistory={() => onViewHistory(zone.coordinator)}
                 />
               </div>
@@ -893,7 +903,7 @@ export function ZoneCard({
                   person={zone.supervisor}
                   zoneColor={zone.color}
                   incident={getLatest(zone.supervisor.userId)}
-                  onAddIncident={() => onAddIncident(zone.supervisor)}
+                  onAddIncident={onAddIncident ? () => onAddIncident(zone.supervisor) : undefined}
                   onViewHistory={() => onViewHistory(zone.supervisor)}
                 />
               </div>
@@ -915,7 +925,7 @@ export function ZoneCard({
                         key={r.userId}
                         person={r}
                         incident={getLatest(r.userId)}
-                        onAddIncident={() => onAddIncident(r)}
+                        onAddIncident={onAddIncident ? () => onAddIncident(r) : undefined}
                         onViewHistory={() => onViewHistory(r)}
                       />
                     ))}
@@ -938,7 +948,7 @@ export function ZoneCard({
                       key={c.userId}
                       person={c}
                       incident={getLatest(c.userId)}
-                      onAddIncident={() => onAddIncident(c)}
+                      onAddIncident={onAddIncident ? () => onAddIncident(c) : undefined}
                       onViewHistory={() => onViewHistory(c)}
                       onTransfer={
                         onTransfer ? () => onTransfer(c, zone.id) : undefined

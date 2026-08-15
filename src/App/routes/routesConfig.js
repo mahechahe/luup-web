@@ -53,12 +53,21 @@ export const routesAuth = [
     component: lazy(() => import('./Eventos/MapLayout/MapLayoutPage')),
   },
   {
+    path: 'eventos/:eventId/zonas/asignacion-masiva',
+    adminOnly: true,
+    component: lazy(() => import('./Eventos/Zonas/AsignacionMasivaPage')),
+  },
+  {
     path: 'eventos/:eventId/zonas',
     component: lazy(() => import('./Eventos/Zonas/ZonasPage')),
   },
   {
     path: 'eventos/:eventId/checkin',
     component: lazy(() => import('./Eventos/Checkin/CheckinPage')),
+  },
+  {
+    path: 'eventos/:eventId/inventario',
+    component: lazy(() => import('./Eventos/Inventario/EventoInventarioPage')),
   },
   {
     path: 'eventos/:eventId',
@@ -72,8 +81,8 @@ export const routesAuth = [
   },
   {
     path: 'colaboradores/:collaboratorId',
-    component: lazy(() =>
-      import('./Colaboradores/CollaboratorDetail/CollaboratorDetailPage')
+    component: lazy(
+      () => import('./Colaboradores/CollaboratorDetail/CollaboratorDetailPage')
     ),
   },
 
@@ -114,5 +123,30 @@ export const routesClient = [
   {
     path: 'cliente/eventos/:eventId',
     component: lazy(() => import('./Cliente/ClienteEventoDetailPage')),
+  },
+  // --- Vista de solo lectura de un evento, reutilizando las mismas páginas del admin ---
+  {
+    path: 'cliente/eventos/:eventId/canvas',
+    component: lazy(() => import('./Eventos/Canvas/CanvasPage')),
+  },
+  {
+    path: 'cliente/eventos/:eventId/zonas',
+    component: lazy(() => import('./Eventos/Zonas/ZonasPage')),
+  },
+  {
+    path: 'cliente/eventos/:eventId/checkin',
+    component: lazy(() => import('./Eventos/Checkin/CheckinPage')),
+  },
+  {
+    path: 'cliente/eventos/:eventId/inventario',
+    component: lazy(() => import('./Cliente/ClienteEventoInventarioPage')),
+  },
+  {
+    path: 'cliente/eventos/:eventId/map-layout',
+    component: lazy(() => import('./Eventos/MapLayout/MapLayoutPage')),
+  },
+  {
+    path: 'cliente/eventos/:eventId/reporte',
+    component: lazy(() => import('./Reportes/ReporteEventoPage')),
   },
 ];

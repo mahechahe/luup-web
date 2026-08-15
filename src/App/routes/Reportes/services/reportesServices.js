@@ -3,6 +3,7 @@ import axios from 'axios';
 
 const { BASE_URL, ENDPOINTS } = constants;
 const EVENTS_URL = `${BASE_URL}/${ENDPOINTS.EVENTS}`;
+const INVENTORY_URL = `${BASE_URL}/${ENDPOINTS.INVENTORY}`;
 
 const getFailedZones = (results, zones) =>
   results.flatMap((result, index) => {
@@ -394,6 +395,92 @@ export const getAttendanceReportService = async (body) => {
       errors:
         error?.response?.data?.data?.message ||
         'Error al obtener el reporte de asistencias.',
+    };
+  }
+};
+
+const EMPTY_INVENTORY_TOTALS = {
+  cantidadCargada: 0,
+  asignado: 0,
+  disponible: 0,
+  devuelto: 0,
+  usado: 0,
+  danado: 0,
+  pendiente: 0,
+};
+
+export const getInventoryReportSummaryService = async (eventId) => {
+  try {
+    const { data } = await axios.get(
+      `${INVENTORY_URL}/event/${eventId}/report`
+    );
+    return {
+      status: true,
+      items: data?.data?.items ?? [],
+      totals: data?.data?.totals ?? EMPTY_INVENTORY_TOTALS,
+      errors: null,
+    };
+  } catch (error) {
+    return {
+      status: false,
+      items: [],
+      totals: EMPTY_INVENTORY_TOTALS,
+      errors:
+        error?.response?.data?.message ||
+        'Error al obtener el resumen de inventario.',
+    };
+  }
+};
+
+export const getInventoryReportCollaboratorsService = async (
+  eventId,
+  { page = 1, limit = 10, nombre, itemNombre, status } = {}
+) => {
+  try {
+    const body = { page, limit };
+    if (nombre) body.nombre = nombre;
+    if (itemNombre) body.itemNombre = itemNombre;
+    if (status) body.status = status;
+    const { data } = await axios.post(
+      `${INVENTORY_URL}/event/${eventId}/report/collaborators`,
+      body
+    );
+    return {
+      status: true,
+      items: data?.data?.items ?? [],
+      pagination: data?.data?.pagination ?? {
+        page: 1,
+        limit,
+        total: 0,
+        totalPages: 1,
+      },
+      errors: null,
+    };
+  } catch (error) {
+    return {
+      status: false,
+      items: [],
+      pagination: { page: 1, limit, total: 0, totalPages: 1 },
+      errors:
+        error?.response?.data?.message ||
+        'Error al obtener el detalle de inventario por colaborador.',
+    };
+  }
+};
+
+export const generateInventoryExcelService = async (eventId) => {
+  try {
+    const { data } = await axios.post(
+      `${INVENTORY_URL}/event/${eventId}/report/excel`
+    );
+    return { status: true, url: data?.data?.url ?? null, errors: null };
+  } catch (error) {
+    return {
+      status: false,
+      url: null,
+      errors:
+        error?.response?.data?.message ||
+        'Error al generar el Excel de inventario.',
     };
   }
 };

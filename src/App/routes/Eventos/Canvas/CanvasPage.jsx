@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
   deleteEventZoneService,
   getEventoDetailService,
@@ -10,6 +10,7 @@ import {
 import { generateId } from './components/constants';
 import { useUserStore } from '@/App/context/userStore';
 import { hasAdminAccess } from '@/App/utils/roles';
+import { eventBasePath } from '@/App/utils/eventNav';
 import { DeleteZoneModal } from './components/DeleteZoneModal';
 import { ErrorState } from './components/ErrorState';
 import { EventoHeader } from './components/EventoHeader';
@@ -21,6 +22,7 @@ import { ChevronDown, ChevronUp, X } from 'lucide-react';
 
 function CanvasPage() {
   const { eventId } = useParams();
+  const location = useLocation();
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
   const { user } = useUserStore();
@@ -281,6 +283,15 @@ function CanvasPage() {
   /* Imagen que se muestra en el canvas (preview local o URL del servidor) */
   const displayedPlan = pendingPreview || planImage;
 
+  const handleBack = () => {
+    if (location.key !== 'default' && window.history.length > 1) {
+      navigate(-1);
+      return;
+    }
+
+    navigate(eventBasePath(eventId, user?.roleId));
+  };
+
   /* ── Guardar zonas ───────────────────────────────────── */
   const handleSaveZones = async () => {
     setIsSaving(true);
@@ -352,7 +363,12 @@ function CanvasPage() {
   /* ── Error / not found ───────────────────────────────── */
   if (!loading && (error || !event)) {
     return (
-      <ErrorState error={error} onNavigateBack={() => navigate('/eventos')} />
+      <ErrorState
+        error={error}
+        onNavigateBack={() =>
+          navigate(hasAdminAccess(user?.roleId) ? '/eventos/listado' : '/cliente/eventos')
+        }
+      />
     );
   }
 
@@ -389,8 +405,11 @@ function CanvasPage() {
       <EventoHeader
         loading={loading}
         event={event}
-        onBack={() => navigate(`/eventos/${eventId}`)}
+        onBack={handleBack}
         onSave={handleSaveZones}
+        onBulkAssignment={IS_ADMIN
+          ? () => navigate(`/eventos/${eventId}/zonas/asignacion-masiva`)
+          : undefined}
       />
 
       {/* ── Layout desktop: canvas + sidebar lado a lado ── */}

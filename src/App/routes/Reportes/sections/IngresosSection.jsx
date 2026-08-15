@@ -165,7 +165,8 @@ function WasteLogCard({ log, colorIndex }) {
               {log.quantity != null && (
                 <span className="inline-flex items-center gap-1 text-sm font-semibold text-foreground">
                   <Package2 className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                  {log.quantity} {log.entryType === 'tools'
+                  {log.quantity}{' '}
+                  {log.entryType === 'tools'
                     ? `herramienta${log.quantity !== 1 ? 's' : ''}`
                     : `bolsa${log.quantity !== 1 ? 's' : ''}`}
                 </span>

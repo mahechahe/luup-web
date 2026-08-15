@@ -15,6 +15,11 @@ import {
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { useUserStore } from '@/App/context/userStore';
+import {
+  colombiaTimeToISO,
+  formatDateRegisterLong,
+  getColombiaTime,
+} from '@/App/utils/functions/colombiaDate';
 import { checkoutService } from '../../services/eventServices';
 
 function QtyControl({ value, max, onChange }) {
@@ -37,28 +42,6 @@ function QtyControl({ value, max, onChange }) {
   );
 }
 
-function buildExitIso(timeStr) {
-  const today = new Date();
-  const [h, m] = timeStr.split(':');
-  const d = new Date(
-    today.getFullYear(),
-    today.getMonth(),
-    today.getDate(),
-    +h,
-    +m,
-    0
-  );
-  const offset = -d.getTimezoneOffset();
-  const sign = offset >= 0 ? '+' : '-';
-  const abs = Math.abs(offset);
-  const oh = String(Math.floor(abs / 60)).padStart(2, '0');
-  const om = String(abs % 60).padStart(2, '0');
-  const pad = (n) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(
-    d.getHours()
-  )}:${pad(d.getMinutes())}:00${sign}${oh}:${om}`;
-}
-
 export function CheckoutModal({ open, onOpenChange, collab, onCheckedOut }) {
   const user = useUserStore((state) => state.user);
   const [exitTime, setExitTime] = useState('');
@@ -66,31 +49,46 @@ export function CheckoutModal({ open, onOpenChange, collab, onCheckedOut }) {
   const [itemQtys, setItemQtys] = useState([]);
   const [saving, setSaving] = useState(false);
 
-  const items = (collab?.inventoryItems ?? []).filter((item) => {
-    const pending =
-      item.pendingQuantity ?? item.quantity - (item.returnedQuantity ?? 0) - (item.usedQuantity ?? 0);
-    return pending > 0;
-  });
+  // Lo que sigue sin cuadrar. El inventario es del EVENTO, así que el ítem
+  // arrastra lo ya devuelto en días anteriores y aquí solo se trabaja el saldo.
+  const items = (collab?.inventoryItems ?? [])
+    .map((item) => ({
+      ...item,
+      pending:
+        item.pendingQuantity ??
+        item.quantity -
+          (item.returnedQuantity ?? 0) -
+          (item.usedQuantity ?? 0) -
+          (item.damagedQuantity ?? 0),
+    }))
+    .filter((item) => item.pending > 0);
+
   const attendanceId =
     collab?.attendance?.id ?? collab?.attendance?.attendanceId;
 
+  const holding = collab?.uniformHolding ?? null;
+
+  // Regla de negocio del cliente: no se cierra la jornada sin cuadrar el
+  // inventario pendiente. Se calcula sobre lo PENDIENTE y no sobre el total
+  // asignado: cuando no hay devoluciones previas ambos coinciden, pero si en
+  // la Estación 3 ya se registró una devolución parcial, exigir el total otra
+  // vez hacía que el API rechazara el check-out por exceso.
   const allItemsReady =
     items.length === 0 ||
     itemQtys.every((q, idx) => {
-      const assigned = items[idx]?.quantity ?? 0;
+      const pending = items[idx]?.pending ?? 0;
       return (
-        q.returnedQuantity + q.usedQuantity + q.damagedQuantity === assigned
+        q.returnedQuantity + q.usedQuantity + q.damagedQuantity === pending
       );
     });
 
+  const declaredSomething = itemQtys.some(
+    (q) => q.returnedQuantity + q.usedQuantity + q.damagedQuantity > 0
+  );
+
   useEffect(() => {
     if (!open) return;
-    const now = new Date();
-    setExitTime(
-      `${String(now.getHours()).padStart(2, '0')}:${String(
-        now.getMinutes()
-      ).padStart(2, '0')}`
-    );
+    setExitTime(getColombiaTime());
     setReturnedUniform(null);
     setItemQtys(
       items.map((item) => ({
@@ -102,17 +100,19 @@ export function CheckoutModal({ open, onOpenChange, collab, onCheckedOut }) {
     );
   }, [open, collab]);
 
+  // Autocompleta el resto para que las tres casillas siempre sumen lo pendiente,
+  // que es lo que el check-out exige para cerrar.
   const updateItemQty = (idx, field, value) => {
-    const assigned = items[idx]?.quantity ?? 0;
+    const pending = items[idx]?.pending ?? 0;
     setItemQtys((prev) =>
       prev.map((q, i) => {
         if (i !== idx) return q;
         if (field === 'returnedQuantity') {
-          const used = Math.max(0, assigned - value - q.damagedQuantity);
+          const used = Math.max(0, pending - value - q.damagedQuantity);
           return { ...q, returnedQuantity: value, usedQuantity: used };
         }
         if (field === 'usedQuantity') {
-          const damaged = Math.max(0, assigned - q.returnedQuantity - value);
+          const damaged = Math.max(0, pending - q.returnedQuantity - value);
           return { ...q, usedQuantity: value, damagedQuantity: damaged };
         }
         return { ...q, [field]: value };
@@ -125,7 +125,7 @@ export function CheckoutModal({ open, onOpenChange, collab, onCheckedOut }) {
       toast.error('Ingresa la hora de salida');
       return;
     }
-    if (returnedUniform === null) {
+    if (holding && returnedUniform === null) {
       toast.error('Indica si devolvió el uniforme');
       return;
     }
@@ -133,9 +133,9 @@ export function CheckoutModal({ open, onOpenChange, collab, onCheckedOut }) {
     const res = await checkoutService({
       attendanceId,
       returnedUniform,
-      exitTime: buildExitIso(exitTime),
+      exitTime: colombiaTimeToISO(exitTime),
       createdBy: user?.userId,
-      items: items.length > 0 ? itemQtys : undefined,
+      items: declaredSomething ? itemQtys : undefined,
     });
     if (res.status) {
       toast.success('Check-out registrado exitosamente');
@@ -173,68 +173,99 @@ export function CheckoutModal({ open, onOpenChange, collab, onCheckedOut }) {
             />
           </div>
 
-          {/* Devolvió uniforme */}
-          <div className="space-y-2">
-            <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-              <Shirt className="w-3.5 h-3.5" />
-              ¿Devolvió el uniforme?
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                onClick={() => setReturnedUniform(true)}
-                className={`h-11 rounded-xl font-semibold text-sm border-2 transition-all ${
-                  returnedUniform === true
-                    ? 'bg-emerald-500 border-emerald-500 text-white'
-                    : 'bg-card border-border text-muted-foreground hover:bg-muted'
-                }`}
-              >
-                Sí
-              </button>
-              <button
-                onClick={() => setReturnedUniform(false)}
-                className={`h-11 rounded-xl font-semibold text-sm border-2 transition-all ${
-                  returnedUniform === false
-                    ? 'bg-red-500 border-red-500 text-white'
-                    : 'bg-card border-border text-muted-foreground hover:bg-muted'
-                }`}
-              >
-                No
-              </button>
+          {/* Uniforme — solo si tiene uno en su poder */}
+          {holding && (
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <Shirt className="w-3.5 h-3.5" />
+                ¿Devuelve el uniforme hoy?
+              </p>
+              <p className="text-[11px] text-muted-foreground -mt-1">
+                Talla{' '}
+                <span className="font-semibold">{holding.size ?? '—'}</span>
+                {holding.deliveredOn && (
+                  <>
+                    {' '}
+                    · entregado el{' '}
+                    <span className="capitalize">
+                      {formatDateRegisterLong(holding.deliveredOn)}
+                    </span>
+                  </>
+                )}
+                . Puede conservarlo y devolverlo otro día.
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => setReturnedUniform(true)}
+                  className={`h-11 rounded-xl font-semibold text-sm border-2 transition-all ${
+                    returnedUniform === true
+                      ? 'bg-emerald-500 border-emerald-500 text-white'
+                      : 'bg-card border-border text-muted-foreground hover:bg-muted'
+                  }`}
+                >
+                  Sí, lo devuelve
+                </button>
+                <button
+                  onClick={() => setReturnedUniform(false)}
+                  className={`h-11 rounded-xl font-semibold text-sm border-2 transition-all ${
+                    returnedUniform === false
+                      ? 'bg-[#234465] border-[#234465] text-white'
+                      : 'bg-card border-border text-muted-foreground hover:bg-muted'
+                  }`}
+                >
+                  Se lo lleva
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Inventario */}
+          {/* Inventario — devolucion opcional, sobre lo pendiente */}
           {items.length > 0 && (
             <div className="space-y-3">
-              <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                <Package className="w-3.5 h-3.5" />
-                Inventario asignado
-              </p>
+              <div>
+                <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                  <Package className="w-3.5 h-3.5" />
+                  Inventario pendiente
+                </p>
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  Distribuye lo pendiente entre devuelto, usado y dañado. El
+                  check-out no se cierra hasta cuadrarlo.
+                </p>
+              </div>
+
               {items.map((item, idx) => {
                 const q = itemQtys[idx] ?? {
                   returnedQuantity: 0,
                   usedQuantity: 0,
                   damagedQuantity: 0,
                 };
-                const total =
+                const declared =
                   q.returnedQuantity + q.usedQuantity + q.damagedQuantity;
-                const pending = item.quantity - total;
-                const ready = total === item.quantity;
+                const excess = declared - item.pending;
                 return (
                   <div
                     key={item.id}
                     className={`rounded-xl border p-3 space-y-3 transition-colors ${
-                      ready
-                        ? 'border-emerald-500/40 bg-emerald-500/5'
-                        : 'border-border'
+                      excess > 0
+                        ? 'border-destructive/50 bg-destructive/5'
+                        : declared > 0
+                          ? 'border-emerald-500/40 bg-emerald-500/5'
+                          : 'border-border'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <p className="text-sm font-semibold text-foreground">
-                        {item.itemName}
-                      </p>
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-foreground">
+                          {item.itemName}
+                        </p>
+                        {item.dateRegister && (
+                          <p className="text-[10px] text-muted-foreground mt-0.5">
+                            Entregado el {item.dateRegister}
+                          </p>
+                        )}
+                      </div>
                       <span className="text-xs font-bold text-[#234465] dark:text-[#7493B2] shrink-0 bg-[#234465]/10 dark:bg-[#7493B2]/15 px-2.5 py-1 rounded-lg">
-                        Asignado: {item.quantity}
+                        Pendiente: {item.pending}
                       </span>
                     </div>
                     <div className="grid grid-cols-3 gap-2">
@@ -244,7 +275,7 @@ export function CheckoutModal({ open, onOpenChange, collab, onCheckedOut }) {
                         </p>
                         <QtyControl
                           value={q.returnedQuantity}
-                          max={item.quantity}
+                          max={item.pending}
                           onChange={(v) =>
                             updateItemQty(idx, 'returnedQuantity', v)
                           }
@@ -256,7 +287,7 @@ export function CheckoutModal({ open, onOpenChange, collab, onCheckedOut }) {
                         </p>
                         <QtyControl
                           value={q.usedQuantity}
-                          max={item.quantity}
+                          max={item.pending}
                           onChange={(v) =>
                             updateItemQty(idx, 'usedQuantity', v)
                           }
@@ -268,7 +299,7 @@ export function CheckoutModal({ open, onOpenChange, collab, onCheckedOut }) {
                         </p>
                         <QtyControl
                           value={q.damagedQuantity}
-                          max={item.quantity}
+                          max={item.pending}
                           onChange={(v) =>
                             updateItemQty(idx, 'damagedQuantity', v)
                           }
@@ -276,25 +307,28 @@ export function CheckoutModal({ open, onOpenChange, collab, onCheckedOut }) {
                       </div>
                     </div>
 
-                    {/* Estado del ítem */}
-                    {ready ? (
+                    {excess > 0 ? (
+                      <div className="flex items-center gap-1.5 text-destructive">
+                        <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                        <p className="text-[11px] font-semibold">
+                          Excede lo pendiente por {excess} unidad
+                          {excess > 1 ? 'es' : ''}
+                        </p>
+                      </div>
+                    ) : declared === item.pending ? (
                       <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
                         <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
                         <p className="text-[11px] font-semibold">
-                          Inventario listo para checkout
+                          Queda saldado
                         </p>
                       </div>
                     ) : (
                       <div className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
                         <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                         <p className="text-[11px] font-semibold">
-                          {pending > 0
-                            ? `Faltan ${pending} unidad${
-                                pending > 1 ? 'es' : ''
-                              } por distribuir`
-                            : `Excede el asignado por ${Math.abs(
-                                pending
-                              )} unidad${Math.abs(pending) > 1 ? 'es' : ''}`}
+                          Faltan {item.pending - declared} unidad
+                          {item.pending - declared > 1 ? 'es' : ''} por
+                          distribuir
                         </p>
                       </div>
                     )}

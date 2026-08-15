@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, CalendarIcon } from 'lucide-react';
+import { ArrowLeft, CalendarIcon, History } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
 import { Skeleton } from '@/components/ui/skeleton';
 import { constants } from '@/App/utils/constants/apiConstants';
+import { eventStatusDotClass } from '../../Eventos/Canvas/components/eventStatus';
+import { EventStatusHistoryModal } from '../../Eventos/Canvas/components/EventStatusHistoryModal';
 
 const { BASE_URL, ENDPOINTS } = constants;
 
@@ -37,6 +39,7 @@ function formatEventDate(event) {
 export default function ReportEventHeader({ eventId, onBack }) {
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   useEffect(() => {
     if (!eventId) return;
@@ -52,6 +55,7 @@ export default function ReportEventHeader({ eventId, onBack }) {
           date: eventData?.date,
           startDate: eventData?.startDate ?? eventData?.start_date,
           endDate: eventData?.endDate ?? eventData?.end_date,
+          status: eventData?.status ?? null,
         });
       })
       .catch(() => toast.error('Error al cargar el evento.'))
@@ -91,7 +95,30 @@ export default function ReportEventHeader({ eventId, onBack }) {
             </>
           )}
         </div>
+
+        {!loading && event && (
+          <button
+            type="button"
+            onClick={() => setHistoryOpen(true)}
+            title="Ver bitácora de estados del evento"
+            className="shrink-0 flex items-center gap-1.5 h-8 px-3 rounded-lg bg-white/10 hover:bg-white/20 transition text-xs font-semibold text-white"
+          >
+            <History className="w-3 h-3 shrink-0" />
+            <span
+              className={`w-1.5 h-1.5 rounded-full shrink-0 ${eventStatusDotClass(
+                event.status
+              )}`}
+            />
+            {event.status || 'Sin estado'}
+          </button>
+        )}
       </div>
+
+      <EventStatusHistoryModal
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        eventId={eventId}
+      />
     </div>
   );
 }

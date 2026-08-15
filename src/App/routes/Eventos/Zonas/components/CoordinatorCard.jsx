@@ -66,19 +66,21 @@ export function CoordinatorCard({ person, incident, onAddIncident, onViewHistory
             <TooltipContent side="top">Ver historial de incidencias</TooltipContent>
           </Tooltip>
 
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={onAddIncident}
-                aria-label="Registrar incidencia"
-                className="flex-1 flex flex-col items-center justify-center gap-1 h-12 rounded-xl bg-[#DD7419] hover:bg-[#DD7419]/90 active:bg-[#DD7419]/80 text-white transition shadow-sm"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span className="text-[10px] font-semibold leading-none">Incidencia</span>
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="top">Registrar nueva incidencia</TooltipContent>
-          </Tooltip>
+          {onAddIncident && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={onAddIncident}
+                  aria-label="Registrar incidencia"
+                  className="flex-1 flex flex-col items-center justify-center gap-1 h-12 rounded-xl bg-[#DD7419] hover:bg-[#DD7419]/90 active:bg-[#DD7419]/80 text-white transition shadow-sm"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span className="text-[10px] font-semibold leading-none">Incidencia</span>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top">Registrar nueva incidencia</TooltipContent>
+            </Tooltip>
+          )}
         </div>
       </div>
     </div>

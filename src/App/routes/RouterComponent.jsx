@@ -17,6 +17,8 @@ function RouterComponent() {
     if (route.workerOnly && user?.roleId !== ROLE_IDS.COLABORADOR) return false;
     if (route.path.startsWith('colaboradores') && !isAdmin) return false;
     if (route.path.startsWith('inventario') && !isAdmin) return false;
+    if (route.adminOnly && !isAdmin) return false;
+    if (route.path === 'eventos/:eventId/inventario' && !isAdmin) return false;
     return true;
   });
 
@@ -48,12 +50,17 @@ function RouterComponent() {
         element={
           <ProtectedRoute
             canActive={userIsLogin && !isClient}
-            redirectPath={userIsLogin ? '/cliente/dashboard' : '/iniciar-sesion'}
+            redirectPath={
+              userIsLogin ? '/cliente/dashboard' : '/iniciar-sesion'
+            }
           />
         }
       >
         <Route element={<AppLayout />}>
-          <Route path="eventos" element={<Navigate to="/eventos/listado" replace />} />
+          <Route
+            path="eventos"
+            element={<Navigate to="/eventos/listado" replace />}
+          />
           {filteredRoutesAuth.map((route) => (
             <Route
               key={route.path}

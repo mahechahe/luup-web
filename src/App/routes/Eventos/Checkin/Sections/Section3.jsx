@@ -1,23 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   Boxes,
-  Calendar,
-  CheckCircle2,
-  ChevronDown,
-  Clock,
-  DoorOpen,
-  IdCard,
   Loader2,
-  Package,
   PackageOpen,
-  Pencil,
-  Plus,
-  RefreshCw,
-  Search,
   Trash2,
-  User,
-  X,
+  CheckCircle2,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
@@ -29,532 +18,34 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { toast } from 'sonner';
+import { useUserStore } from '@/App/context/userStore';
+import { hasAdminAccess } from '@/App/utils/roles';
 import {
   confirmInventoryService,
   getStation3RecordsService,
 } from '../../services/eventServices';
 import { deleteInventoryAssignmentService } from '../../services/inventoryServices';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { InventoryModal } from '../components/InventoryModal';
-import { AddInventoryModal } from '../components/AddInventoryModal';
+import { AttendanceTimelineModal } from '../components/AttendanceTimelineModal';
+import { CollabCardSkeletonList } from '../components/CollabCardSkeleton';
 import { EditInventoryItemModal } from '../components/EditInventoryItemModal';
+import { InventoryModal } from '../components/InventoryModal';
 import { PaginationControls } from '../components/PaginationControls';
-import { useUserStore } from '@/App/context/userStore';
-import { hasAdminAccess } from '@/App/utils/roles';
+import { RevertStageModal } from '../components/RevertStageModal';
+import { Station3CollabCard } from '../components/Station3CollabCard';
+import { StationLayout } from '../components/StationLayout';
+import { useStationList } from '../hooks/useStationList';
+import { STAGES, getStage } from '../utils/stages';
 
-const PAGE_SIZE = 25;
-
-function formatTime(isoString) {
-  if (!isoString) return null;
-  return new Date(isoString).toLocaleTimeString('es-CO', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true,
-  });
-}
-
-function roleBadgeClass(role) {
-  if (role === 'supervisor')
-    return 'bg-[#234465]/10 text-[#234465] dark:bg-[#234465]/20 dark:text-[#7493B2]';
-  if (role === 'coordinador') return 'bg-[#DD7419]/10 text-[#DD7419]';
-  return 'bg-[#7493B2]/10 text-[#7493B2]';
-}
-function roleLabel(role) {
-  return (
-    {
-      supervisor: 'Supervisor',
-      coordinador: 'Coordinador',
-      colaborador: 'Colaborador',
-    }[role] ?? role
-  );
-}
-
-function CollabCard({
-  collab,
-  onAssign,
-  onRequestConfirm,
-  onAddMore,
-  onDeleteItem,
-  onEditItem,
-  isAdmin,
-}) {
-  const items = collab.inventoryItems ?? [];
-  const hasItems = items.length > 0;
-  const [itemsExpanded, setItemsExpanded] = useState(false);
-  const [showAllItems, setShowAllItems] = useState(false);
-
-  const pendingItems = items.filter((item) => {
-    const returned = item.returnedQuantity ?? 0;
-    const used = item.usedQuantity ?? 0;
-    const damaged = item.damagedQuantity ?? 0;
-    const pending =
-      item.pendingQuantity ?? item.quantity - returned - used - damaged;
-    return pending > 0;
-  });
-  const hiddenCount = items.length - pendingItems.length;
-
-  const allReturned =
-    hasItems && items.every((i) => i.returnedQuantity >= i.quantity);
-  const entryTime = formatTime(collab.attendance?.entryTime);
-  const exitTime = formatTime(collab.attendance?.exitTime);
-  const hasCheckout = !!collab.attendance?.exitTime;
-  const isConfirmed = collab.attendance?.confirmInventory;
-
-  return (
-    <div
-      className={`bg-card rounded-2xl border overflow-hidden transition-all ${
-        isConfirmed
-          ? 'border-[#234465]/30 dark:border-[#7493B2]/30'
-          : allReturned
-            ? 'border-emerald-200 dark:border-emerald-800'
-            : 'border-border'
-      }`}
-    >
-      <div
-        className={`h-1 ${
-          isConfirmed
-            ? 'bg-[#234465] dark:bg-[#7493B2]'
-            : allReturned
-              ? 'bg-emerald-500'
-              : hasItems
-                ? 'bg-[#234465]'
-                : 'bg-muted'
-        }`}
-      />
-      <div className="p-4 space-y-3">
-        {/* Cabecera colaborador */}
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex-1 min-w-0">
-            <p className="text-base font-bold text-foreground">
-              {collab.firstName} {collab.lastName}
-            </p>
-            <div className="mt-2 space-y-2">
-              <p className="text-xs text-foreground">
-                <span className="text-muted-foreground">Cédula:</span>{' '}
-                <span className="font-semibold">{collab.cedula}</span>
-              </p>
-              <p className="text-xs text-foreground">
-                <span className="text-muted-foreground">Celular:</span>{' '}
-                <span className="font-semibold">{collab.phone ?? '—'}</span>
-              </p>
-              <p className="text-xs text-foreground">
-                <span className="text-muted-foreground">Zonas:</span>{' '}
-                {collab.zones?.length > 0 ? (
-                  <span className="font-semibold">
-                    {collab.zones.join(', ')}
-                  </span>
-                ) : (
-                  <span className="text-muted-foreground">—</span>
-                )}
-              </p>
-              <p className="text-xs text-foreground">
-                <span className="text-muted-foreground">Rol:</span>{' '}
-                <span
-                  className={`font-semibold text-[11px] px-2 py-0.5 rounded-md ${roleBadgeClass(
-                    collab.role
-                  )}`}
-                >
-                  {roleLabel(collab.role)}
-                </span>
-              </p>
-            </div>
-          </div>
-          <span
-            className={`shrink-0 text-[11px] font-bold px-2 py-1 rounded-lg ${
-              hasItems
-                ? allReturned
-                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
-                  : 'bg-[#DD7419]/10 text-[#DD7419]'
-                : 'bg-muted text-muted-foreground'
-            }`}
-          >
-            {items.length} {items.length === 1 ? 'ítem' : 'ítems'}
-          </span>
-        </div>
-
-        {/* Nota */}
-        {(collab.attendance?.notes ?? collab.notes) && (
-          <p
-            className="text-[11px] text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-lg px-2.5 py-1.5 italic"
-            style={{
-              marginBottom: '10px',
-            }}
-          >
-            <span className="font-semibold not-italic">Nota: </span>
-            {collab.attendance?.notes ?? collab.notes}
-          </p>
-        )}
-
-        {/* Inventario */}
-        {hasItems ? (
-          <div>
-            <div
-              className="w-full flex items-center justify-between gap-2 rounded-xl bg-muted/30 px-3 py-2.5 hover:bg-muted/50 transition cursor-pointer"
-              onClick={() => setItemsExpanded((v) => !v)}
-            >
-              <div className="flex items-center gap-2">
-                <Package className="w-3.5 h-3.5 text-[#DD7419] shrink-0" />
-                <span className="text-[11px] font-semibold text-foreground">
-                  {itemsExpanded ? 'Ocultar ítems' : 'Ver ítems'}
-                </span>
-                {pendingItems.length > 0 && (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#DD7419]/10 text-[#DD7419]">
-                    {pendingItems.length} pendiente{pendingItems.length !== 1 ? 's' : ''}
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                {hiddenCount > 0 && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowAllItems(true);
-                    }}
-                    className="text-[10px] font-semibold text-muted-foreground hover:text-foreground underline underline-offset-2 transition"
-                  >
-                    Ver todos ({items.length})
-                  </button>
-                )}
-                <ChevronDown
-                  className="w-3.5 h-3.5 text-muted-foreground transition-transform duration-200"
-                  style={{
-                    transform: itemsExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                  }}
-                />
-              </div>
-            </div>
-
-            {itemsExpanded && (
-              <div className="mt-2 space-y-2">
-                {pendingItems.length === 0 ? (
-                  <div className="flex items-center gap-2 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 px-3 py-2.5">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                    <p className="text-[11px] text-emerald-700 dark:text-emerald-300 font-medium">
-                      Todos los ítems están completos
-                    </p>
-                  </div>
-                ) : (
-                  pendingItems.map((item) => {
-                    const returned = item.returnedQuantity ?? 0;
-                    const used = item.usedQuantity ?? 0;
-                    const damaged = item.damagedQuantity ?? 0;
-                    const pending =
-                      item.pendingQuantity ??
-                      item.quantity - returned - used - damaged;
-                    return (
-                      <div
-                        key={item.id}
-                        className="rounded-xl bg-muted/40 px-3 py-3 space-y-2.5"
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <div className="w-6 h-6 rounded-lg bg-[#DD7419]/10 flex items-center justify-center shrink-0">
-                              <Package className="w-3 h-3 text-[#DD7419]" />
-                            </div>
-                            <div className="min-w-0">
-                              <p className="text-[12px] font-semibold text-foreground truncate">
-                                {item.itemName}
-                              </p>
-                              {item.dateRegister && (
-                                <div className="flex items-center gap-1 mt-0.5">
-                                  <Calendar className="w-2.5 h-2.5 text-muted-foreground shrink-0" />
-                                  <p className="text-[10px] text-muted-foreground">
-                                    Fecha de registro: {item.dateRegister}
-                                  </p>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
-                              Pendiente
-                            </span>
-                            <button
-                              onClick={() => onEditItem({ collabUserId: collab.userId, item })}
-                              className="w-6 h-6 flex items-center justify-center rounded-md text-muted-foreground hover:bg-[#DD7419]/10 hover:text-[#DD7419] transition"
-                              title="Registrar devolución"
-                            >
-                              <Pencil className="w-3 h-3" />
-                            </button>
-                            {!isConfirmed && (
-                              <button
-                                onClick={() =>
-                                  onDeleteItem({
-                                    collabUserId: collab.userId,
-                                    itemId: item.id,
-                                    itemName: item.itemName,
-                                  })
-                                }
-                                className="w-6 h-6 flex items-center justify-center rounded-md text-muted-foreground hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-500 transition"
-                                title="Eliminar asignación"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-5 gap-1.5">
-                          {[
-                            {
-                              label: 'Asignado',
-                              value: item.quantity,
-                              color: 'text-foreground',
-                            },
-                            {
-                              label: 'Devuelto',
-                              value: returned,
-                              color: 'text-emerald-600',
-                            },
-                            {
-                              label: 'Usado',
-                              value: used,
-                              color: 'text-[#234465] dark:text-[#7493B2]',
-                            },
-                            {
-                              label: 'Dañado',
-                              value: damaged,
-                              color:
-                                damaged > 0
-                                  ? 'text-destructive'
-                                  : 'text-muted-foreground',
-                            },
-                            {
-                              label: 'Pendiente',
-                              value: pending,
-                              color: 'text-amber-600',
-                            },
-                          ].map(({ label, value, color }) => (
-                            <div
-                              key={label}
-                              className="bg-background rounded-lg py-2 text-center"
-                            >
-                              <p className="text-[9px] text-muted-foreground uppercase tracking-wide leading-none mb-1">
-                                {label}
-                              </p>
-                              <p className={`text-base font-bold ${color}`}>
-                                {value}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-
-              </div>
-            )}
-
-            {/* Modal — todos los ítems */}
-            <Dialog open={showAllItems} onOpenChange={setShowAllItems}>
-              <DialogContent className="max-w-sm max-h-[80vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle className="text-base">
-                    Todos los ítems — {collab.firstName} {collab.lastName}
-                  </DialogTitle>
-                </DialogHeader>
-                <div className="space-y-2 mt-2">
-                  {items.map((item) => {
-                    const returned = item.returnedQuantity ?? 0;
-                    const used = item.usedQuantity ?? 0;
-                    const damaged = item.damagedQuantity ?? 0;
-                    const pending =
-                      item.pendingQuantity ??
-                      item.quantity - returned - used - damaged;
-                    const complete = pending === 0;
-                    return (
-                      <div
-                        key={item.id}
-                        className="rounded-xl bg-muted/40 px-3 py-3 space-y-2.5"
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <div className="w-6 h-6 rounded-lg bg-[#DD7419]/10 flex items-center justify-center shrink-0">
-                              <Package className="w-3 h-3 text-[#DD7419]" />
-                            </div>
-                            <div className="min-w-0">
-                              <p className="text-[12px] font-semibold text-foreground truncate">
-                                {item.itemName}
-                              </p>
-                              {item.dateRegister && (
-                                <div className="flex items-center gap-1 mt-0.5">
-                                  <Calendar className="w-2.5 h-2.5 text-muted-foreground shrink-0" />
-                                  <p className="text-[10px] text-muted-foreground">
-                                    Fecha de registro: {item.dateRegister}
-                                  </p>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                          <span
-                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
-                              complete
-                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
-                                : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
-                            }`}
-                          >
-                            {complete ? 'Completo' : 'Pendiente'}
-                          </span>
-                        </div>
-                        <div className="grid grid-cols-5 gap-1.5">
-                          {[
-                            {
-                              label: 'Asignado',
-                              value: item.quantity,
-                              color: 'text-foreground',
-                            },
-                            {
-                              label: 'Devuelto',
-                              value: returned,
-                              color: 'text-emerald-600',
-                            },
-                            {
-                              label: 'Usado',
-                              value: used,
-                              color: 'text-[#234465] dark:text-[#7493B2]',
-                            },
-                            {
-                              label: 'Dañado',
-                              value: damaged,
-                              color:
-                                damaged > 0
-                                  ? 'text-destructive'
-                                  : 'text-muted-foreground',
-                            },
-                            {
-                              label: 'Pendiente',
-                              value: pending,
-                              color: complete
-                                ? 'text-emerald-600'
-                                : 'text-amber-600',
-                            },
-                          ].map(({ label, value, color }) => (
-                            <div
-                              key={label}
-                              className="bg-background rounded-lg py-2 text-center"
-                            >
-                              <p className="text-[9px] text-muted-foreground uppercase tracking-wide leading-none mb-1">
-                                {label}
-                              </p>
-                              <p className={`text-base font-bold ${color}`}>
-                                {value}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </DialogContent>
-            </Dialog>
-          </div>
-        ) : (
-          <div className="flex items-center gap-2 rounded-xl bg-muted/30 px-3 py-2.5">
-            <PackageOpen className="w-4 h-4 text-muted-foreground shrink-0" />
-            <p className="text-[11px] text-muted-foreground italic">
-              Sin inventario asignado
-            </p>
-          </div>
-        )}
-
-        {/* Footer: check-out registrado o botones */}
-        <div className="pt-1">
-          {hasCheckout ? (
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1.5 flex-1 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-lg px-3 py-2">
-                <Clock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                <div>
-                  <p className="text-[9px] text-emerald-600/70 dark:text-emerald-400/70 uppercase tracking-wide font-semibold leading-none">
-                    Check-in
-                  </p>
-                  <p className="text-[12px] font-bold text-emerald-700 dark:text-emerald-300">
-                    {entryTime ?? '—'}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-1.5 flex-1 bg-[#DD7419]/5 border border-[#DD7419]/20 rounded-lg px-3 py-2">
-                <DoorOpen className="w-3.5 h-3.5 text-[#DD7419] shrink-0" />
-                <div>
-                  <p className="text-[9px] text-[#DD7419]/60 uppercase tracking-wide font-semibold leading-none">
-                    Check-out
-                  </p>
-                  <p className="text-[12px] font-bold text-[#DD7419]">
-                    {exitTime}
-                  </p>
-                </div>
-              </div>
-            </div>
-          ) : isConfirmed ? (
-            <div className="space-y-2">
-              <div className="flex items-center justify-center gap-2 rounded-xl bg-[#234465]/8 dark:bg-[#7493B2]/10 border border-[#234465]/20 dark:border-[#7493B2]/25 px-4 py-2.5">
-                <CheckCircle2 className="w-4 h-4 text-[#234465] dark:text-[#7493B2] shrink-0" />
-                <p className="text-xs font-bold text-[#234465] dark:text-[#7493B2] leading-none">
-                  Asignación confirmada
-                </p>
-              </div>
-              {isAdmin && (
-                <button
-                  onClick={() => onAddMore(collab)}
-                  className="w-full flex items-center justify-center gap-1.5 h-8 rounded-lg text-[11px] font-semibold text-[#DD7419] border border-[#DD7419]/25 hover:bg-[#DD7419]/5 transition"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  Reasignación de inventario
-                </button>
-              )}
-            </div>
-          ) : (
-            <div className="flex gap-2">
-              <button
-                onClick={() => onAssign(collab)}
-                className="flex-1 flex items-center justify-center gap-1.5 h-8 rounded-lg text-[11px] font-semibold text-[#DD7419] border border-[#DD7419]/25 hover:bg-[#DD7419]/5 transition"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                Asignar inventario
-              </button>
-              <button
-                onClick={() => onRequestConfirm(collab)}
-                className="flex-1 flex items-center justify-center gap-1.5 h-8 rounded-lg text-[11px] font-semibold text-[#234465] dark:text-[#7493B2] border border-[#234465]/25 dark:border-[#7493B2]/30 hover:bg-[#234465]/5 transition"
-              >
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                Confirmar asignación
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function CardSkeleton() {
-  return (
-    <div className="bg-card rounded-2xl border p-4 animate-pulse space-y-3">
-      <div className="flex justify-between gap-3">
-        <div className="flex-1 space-y-2">
-          <div className="h-4 bg-muted rounded-full w-44" />
-          <div className="h-3 bg-muted rounded-full w-32" />
-          <div className="h-3 bg-muted rounded-full w-36" />
-          <div className="h-3 bg-muted rounded-full w-28" />
-          <div className="h-3 bg-muted rounded-full w-20" />
-        </div>
-        <div className="h-6 w-14 bg-muted rounded-lg shrink-0" />
-      </div>
-      <div className="space-y-1.5">
-        <div className="h-11 bg-muted rounded-xl" />
-        <div className="h-11 bg-muted rounded-xl" />
-      </div>
-    </div>
-  );
-}
-
-export const Section3 = ({ eventId }) => {
+export const Section3 = ({
+  eventId,
+  dateRegister,
+  day,
+  isToday,
+  shiftId,
+  shiftOptions,
+  onShiftChange,
+  onStageChanged,
+}) => {
   const { user } = useUserStore();
   const isAdmin = hasAdminAccess(user?.roleId);
 
@@ -566,51 +57,39 @@ export const Section3 = ({ eventId }) => {
   const [deleteTarget, setDeleteTarget] = useState(null); // { collabUserId, itemId, itemName }
   const [deleting, setDeleting] = useState(false);
   const [editTarget, setEditTarget] = useState(null); // { collabUserId, item }
-  const [filters, setFilters] = useState({ name: '', cedula: '' });
-  const [filterInput, setFilterInput] = useState({ name: '', cedula: '' });
-  const [loading, setLoading] = useState(true);
-  const [collaborators, setCollaborators] = useState([]);
-  const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 25,
-    total: 0,
-    totalPages: 1,
+  const [revertTarget, setRevertTarget] = useState(null);
+  const [timelineTarget, setTimelineTarget] = useState(null);
+
+  const {
+    collaborators,
+    updateCollaborator,
+    updateAttendance,
+    loading,
+    error,
+    refresh,
+    filters,
+    page,
+  } = useStationList({
+    eventId,
+    fetcher: getStation3RecordsService,
+    dateRegister,
+    shiftId,
   });
-  const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = PAGE_SIZE;
 
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter') handleSearch();
-  };
-
-  const handleSearch = () => {
-    setFilters(filterInput);
-    setCurrentPage(1);
+  const addItemTo = (userId, newItem) => {
+    updateCollaborator(userId, (c) => ({
+      ...c,
+      inventoryItems: [...(c.inventoryItems ?? []), newItem],
+    }));
   };
 
   const handleAssigned = (newItem) => {
-    setCollaborators((prev) =>
-      prev.map((c) => {
-        if (c.userId !== assignCollab?.userId) return c;
-        return {
-          ...c,
-          inventoryItems: [...(c.inventoryItems ?? []), newItem],
-        };
-      })
-    );
+    addItemTo(assignCollab?.userId, newItem);
     setAssignCollab(null);
   };
 
   const handleAdded = (newItem) => {
-    setCollaborators((prev) =>
-      prev.map((c) => {
-        if (c.userId !== addMoreCollab?.userId) return c;
-        return {
-          ...c,
-          inventoryItems: [...(c.inventoryItems ?? []), newItem],
-        };
-      })
-    );
+    addItemTo(addMoreCollab?.userId, newItem);
     setAddMoreCollab(null);
   };
 
@@ -619,15 +98,14 @@ export const Section3 = ({ eventId }) => {
     setConfirming(true);
     const res = await confirmInventoryService(confirmTarget.attendance?.id);
     setConfirming(false);
+
     if (res.status) {
       toast.success('Inventario confirmado exitosamente');
-      setCollaborators((prev) =>
-        prev.map((c) =>
-          c.userId !== confirmTarget.userId
-            ? c
-            : { ...c, attendance: { ...c.attendance, confirmInventory: true } }
-        )
-      );
+      updateAttendance(confirmTarget.userId, {
+        stage: STAGES.ESTACION_4,
+        confirmInventory: true,
+      });
+      onStageChanged?.();
       setConfirmTarget(null);
     } else {
       toast.error(res.errors ?? 'Error al confirmar el inventario');
@@ -639,118 +117,55 @@ export const Section3 = ({ eventId }) => {
     setDeleting(true);
     const res = await deleteInventoryAssignmentService(deleteTarget.itemId);
     setDeleting(false);
+
     if (res.status) {
       toast.success('Asignación eliminada');
-      setCollaborators((prev) =>
-        prev.map((c) => {
-          if (c.userId !== deleteTarget.collabUserId) return c;
-          return {
-            ...c,
-            inventoryItems: c.inventoryItems.filter(
-              (i) => i.id !== deleteTarget.itemId
-            ),
-          };
-        })
-      );
+      updateCollaborator(deleteTarget.collabUserId, (c) => ({
+        ...c,
+        inventoryItems: c.inventoryItems.filter(
+          (i) => i.id !== deleteTarget.itemId
+        ),
+      }));
       setDeleteTarget(null);
     } else {
       toast.error(res.errors ?? 'Error al eliminar la asignación');
     }
   };
 
-  const handleItemUpdated = ({ collaboratorItemId, returnedQuantity, usedQuantity, damagedQuantity, pendingQuantity }) => {
-    setCollaborators((prev) =>
-      prev.map((c) => {
-        if (c.userId !== editTarget?.collabUserId) return c;
-        return {
-          ...c,
-          inventoryItems: c.inventoryItems.map((i) =>
-            i.id !== collaboratorItemId
-              ? i
-              : { ...i, returnedQuantity, usedQuantity, damagedQuantity, pendingQuantity }
-          ),
-        };
-      })
-    );
+  const handleItemUpdated = ({ collaboratorItemId, ...quantities }) => {
+    updateCollaborator(editTarget?.collabUserId, (c) => ({
+      ...c,
+      inventoryItems: c.inventoryItems.map((i) =>
+        i.id !== collaboratorItemId ? i : { ...i, ...quantities }
+      ),
+    }));
     setEditTarget(null);
   };
 
-  const handleClearFilters = () => {
-    setFilterInput({ name: '', cedula: '' });
-    setFilters({ name: '', cedula: '' });
-    setCurrentPage(1);
+  // Al devolver, la persona sale de esta lista en el siguiente refresco.
+  const handleReverted = (userId, to) => {
+    updateAttendance(userId, { stage: to });
+    onStageChanged?.();
+    refresh();
   };
 
-  const fetchData = (currentFilters = filters, page = currentPage) => {
-    setLoading(true);
-    getStation3RecordsService(eventId, {
-      ...currentFilters,
-      page,
-      limit: pageSize,
-    }).then((res) => {
-      if (res.status && res.data) {
-        setCollaborators(res.data?.data?.collaborators ?? []);
-        setPagination(
-          res.data?.data?.pagination ?? {
-            page: 1,
-            limit: pageSize,
-            total: 0,
-            totalPages: 1,
-          }
-        );
-      }
-      setLoading(false);
-    });
-  };
-
-  useEffect(() => {
-    fetchData(filters, currentPage);
-  }, [eventId, filters, currentPage, pageSize]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const hasActiveFilters = filterInput.name !== '' || filterInput.cedula !== '';
-  const { total, totalPages } = pagination;
-  const safePage = Math.min(currentPage, Math.max(1, totalPages));
-  const startIdx = (safePage - 1) * pageSize;
+  const hasResults = !loading && collaborators.length > 0;
 
   return (
-    <>
-      {/* Banner */}
-      <div className="rounded-2xl bg-[#234465] px-6 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-md">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-white/60 mb-1">
-            Estación 3
-          </p>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-white leading-tight">
-            Dotación · Insumos
-          </h2>
-        </div>
-        <div className="flex flex-col sm:items-end gap-2">
-          <div className="text-right">
-            <p className="text-sm font-medium text-white/60 uppercase tracking-wide mb-0.5">
-              Fecha de hoy
-            </p>
-            <p className="text-xl sm:text-2xl font-bold text-[#DD7419] capitalize leading-snug">
-              {new Date().toLocaleDateString('es-CO', {
-                weekday: 'long',
-                day: '2-digit',
-                month: 'long',
-                year: 'numeric',
-              })}
-            </p>
-          </div>
-          <Button
-            variant="outline"
-            className="gap-1.5 h-9 bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white self-start sm:self-auto"
-            onClick={() => fetchData(filters, currentPage)}
-            disabled={loading}
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            Actualizar
-          </Button>
-        </div>
-      </div>
-
-      {/* Alerta inventario */}
+    <StationLayout
+      station="Estación 3"
+      title="Dotación · Insumos"
+      loading={loading}
+      error={error}
+      onRefresh={refresh}
+      filters={filters}
+      shiftId={shiftId}
+      shiftOptions={shiftOptions}
+      onShiftChange={onShiftChange}
+      day={day}
+      isToday={isToday}
+    >
+      {/* Acceso al inventario */}
       <div className="flex items-center justify-between gap-4 rounded-xl border border-[#DD7419]/20 bg-[#DD7419]/5 px-4 py-3">
         <div className="flex items-center gap-3 min-w-0">
           <div className="w-8 h-8 rounded-lg bg-[#DD7419]/15 flex items-center justify-center shrink-0">
@@ -770,77 +185,11 @@ export const Section3 = ({ eventId }) => {
         </Button>
       </div>
 
-      {/* Controles */}
-      <div className="bg-card rounded-xl border border-border p-3 space-y-3">
-        <div className="flex items-center gap-2 flex-wrap">
-          <div className="relative flex-1 min-w-[140px]">
-            <User className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
-            <input
-              type="text"
-              placeholder="Buscar por nombre…"
-              value={filterInput.name}
-              onChange={(e) =>
-                setFilterInput((f) => ({ ...f, name: e.target.value }))
-              }
-              onKeyDown={handleKeyDown}
-              className="h-9 pl-8 pr-3 rounded-md border border-border bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/30 w-full"
-            />
-          </div>
-          <div className="relative w-40 shrink-0">
-            <IdCard className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
-            <input
-              type="text"
-              placeholder="Cédula…"
-              value={filterInput.cedula}
-              onChange={(e) =>
-                setFilterInput((f) => ({ ...f, cedula: e.target.value }))
-              }
-              onKeyDown={handleKeyDown}
-              className="h-9 pl-8 pr-3 rounded-md border border-border bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/30 w-full"
-            />
-          </div>
-          <Button
-            onClick={handleSearch}
-            disabled={
-              (filterInput.name === '' && filterInput.cedula === '') || loading
-            }
-            className="h-9 bg-[#DD7419] hover:bg-[#DD7419]/90 text-white gap-1.5 shrink-0"
-          >
-            <Search className="w-3.5 h-3.5" />
-            <span>Buscar</span>
-          </Button>
-          {hasActiveFilters && (
-            <Button
-              variant="outline"
-              onClick={handleClearFilters}
-              className="h-9 gap-1.5 text-muted-foreground shrink-0"
-            >
-              <X className="w-3.5 h-3.5" />
-              <span className="text-xs">Limpiar</span>
-            </Button>
-          )}
-        </div>
-        <div className="border-t border-border" />
-      </div>
-
-      {!loading && collaborators.length > 0 && (
-        <PaginationControls
-          totalItems={total}
-          pageSize={pageSize}
-          startIdx={startIdx}
-          safePage={safePage}
-          totalPages={totalPages}
-          onPageChange={setCurrentPage}
-        />
-      )}
+      {hasResults && <PaginationControls page={page} />}
 
       {/* Lista */}
       {loading ? (
-        <div className="space-y-2">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <CardSkeleton key={i} />
-          ))}
-        </div>
+        <CollabCardSkeletonList count={4} />
       ) : collaborators.length === 0 ? (
         <div className="text-center py-14 flex flex-col justify-center items-center">
           <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
@@ -857,7 +206,7 @@ export const Section3 = ({ eventId }) => {
       ) : (
         <div className="space-y-2">
           {collaborators.map((collab) => (
-            <CollabCard
+            <Station3CollabCard
               key={collab.userId}
               collab={collab}
               isAdmin={isAdmin}
@@ -866,6 +215,8 @@ export const Section3 = ({ eventId }) => {
               onAddMore={setAddMoreCollab}
               onDeleteItem={setDeleteTarget}
               onEditItem={setEditTarget}
+              onRevert={setRevertTarget}
+              onTimeline={setTimelineTarget}
             />
           ))}
         </div>
@@ -940,7 +291,9 @@ export const Section3 = ({ eventId }) => {
       {/* Confirmación de eliminación de ítem */}
       <AlertDialog
         open={!!deleteTarget}
-        onOpenChange={(v) => { if (!v && !deleting) setDeleteTarget(null); }}
+        onOpenChange={(v) => {
+          if (!v && !deleting) setDeleteTarget(null);
+        }}
       >
         <AlertDialogContent className="max-w-sm">
           <AlertDialogHeader>
@@ -962,7 +315,9 @@ export const Section3 = ({ eventId }) => {
                   de la asignación pendiente.
                 </p>
                 <div className="flex items-start gap-2 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-3 py-2.5">
-                  <span className="text-red-500 text-base leading-none mt-0.5">⚠</span>
+                  <span className="text-red-500 text-base leading-none mt-0.5">
+                    ⚠
+                  </span>
                   <p className="text-xs text-red-700 dark:text-red-300 leading-relaxed">
                     Esta acción no se puede deshacer. El ítem volverá al
                     inventario disponible.
@@ -997,18 +352,45 @@ export const Section3 = ({ eventId }) => {
       {/* Modal editar ítem — registrar devolución parcial */}
       <EditInventoryItemModal
         open={!!editTarget}
-        onOpenChange={(v) => { if (!v) setEditTarget(null); }}
+        onOpenChange={(v) => {
+          if (!v) setEditTarget(null);
+        }}
         item={editTarget?.item ?? null}
         onUpdated={handleItemUpdated}
       />
 
+      <AttendanceTimelineModal
+        open={!!timelineTarget}
+        onOpenChange={(v) => {
+          if (!v) setTimelineTarget(null);
+        }}
+        collab={timelineTarget}
+      />
+
+      {/* Devolver a la estación anterior */}
+      <RevertStageModal
+        open={!!revertTarget}
+        onOpenChange={(v) => {
+          if (!v) setRevertTarget(null);
+        }}
+        collab={revertTarget}
+        stage={revertTarget ? getStage(revertTarget) : null}
+        onReverted={handleReverted}
+      />
+
       {/* Modal inventario — solo navegación */}
-      <InventoryModal open={showInventory} onOpenChange={setShowInventory} />
+      <InventoryModal
+        open={showInventory}
+        onOpenChange={setShowInventory}
+        eventId={eventId}
+      />
 
       {/* Modal reasignación de inventario — solo admin, post-confirmación */}
       <InventoryModal
         open={!!addMoreCollab}
-        onOpenChange={(v) => { if (!v) setAddMoreCollab(null); }}
+        onOpenChange={(v) => {
+          if (!v) setAddMoreCollab(null);
+        }}
         mode="assign"
         collab={addMoreCollab}
         eventId={eventId}
@@ -1027,19 +409,11 @@ export const Section3 = ({ eventId }) => {
         onAssigned={handleAssigned}
       />
 
-      {/* Paginación */}
-      {!loading && collaborators.length > 0 && (
+      {hasResults && (
         <div className="pb-4">
-          <PaginationControls
-            totalItems={total}
-            pageSize={pageSize}
-            startIdx={startIdx}
-            safePage={safePage}
-            totalPages={totalPages}
-            onPageChange={setCurrentPage}
-          />
+          <PaginationControls page={page} />
         </div>
       )}
-    </>
+    </StationLayout>
   );
 };

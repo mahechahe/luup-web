@@ -91,8 +91,7 @@ function EventCard({ event, onClick }) {
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <LayoutGrid className="w-3 h-3 shrink-0 text-brand/60" />
           <span>
-            {event.zoneCount ?? 0}{' '}
-            {event.zoneCount === 1 ? 'zona' : 'zonas'}
+            {event.zoneCount ?? 0} {event.zoneCount === 1 ? 'zona' : 'zonas'}
           </span>
         </div>
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -146,90 +145,90 @@ export default function ReportesPage() {
   return (
     <div className="min-h-screen bg-background px-4 py-6 pb-28">
       <div className="max-w-7xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="rounded-2xl bg-[#234465] px-5 py-5 shadow-md">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
-            <BarChart3 className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-white/60 mb-0.5">
-              Análisis y datos
-            </p>
-            <h1 className="text-2xl font-extrabold text-white leading-tight">
-              Reportes
-            </h1>
-            <p className="text-sm text-white/60 mt-0.5">
-              Selecciona un evento para ver sus reportes.
-            </p>
+        {/* Header */}
+        <div className="rounded-2xl bg-[#234465] px-5 py-5 shadow-md">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
+              <BarChart3 className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-white/60 mb-0.5">
+                Análisis y datos
+              </p>
+              <h1 className="text-2xl font-extrabold text-white leading-tight">
+                Reportes
+              </h1>
+              <p className="text-sm text-white/60 mt-0.5">
+                Selecciona un evento para ver sus reportes.
+              </p>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Content */}
-      <div>
-        {loading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <EventCardSkeleton key={i} />
-            ))}
-          </div>
-        ) : events.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center mb-4">
-              <FileText className="w-7 h-7 text-muted-foreground" />
-            </div>
-            <p className="text-base font-medium text-foreground mb-1">
-              Sin eventos
-            </p>
-            <p className="text-sm text-muted-foreground max-w-xs">
-              No hay eventos activos disponibles para generar reportes.
-            </p>
-          </div>
-        ) : (
-          <>
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                {pagination.total}{' '}
-                {pagination.total === 1 ? 'evento' : 'eventos'}
-              </span>
-            </div>
-
+        {/* Content */}
+        <div>
+          {loading ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {events.map((event) => (
-                <EventCard
-                  key={event.eventId}
-                  event={event}
-                  onClick={() => navigate(`/reportes/${event.eventId}`)}
-                />
+              {Array.from({ length: 6 }).map((_, i) => (
+                <EventCardSkeleton key={i} />
               ))}
             </div>
-
-            {/* Pagination */}
-            {pagination.totalPages > 1 && (
-              <div className="flex items-center justify-center gap-3 mt-6">
-                <button
-                  onClick={() => fetchEvents(pagination.page - 1)}
-                  disabled={pagination.page <= 1}
-                  className="px-4 py-2 text-sm font-medium rounded-xl border border-border bg-card text-foreground disabled:opacity-40 hover:bg-muted transition-colors"
-                >
-                  Anterior
-                </button>
-                <span className="text-sm text-muted-foreground">
-                  {pagination.page} / {pagination.totalPages}
-                </span>
-                <button
-                  onClick={() => fetchEvents(pagination.page + 1)}
-                  disabled={pagination.page >= pagination.totalPages}
-                  className="px-4 py-2 text-sm font-medium rounded-xl border border-border bg-card text-foreground disabled:opacity-40 hover:bg-muted transition-colors"
-                >
-                  Siguiente
-                </button>
+          ) : events.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center mb-4">
+                <FileText className="w-7 h-7 text-muted-foreground" />
               </div>
-            )}
-          </>
-        )}
-      </div>
+              <p className="text-base font-medium text-foreground mb-1">
+                Sin eventos
+              </p>
+              <p className="text-sm text-muted-foreground max-w-xs">
+                No hay eventos activos disponibles para generar reportes.
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  {pagination.total}{' '}
+                  {pagination.total === 1 ? 'evento' : 'eventos'}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {events.map((event) => (
+                  <EventCard
+                    key={event.eventId}
+                    event={event}
+                    onClick={() => navigate(`/reportes/${event.eventId}`)}
+                  />
+                ))}
+              </div>
+
+              {/* Pagination */}
+              {pagination.totalPages > 1 && (
+                <div className="flex items-center justify-center gap-3 mt-6">
+                  <button
+                    onClick={() => fetchEvents(pagination.page - 1)}
+                    disabled={pagination.page <= 1}
+                    className="px-4 py-2 text-sm font-medium rounded-xl border border-border bg-card text-foreground disabled:opacity-40 hover:bg-muted transition-colors"
+                  >
+                    Anterior
+                  </button>
+                  <span className="text-sm text-muted-foreground">
+                    {pagination.page} / {pagination.totalPages}
+                  </span>
+                  <button
+                    onClick={() => fetchEvents(pagination.page + 1)}
+                    disabled={pagination.page >= pagination.totalPages}
+                    className="px-4 py-2 text-sm font-medium rounded-xl border border-border bg-card text-foreground disabled:opacity-40 hover:bg-muted transition-colors"
+                  >
+                    Siguiente
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

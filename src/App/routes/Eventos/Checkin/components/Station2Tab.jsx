@@ -9,7 +9,10 @@ import {
   ClipboardCheck,
   X,
 } from 'lucide-react';
-import { updateDeliveryService, confirmAssignmentService } from '@/App/routes/Eventos/services/eventServices';
+import {
+  updateDeliveryService,
+  confirmAssignmentService,
+} from '@/App/routes/Eventos/services/eventServices';
 import {
   Dialog,
   DialogContent,
@@ -17,61 +20,42 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-
-function roleBadgeClass(role) {
-  if (role === 'supervisor') return 'bg-[#234465]/10 text-[#234465] dark:bg-[#234465]/20 dark:text-[#7493B2]';
-  if (role === 'coordinador') return 'bg-[#DD7419]/10 text-[#DD7419]';
-  return 'bg-[#7493B2]/10 text-[#7493B2]';
-}
-function roleLabel(role) {
-  return (
-    {
-      supervisor: 'Supervisor',
-      coordinador: 'Coordinador',
-      colaborador: 'Colaborador',
-    }[role] ?? role
-  );
-}
+import { CollabIdentity, CollabNote } from './CollabIdentity';
+import { StageBadge } from './StageBadge';
+import { STAGES, getStage, isPastStage } from '../utils/stages';
 
 // key = clave local en station2 | type = valor que espera la API
+// El color de acento solo identifica la categoría en estado pendiente;
+// "completado" siempre se ve en verde esmeralda, igual que en el resto de la app.
 const ACTIONS = [
   {
     key: 'suitcase',
     type: 'suitcase',
     Icon: Briefcase,
     label: 'Maleta',
-    labelDone: 'Maleta recibida',
-    activeBg: 'bg-indigo-500',
-    doneBg: 'bg-indigo-50 dark:bg-indigo-900/30',
-    doneText: 'text-indigo-700 dark:text-indigo-300',
-    doneBorder: 'border-indigo-200 dark:border-indigo-800',
+    iconBg: 'bg-indigo-100 dark:bg-indigo-900/40',
+    iconText: 'text-indigo-600 dark:text-indigo-400',
   },
   {
     key: 'lunch',
     type: 'lunch',
     Icon: UtensilsCrossed,
     label: 'Almuerzo',
-    labelDone: 'Almuerzo recibido',
-    activeBg: 'bg-amber-500',
-    doneBg: 'bg-amber-50 dark:bg-amber-900/30',
-    doneText: 'text-amber-700 dark:text-amber-300',
-    doneBorder: 'border-amber-200 dark:border-amber-800',
+    iconBg: 'bg-amber-100 dark:bg-amber-900/40',
+    iconText: 'text-amber-600 dark:text-amber-400',
   },
   {
     key: 'snack',
     type: 'snack',
     Icon: Cookie,
     label: 'Refrigerio',
-    labelDone: 'Refrigerio dado',
-    activeBg: 'bg-red-600',
-    doneBg: 'bg-red-50 dark:bg-red-900/30',
-    doneText: 'text-red-700 dark:text-red-300',
-    doneBorder: 'border-red-300 dark:border-red-800',
+    iconBg: 'bg-rose-100 dark:bg-rose-900/40',
+    iconText: 'text-rose-600 dark:text-rose-400',
     requiresDetail: true,
   },
 ];
 
-function CollabCard({ collab, onActionSaved }) {
+function CollabCard({ collab, isAdmin, onActionSaved, onTimeline }) {
   const [saving, setSaving] = useState(null);
   const [showSnackDetail, setShowSnackDetail] = useState(false);
   const [snackDetail, setSnackDetail] = useState('');
@@ -86,8 +70,10 @@ function CollabCard({ collab, onActionSaved }) {
     snackDetail: collab.attendance?.snackDetail ?? null,
   };
   const attendanceId = collab.attendance?.id ?? collab.attendance?.attendanceId;
-  const assignConfirmed = collab.attendance?.confirmStation2 === true;
+  // Ya pasó de la Estación 2: la tarjeta queda en modo consulta.
+  const assignConfirmed = isPastStage(getStage(collab), STAGES.ESTACION_2);
   const allDone = !!station2.snack;
+  const doneCount = ACTIONS.filter(({ key }) => !!station2[key]).length;
   const notes = collab.attendance?.notes ?? collab.notes ?? null;
 
   const handleToggle = async (key, type) => {
@@ -105,7 +91,12 @@ function CollabCard({ collab, onActionSaved }) {
       received: newReceived,
     });
     if (res.status) {
-      onActionSaved(collab.userId, type, snackDetail.trim() || null, newReceived);
+      onActionSaved(
+        collab.userId,
+        type,
+        snackDetail.trim() || null,
+        newReceived
+      );
     }
     setSaving(null);
   };
@@ -141,107 +132,123 @@ function CollabCard({ collab, onActionSaved }) {
         assignConfirmed
           ? 'border-emerald-200 dark:border-emerald-800'
           : allDone
-          ? 'border-[#DD7419]/30'
-          : 'border-border'
+            ? 'border-[#DD7419]/30'
+            : 'border-border'
       }`}
     >
-      <div className={`h-1 ${assignConfirmed ? 'bg-emerald-500' : allDone ? 'bg-[#DD7419]' : 'bg-muted'}`} />
+      <div
+        className={`h-1 ${
+          assignConfirmed
+            ? 'bg-emerald-500'
+            : allDone
+              ? 'bg-[#DD7419]'
+              : 'bg-muted'
+        }`}
+      />
       <div className="p-4 space-y-3">
         <div className="flex items-start justify-between gap-3">
-          <div className="flex-1 min-w-0">
-            <p className="text-base font-bold text-foreground">
-              {collab.firstName} {collab.lastName}
-            </p>
-            <div className="mt-2 space-y-2">
-              <p className="text-xs text-foreground">
-                <span className="text-muted-foreground">Cédula:</span>{' '}
-                <span className="font-semibold">{collab.cedula}</span>
-              </p>
-              <p className="text-xs text-foreground">
-                <span className="text-muted-foreground">Celular:</span>{' '}
-                <span className="font-semibold">{collab.phone ?? '—'}</span>
-              </p>
-              <p className="text-xs text-foreground">
-                <span className="text-muted-foreground">Zonas:</span>{' '}
-                <span className="font-semibold">
-                  {collab.zones?.join(', ') || '—'}
-                </span>
-              </p>
-              <p className="text-xs text-foreground">
-                <span className="text-muted-foreground">Rol:</span>{' '}
-                <span
-                  className={`font-semibold text-[11px] px-2 py-0.5 rounded-md ${roleBadgeClass(
-                    collab.role
-                  )}`}
-                >
-                  {roleLabel(collab.role)}
-                </span>
-              </p>
-            </div>
+          <CollabIdentity collab={collab} />
+          <div className="shrink-0 flex flex-col items-end gap-1.5">
+            <StageBadge
+              stage={getStage(collab)}
+              onClick={onTimeline && (() => onTimeline(collab))}
+            />
+            {assignConfirmed && (
+              <div className="w-7 h-7 rounded-full bg-emerald-500 flex items-center justify-center">
+                <Check className="w-4 h-4 text-white" strokeWidth={3} />
+              </div>
+            )}
           </div>
-          {assignConfirmed && (
-            <div className="shrink-0 w-7 h-7 rounded-full bg-emerald-500 flex items-center justify-center">
-              <Check className="w-4 h-4 text-white" strokeWidth={3} />
+        </div>
+
+        {/* Acciones */}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between px-0.5">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Entregas
+            </span>
+            <span
+              className={`text-[11px] font-bold tabular-nums ${
+                doneCount === ACTIONS.length
+                  ? 'text-emerald-600 dark:text-emerald-400'
+                  : 'text-muted-foreground'
+              }`}
+            >
+              {doneCount}/{ACTIONS.length}
+            </span>
+          </div>
+          <div className="grid grid-cols-3 gap-1.5">
+            {ACTIONS.map(({ key, type, Icon, label, requiresDetail, iconBg, iconText }) => {
+              const done = !!station2[key];
+              const isSaving = saving === key;
+              const canUndo = done && !assignConfirmed;
+              return (
+                <button
+                  key={key}
+                  onClick={() => handleToggle(key, type)}
+                  disabled={!isAdmin || !!saving || assignConfirmed}
+                  className={`relative flex items-center gap-1.5 h-11 px-2 rounded-xl border font-semibold text-[11px] leading-tight transition-all ${
+                    isSaving ? 'opacity-60' : ''
+                  } ${
+                    done
+                      ? `bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-900/25 dark:border-emerald-800 dark:text-emerald-300 ${
+                          canUndo ? 'hover:bg-emerald-100 dark:hover:bg-emerald-900/40' : 'cursor-default'
+                        }`
+                      : 'bg-card border-border text-foreground hover:border-muted-foreground/30 hover:bg-muted active:scale-95'
+                  }`}
+                >
+                  {requiresDetail && !done && !isSaving && (
+                    <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-rose-500" />
+                  )}
+                  {canUndo && (
+                    <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-background border border-border flex items-center justify-center text-muted-foreground">
+                      {isSaving ? (
+                        <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                      ) : (
+                        <X className="w-2.5 h-2.5" strokeWidth={3} />
+                      )}
+                    </span>
+                  )}
+                  <span
+                    className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${
+                      done ? 'bg-emerald-500 text-white' : `${iconBg} ${iconText}`
+                    }`}
+                  >
+                    {isSaving ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : done ? (
+                      <Check className="w-3.5 h-3.5" strokeWidth={3} />
+                    ) : (
+                      <Icon className="w-3.5 h-3.5" />
+                    )}
+                  </span>
+                  <span className="truncate">{label}</span>
+                </button>
+              );
+            })}
+          </div>
+          {station2.snack && station2.snackDetail && (
+            <div className="flex items-center gap-1.5">
+              <Cookie className="w-3 h-3 text-red-500 shrink-0" />
+              <span className="text-[11px] text-muted-foreground">
+                {station2.snackDetail}
+              </span>
             </div>
           )}
         </div>
 
-        {/* Acciones */}
-        <div className="space-y-2">
-        <div className="flex gap-2 flex-wrap">
-          {ACTIONS.map(({ key, type, Icon, label, requiresDetail, doneBg, doneText, doneBorder }) => {
-            const done = !!station2[key];
-            const isSaving = saving === key;
-            const canUndo = done && !assignConfirmed;
-            return (
-              <button
-                key={key}
-                onClick={() => handleToggle(key, type)}
-                disabled={!!saving || assignConfirmed}
-                className={`relative flex items-center gap-2 h-10 px-4 rounded-xl border-2 font-semibold text-xs transition-all group ${
-                  done
-                    ? `${doneBg} ${doneText} ${doneBorder} ${canUndo ? 'hover:opacity-70 cursor-pointer' : 'cursor-default'}`
-                    : 'bg-card border-border text-muted-foreground hover:bg-muted active:scale-95'
-                }`}
-              >
-                {requiresDetail && !done && (
-                  <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-red-600" />
-                )}
-                {isSaving ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : done ? (
-                  <>
-                    <Check className="w-4 h-4 group-hover:hidden" strokeWidth={3} />
-                    {canUndo && <X className="w-4 h-4 hidden group-hover:block" />}
-                  </>
-                ) : (
-                  <Icon className="w-4 h-4" />
-                )}
-                <span>{label}</span>
-              </button>
-            );
-          })}
-        </div>
-        {station2.snack && station2.snackDetail && (
-          <div className="flex items-center gap-1.5">
-            <Cookie className="w-3 h-3 text-red-500 shrink-0" />
-            <span className="text-[11px] text-muted-foreground">
-              {station2.snackDetail}
-            </span>
-          </div>
-        )}
-        </div>
-
         {/* Confirmar asignación */}
         <button
-          onClick={() => { if (allDone && !assignConfirmed && !saving) setShowConfirm(true); }}
-          disabled={!allDone || assignConfirmed || !!saving}
+          onClick={() => {
+            if (isAdmin && allDone && !assignConfirmed && !saving) setShowConfirm(true);
+          }}
+          disabled={!isAdmin || !allDone || assignConfirmed || !!saving}
           className={`w-full h-9 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition border-2 ${
             assignConfirmed
               ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800 cursor-default'
               : !allDone
-              ? 'bg-muted border-border text-muted-foreground opacity-40 cursor-not-allowed'
-              : 'bg-[#234465] text-white hover:bg-[#234465]/90 border-transparent'
+                ? 'bg-muted border-border text-muted-foreground opacity-40 cursor-not-allowed'
+                : 'bg-[#234465] text-white hover:bg-[#234465]/90 border-transparent'
           }`}
         >
           {saving === 'confirm' ? (
@@ -259,19 +266,17 @@ function CollabCard({ collab, onActionSaved }) {
           )}
         </button>
 
-        {notes && (
-          <p
-            className="text-[11px] text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-lg px-2.5 py-1.5 italic mb-2"
-            style={{
-              marginBottom: '10px',
-            }}
-          >
-            <span className="font-semibold not-italic">Nota: </span>
-            {notes}
-          </p>
-        )}
+        <CollabNote note={notes} />
 
-        <Dialog open={showSnackDetail} onOpenChange={(open) => { if (!open && saving !== 'snack') { setShowSnackDetail(false); setSnackDetail(''); } }}>
+        <Dialog
+          open={showSnackDetail}
+          onOpenChange={(open) => {
+            if (!open && saving !== 'snack') {
+              setShowSnackDetail(false);
+              setSnackDetail('');
+            }
+          }}
+        >
           <DialogContent className="sm:max-w-sm">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
@@ -289,14 +294,18 @@ function CollabCard({ collab, onActionSaved }) {
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-foreground">
                   Detalle{' '}
-                  <span className="font-normal text-muted-foreground">(opcional)</span>
+                  <span className="font-normal text-muted-foreground">
+                    (opcional)
+                  </span>
                 </label>
                 <input
                   type="text"
                   placeholder="Ej: jugo + galletas…"
                   value={snackDetail}
                   onChange={(e) => setSnackDetail(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') handleConfirmSnack(); }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleConfirmSnack();
+                  }}
                   autoFocus
                   className="w-full h-9 px-3 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-[#DD7419]/30"
                 />
@@ -304,7 +313,10 @@ function CollabCard({ collab, onActionSaved }) {
             </div>
             <DialogFooter className="gap-2 sm:gap-2">
               <button
-                onClick={() => { setShowSnackDetail(false); setSnackDetail(''); }}
+                onClick={() => {
+                  setShowSnackDetail(false);
+                  setSnackDetail('');
+                }}
                 disabled={saving === 'snack'}
                 className="flex-1 h-9 rounded-lg border border-border text-sm text-muted-foreground hover:bg-muted transition"
               >
@@ -325,7 +337,12 @@ function CollabCard({ collab, onActionSaved }) {
           </DialogContent>
         </Dialog>
 
-        <Dialog open={showConfirm} onOpenChange={(open) => { if (!open && saving !== 'confirm') setShowConfirm(false); }}>
+        <Dialog
+          open={showConfirm}
+          onOpenChange={(open) => {
+            if (!open && saving !== 'confirm') setShowConfirm(false);
+          }}
+        >
           <DialogContent className="sm:max-w-sm">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
@@ -337,7 +354,8 @@ function CollabCard({ collab, onActionSaved }) {
               <span className="font-semibold text-foreground">
                 {collab.firstName} {collab.lastName}
               </span>{' '}
-              será habilitado para la Estación 3 y ya no podrá ser gestionado aquí.
+              será habilitado para la Estación 3 y ya no podrá ser gestionado
+              aquí.
             </p>
             <DialogFooter>
               <button
@@ -366,7 +384,13 @@ function CollabCard({ collab, onActionSaved }) {
   );
 }
 
-export function Station2Tab({ collaborators, loading, onActionSaved }) {
+export function Station2Tab({
+  collaborators,
+  loading,
+  isAdmin = true,
+  onActionSaved,
+  onTimeline,
+}) {
   return (
     <div className="space-y-4">
       {loading ? (
@@ -384,7 +408,7 @@ export function Station2Tab({ collaborators, loading, onActionSaved }) {
               </div>
               <div className="grid grid-cols-3 gap-1.5">
                 {[0, 1, 2].map((j) => (
-                  <div key={j} className="h-16 bg-muted rounded-xl" />
+                  <div key={j} className="h-11 bg-muted rounded-xl" />
                 ))}
               </div>
             </div>
@@ -408,7 +432,9 @@ export function Station2Tab({ collaborators, loading, onActionSaved }) {
             <CollabCard
               key={collab.userId}
               collab={collab}
+              isAdmin={isAdmin}
               onActionSaved={onActionSaved}
+              onTimeline={onTimeline}
             />
           ))}
         </div>
