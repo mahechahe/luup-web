@@ -1016,10 +1016,12 @@ export const getAttendanceHistoryService = async (body) => {
   }
 };
 
-export const getAttendanceDaysService = async (eventId) => {
+/** `shiftId` opcional: limita los conteos de cada día a ese turno. */
+export const getAttendanceDaysService = async (eventId, shiftId) => {
   try {
     const { data } = await axios.get(
-      `${EVENTS_URL}/attendance/${eventId}/days`
+      `${EVENTS_URL}/attendance/${eventId}/days`,
+      { params: shiftId ? { shiftId } : {} }
     );
     return { status: true, data: data?.data?.data, errors: null };
   } catch (error) {

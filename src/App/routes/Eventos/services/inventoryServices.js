@@ -139,16 +139,25 @@ export const listEventInventoryService = async (
   }
 };
 
+/**
+ * El ítem se manda por id (elegido del catálogo) o por nombre (escrito a mano);
+ * con nombre, el API lo crea en el catálogo si no existe.
+ */
 export const upsertEventInventoryService = async ({
   eventId,
   inventoryItemId,
+  nombre,
   cantidadCargada,
 }) => {
   try {
-    const { data } = await axios.post(`${INVENTORY_URL}/event/${eventId}`, {
-      inventoryItemId,
-      cantidadCargada,
-    });
+    const body = { cantidadCargada };
+    if (inventoryItemId) body.inventoryItemId = inventoryItemId;
+    else body.nombre = nombre;
+
+    const { data } = await axios.post(
+      `${INVENTORY_URL}/event/${eventId}`,
+      body
+    );
     return { status: true, data: data?.data, errors: null };
   } catch (error) {
     return {
@@ -157,6 +166,48 @@ export const upsertEventInventoryService = async ({
       errors:
         error?.response?.data?.message ||
         'Error al cargar el inventario del evento.',
+    };
+  }
+};
+
+/** Carga masiva desde Excel. Devuelve el resumen fila por fila. */
+export const uploadEventInventoryExcelService = async ({ eventId, file }) => {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const { data } = await axios.post(
+      `${INVENTORY_URL}/event/${eventId}/upload-excel`,
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data' } }
+    );
+
+    return { status: true, data: data?.data ?? null, errors: null };
+  } catch (error) {
+    return {
+      status: false,
+      data: null,
+      errors:
+        error?.response?.data?.message ||
+        'Error al procesar el archivo de inventario.',
+    };
+  }
+};
+
+/** URL firmada (15 min) de la plantilla de carga masiva. */
+export const getEventInventoryTemplateService = async () => {
+  try {
+    const { data } = await axios.get(
+      `${INVENTORY_URL}/event-inventory-template`
+    );
+    return { status: true, url: data?.data?.url ?? null, errors: null };
+  } catch (error) {
+    return {
+      status: false,
+      url: null,
+      errors:
+        error?.response?.data?.message ||
+        'Error al generar la plantilla de carga masiva.',
     };
   }
 };

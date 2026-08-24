@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { getAttendanceDaysService } from '../../services/eventServices';
 import {
   getColombiaDateISO,
@@ -11,8 +11,12 @@ import {
  * Siempre arranca en hoy. Si hoy no es una jornada del evento (ya terminó o aún
  * no empieza) cae al día más cercano dentro del rango, para no dejar el tablero
  * en una fecha sin registros.
+ *
+ * `shiftId` viaja al API para que los conteos sean del turno filtrado y el
+ * resumen cuadre con las listas de las estaciones. Cambiar de turno recarga
+ * los números pero nunca mueve el día abierto.
  */
-export function useEventDays(eventId) {
+export function useEventDays(eventId, shiftId = '') {
   const [days, setDays] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(getColombiaDateISO());
@@ -20,7 +24,7 @@ export function useEventDays(eventId) {
   const load = useCallback(
     async ({ resetSelection = true } = {}) => {
       setLoading(true);
-      const res = await getAttendanceDaysService(eventId);
+      const res = await getAttendanceDaysService(eventId, shiftId);
       setLoading(false);
 
       if (!res.status || !res.data) return;
@@ -46,17 +50,19 @@ export function useEventDays(eventId) {
       const isPastEvent = list[list.length - 1].date < today;
       setSelected(isPastEvent ? list[list.length - 1].date : list[0].date);
     },
-    [eventId]
+    [eventId, shiftId]
   );
+
+  // Solo el evento reposiciona el día; cambiar de turno se queda donde está.
+  const loadedEventId = useRef(null);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    const isNewEvent = loadedEventId.current !== eventId;
+    loadedEventId.current = eventId;
+    load({ resetSelection: isNewEvent });
+  }, [load, eventId]);
 
-  const refresh = useCallback(
-    () => load({ resetSelection: false }),
-    [load]
-  );
+  const refresh = useCallback(() => load({ resetSelection: false }), [load]);
 
   const selectedDay = days.find((d) => d.date === selected) ?? null;
 

@@ -77,6 +77,7 @@ export const Section1 = ({
         collaborators={collaborators}
         loading={loading}
         eventId={eventId}
+        dateRegister={dateRegister}
         isAdmin={isAdmin}
         onAttendanceUpdated={handleAttendanceUpdated}
         onUniformSaved={handleUniformSaved}

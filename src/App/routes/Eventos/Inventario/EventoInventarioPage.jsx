@@ -1,19 +1,23 @@
 import {
+  AlertCircle,
   ArrowLeft,
   Boxes,
   Check,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Download,
+  FileSpreadsheet,
   Loader2,
   PackageOpen,
   Pencil,
   Plus,
   Search,
   Trash2,
+  Upload,
   X,
 } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
@@ -41,6 +45,8 @@ import {
   listEventInventoryService,
   upsertEventInventoryService,
   deleteEventInventoryService,
+  uploadEventInventoryExcelService,
+  getEventInventoryTemplateService,
 } from '../services/inventoryServices';
 
 // ── Modal: cargar / editar la cantidad de un ítem para el evento ───────────
@@ -90,19 +96,16 @@ function LoadItemModal({ open, onClose, eventId, editingRow, onSuccess }) {
       toast.error('Selecciona un ítem e ingresa la cantidad.');
       return;
     }
-    if (
-      typeof selectedItem.cantidad === 'number' &&
-      Number(cantidad) > selectedItem.cantidad
-    ) {
-      toast.error(
-        `No puedes cargar más de ${selectedItem.cantidad} unidades: es la cantidad total de "${selectedItem.nombre}" en el catálogo.`
-      );
+    if (!Number.isInteger(Number(cantidad))) {
+      toast.error('La cantidad debe ser un número entero.');
       return;
     }
     setSaving(true);
+    // Sin id es un ítem nuevo: el API lo crea en el catálogo por nombre.
     const res = await upsertEventInventoryService({
       eventId,
-      inventoryItemId: selectedItem.id,
+      inventoryItemId: selectedItem.id ?? undefined,
+      nombre: selectedItem.nombre,
       cantidadCargada: Number(cantidad),
     });
     if (res.status) {
@@ -117,6 +120,17 @@ function LoadItemModal({ open, onClose, eventId, editingRow, onSuccess }) {
     setSaving(false);
   };
 
+  const trimmedSearch = search.trim();
+  // Solo se ofrece crear si el nombre escrito no existe ya en el catálogo.
+  const canCreateNew =
+    !isEdit &&
+    trimmedSearch !== '' &&
+    !loadingCatalog &&
+    !catalog.some(
+      (it) => it.nombre.trim().toLowerCase() === trimmedSearch.toLowerCase()
+    );
+  const isNewSelected = selectedItem != null && selectedItem.id == null;
+
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-md max-h-[90dvh] flex flex-col gap-0 p-0">
@@ -127,7 +141,7 @@ function LoadItemModal({ open, onClose, eventId, editingRow, onSuccess }) {
           <DialogDescription>
             {isEdit
               ? `Ajusta cuántas unidades de "${editingRow.nombre}" tiene disponibles este evento.`
-              : 'Elige un ítem del catálogo y define cuántas unidades tiene disponibles este evento.'}
+              : 'Busca un ítem del catálogo o escribe uno nuevo, y define cuántas unidades tiene disponibles este evento.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -135,17 +149,59 @@ function LoadItemModal({ open, onClose, eventId, editingRow, onSuccess }) {
           {!isEdit && (
             <div className="space-y-2">
               <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide block">
-                Ítem del catálogo
+                Ítem
               </label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   className="pl-9"
-                  placeholder="Buscar por nombre..."
+                  placeholder="Buscar o escribir un ítem nuevo..."
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={(e) => {
+                    setSearch(e.target.value);
+                    // El ítem nuevo se nombra con lo escrito: al cambiarlo la
+                    // selección anterior deja de corresponder.
+                    if (isNewSelected) setSelectedItem(null);
+                  }}
                 />
               </div>
+
+              {/* Un nombre que no está en el catálogo se puede crear al vuelo. */}
+              {canCreateNew && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSelectedItem({ id: null, nombre: trimmedSearch })
+                  }
+                  className={`w-full text-left rounded-xl border-2 border-dashed px-3 py-2.5 bg-card transition-all ${
+                    isNewSelected
+                      ? 'border-brand'
+                      : 'border-border hover:border-muted-foreground/40'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-foreground truncate">
+                        Crear &quot;{trimmedSearch}&quot;
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        No está en el catálogo. Se agrega al crearlo.
+                      </p>
+                    </div>
+                    <span
+                      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
+                        isNewSelected
+                          ? 'bg-brand border-transparent'
+                          : 'border-muted-foreground/30'
+                      }`}
+                    >
+                      {isNewSelected && (
+                        <Check className="w-3 h-3 text-white stroke-[3]" />
+                      )}
+                    </span>
+                  </div>
+                </button>
+              )}
 
               {loadingCatalog ? (
                 <div className="space-y-2">
@@ -158,7 +214,9 @@ function LoadItemModal({ open, onClose, eventId, editingRow, onSuccess }) {
                 </div>
               ) : catalog.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-4 border border-border rounded-xl">
-                  No se encontraron ítems en el catálogo.
+                  {trimmedSearch
+                    ? 'No hay ítems del catálogo con ese nombre.'
+                    : 'El catálogo está vacío. Escribe un nombre para crear el primer ítem.'}
                 </p>
               ) : (
                 <div className="space-y-1.5 max-h-48 overflow-y-auto">
@@ -218,19 +276,15 @@ function LoadItemModal({ open, onClose, eventId, editingRow, onSuccess }) {
             <Input
               type="number"
               min="0"
-              max={selectedItem?.cantidad ?? undefined}
+              step="1"
               value={cantidad}
               onChange={(e) => setCantidad(e.target.value)}
               placeholder="ej. 4"
             />
-            {typeof selectedItem?.cantidad === 'number' && (
-              <p className="text-xs text-muted-foreground">
-                Cantidad total en catálogo:{' '}
-                <span className="font-medium text-foreground tabular-nums">
-                  {selectedItem.cantidad}
-                </span>
-              </p>
-            )}
+            <p className="text-xs text-muted-foreground">
+              Es el tope de unidades que este evento puede asignar. No depende
+              de las existencias del catálogo.
+            </p>
           </div>
         </div>
 
@@ -240,13 +294,7 @@ function LoadItemModal({ open, onClose, eventId, editingRow, onSuccess }) {
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={
-              saving ||
-              !selectedItem ||
-              cantidad === '' ||
-              (typeof selectedItem?.cantidad === 'number' &&
-                Number(cantidad) > selectedItem.cantidad)
-            }
+            disabled={saving || !selectedItem || cantidad === ''}
           >
             {saving && <Loader2 className="w-4 h-4 animate-spin mr-1.5" />}
             {saving
@@ -255,6 +303,302 @@ function LoadItemModal({ open, onClose, eventId, editingRow, onSuccess }) {
                 ? 'Guardar cambios'
                 : 'Cargar ítem'}
           </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ── Modal: carga masiva desde Excel ───────────────────────────────────────
+function BulkUploadModal({ open, onClose, eventId, onSuccess }) {
+  const fileRef = useRef(null);
+  const [file, setFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [result, setResult] = useState(null);
+
+  useEffect(() => {
+    if (!open) return;
+    setFile(null);
+    setResult(null);
+    setUploading(false);
+  }, [open]);
+
+  const handleDownloadTemplate = async () => {
+    setDownloading(true);
+    const res = await getEventInventoryTemplateService();
+    setDownloading(false);
+    if (res.status && res.url) {
+      window.open(res.url, '_blank', 'noopener,noreferrer');
+    } else {
+      toast.error(res.errors ?? 'No se pudo generar la plantilla.');
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!file) return;
+    setUploading(true);
+    const res = await uploadEventInventoryExcelService({ eventId, file });
+    setUploading(false);
+
+    if (!res.status) {
+      toast.error(res.errors ?? 'No se pudo procesar el archivo.');
+      return;
+    }
+
+    setResult(res.data);
+    // La lista de atrás se refresca aunque queden filas con error.
+    onSuccess();
+  };
+
+  const resumen = result?.resumen;
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-lg max-h-[90dvh] flex flex-col gap-0 p-0">
+        <DialogHeader className="px-5 pt-5 pb-4 border-b border-border shrink-0">
+          <DialogTitle>
+            {result ? 'Resumen de la carga' : 'Carga masiva de inventario'}
+          </DialogTitle>
+          <DialogDescription>
+            {result
+              ? 'Esto fue lo que se cargó. Las filas con error no se guardaron.'
+              : 'Sube un Excel con los ítems y sus cantidades. Descarga la plantilla si no la tienes.'}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+          {!result ? (
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full gap-1.5"
+                onClick={handleDownloadTemplate}
+                disabled={downloading}
+              >
+                {downloading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Download className="w-4 h-4" />
+                )}
+                {downloading ? 'Generando...' : 'Descargar plantilla'}
+              </Button>
+
+              <div className="rounded-xl border border-border bg-muted/30 p-3 space-y-1.5">
+                <p className="text-xs font-semibold text-foreground">
+                  Cómo llenarla
+                </p>
+                <ul className="text-xs text-muted-foreground space-y-1 list-disc pl-4">
+                  <li>
+                    <span className="font-medium text-foreground">
+                      Nombre del ítem
+                    </span>{' '}
+                    y{' '}
+                    <span className="font-medium text-foreground">
+                      Cantidad
+                    </span>{' '}
+                    son obligatorios; la descripción es opcional.
+                  </li>
+                  <li>Si el ítem no existe en el catálogo, se crea solo.</li>
+                  <li>
+                    Si ya está cargado en este evento, la cantidad del archivo
+                    reemplaza la anterior.
+                  </li>
+                </ul>
+              </div>
+
+              <input
+                ref={fileRef}
+                type="file"
+                accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+                className="hidden"
+                onChange={(e) => {
+                  setFile(e.target.files?.[0] ?? null);
+                  e.target.value = '';
+                }}
+              />
+
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                className="w-full rounded-xl border-2 border-dashed border-border hover:border-brand transition-colors px-4 py-6 flex flex-col items-center gap-2 text-center"
+              >
+                <div className="w-10 h-10 rounded-2xl bg-muted flex items-center justify-center">
+                  <FileSpreadsheet className="w-5 h-5 text-muted-foreground" />
+                </div>
+                {file ? (
+                  <>
+                    <p className="text-sm font-semibold text-foreground break-all">
+                      {file.name}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Toca para elegir otro archivo
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm font-semibold text-foreground">
+                      Selecciona el archivo
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Formato .xlsx o .xls
+                    </p>
+                  </>
+                )}
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="grid grid-cols-3 gap-2">
+                <div className="rounded-xl border border-border bg-card px-3 py-2.5 text-center">
+                  <p className="text-lg font-bold text-foreground tabular-nums">
+                    {resumen.procesadas}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">Filas</p>
+                </div>
+                <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2.5 text-center">
+                  <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
+                    {resumen.exitosas}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">Cargadas</p>
+                </div>
+                <div
+                  className={`rounded-xl border px-3 py-2.5 text-center ${
+                    resumen.fallidas > 0
+                      ? 'border-destructive/20 bg-destructive/10'
+                      : 'border-border bg-card'
+                  }`}
+                >
+                  <p
+                    className={`text-lg font-bold tabular-nums ${
+                      resumen.fallidas > 0
+                        ? 'text-destructive'
+                        : 'text-foreground'
+                    }`}
+                  >
+                    {resumen.fallidas}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">Con error</p>
+                </div>
+              </div>
+
+              {(resumen.nuevos > 0 ||
+                resumen.actualizados > 0 ||
+                resumen.itemsCreadosEnCatalogo > 0) && (
+                <div className="flex flex-wrap gap-1.5">
+                  {resumen.nuevos > 0 && (
+                    <Badge variant="outline" className="tabular-nums">
+                      {resumen.nuevos} nuevo{resumen.nuevos !== 1 ? 's' : ''} en
+                      el evento
+                    </Badge>
+                  )}
+                  {resumen.actualizados > 0 && (
+                    <Badge variant="outline" className="tabular-nums">
+                      {resumen.actualizados} actualizado
+                      {resumen.actualizados !== 1 ? 's' : ''}
+                    </Badge>
+                  )}
+                  {resumen.itemsCreadosEnCatalogo > 0 && (
+                    <Badge
+                      variant="outline"
+                      className="tabular-nums bg-brand/10 text-brand border-brand/20"
+                    >
+                      {resumen.itemsCreadosEnCatalogo} creado
+                      {resumen.itemsCreadosEnCatalogo !== 1 ? 's' : ''} en el
+                      catálogo
+                    </Badge>
+                  )}
+                </div>
+              )}
+
+              {result.failed.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-destructive">
+                    No se cargaron ({result.failed.length})
+                  </p>
+                  <div className="rounded-xl border border-destructive/20 divide-y divide-destructive/10 overflow-hidden">
+                    {result.failed.map((f) => (
+                      <div key={`f-${f.row}`} className="px-3 py-2.5">
+                        <div className="flex items-start gap-2">
+                          <AlertCircle className="w-3.5 h-3.5 text-destructive shrink-0 mt-0.5" />
+                          <div className="min-w-0">
+                            <p className="text-xs font-semibold text-foreground">
+                              Fila {f.row} · {f.nombre}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {f.motivo}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {result.successful.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Cargadas ({result.successful.length})
+                  </p>
+                  <div className="rounded-xl border border-border divide-y divide-border overflow-hidden max-h-56 overflow-y-auto">
+                    {result.successful.map((s) => (
+                      <div
+                        key={`s-${s.row}`}
+                        className="px-3 py-2.5 flex items-start gap-2"
+                      >
+                        <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-semibold text-foreground truncate">
+                            {s.nombre}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-0.5 tabular-nums">
+                            {s.actualizado
+                              ? `${s.cantidadAnterior} → ${s.cantidadCargada} unidades`
+                              : `${s.cantidadCargada} unidades`}
+                            {s.itemCreado && ' · nuevo en el catálogo'}
+                          </p>
+                        </div>
+                        <span className="text-[11px] text-muted-foreground shrink-0 tabular-nums">
+                          Fila {s.row}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        <div className="px-5 py-4 border-t border-border flex justify-end gap-2 shrink-0">
+          {result ? (
+            <>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setResult(null);
+                  setFile(null);
+                }}
+              >
+                Cargar otro archivo
+              </Button>
+              <Button onClick={onClose}>Listo</Button>
+            </>
+          ) : (
+            <>
+              <Button variant="outline" onClick={onClose} disabled={uploading}>
+                Cancelar
+              </Button>
+              <Button onClick={handleUpload} disabled={!file || uploading}>
+                {uploading && (
+                  <Loader2 className="w-4 h-4 animate-spin mr-1.5" />
+                )}
+                {uploading ? 'Procesando...' : 'Cargar archivo'}
+              </Button>
+            </>
+          )}
         </div>
       </DialogContent>
     </Dialog>
@@ -348,6 +692,7 @@ function EventoInventarioPage() {
     totalPages: 1,
   });
   const [modalRow, setModalRow] = useState(undefined); // undefined=cerrado, null=nuevo, obj=editar
+  const [bulkOpen, setBulkOpen] = useState(false);
   const [toRemove, setToRemove] = useState(null);
   const [removing, setRemoving] = useState(false);
 
@@ -436,15 +781,25 @@ function EventoInventarioPage() {
               para este evento.
             </p>
           </div>
-          {pagination.total > 0 && (
+          <div className="flex items-center gap-2">
             <Button
               size="sm"
-              onClick={() => setModalRow(null)}
+              variant="outline"
+              onClick={() => setBulkOpen(true)}
               className="gap-1.5"
             >
-              <Plus className="w-4 h-4" /> Cargar ítem
+              <Upload className="w-4 h-4" /> Carga masiva
             </Button>
-          )}
+            {pagination.total > 0 && (
+              <Button
+                size="sm"
+                onClick={() => setModalRow(null)}
+                className="gap-1.5"
+              >
+                <Plus className="w-4 h-4" /> Cargar ítem
+              </Button>
+            )}
+          </div>
         </div>
 
         {pagination.total > 0 || hasActiveFilter ? (
@@ -642,6 +997,13 @@ function EventoInventarioPage() {
         eventId={eventId}
         onSuccess={fetchInventory}
         onClose={() => setModalRow(undefined)}
+      />
+
+      <BulkUploadModal
+        open={bulkOpen}
+        eventId={eventId}
+        onSuccess={fetchInventory}
+        onClose={() => setBulkOpen(false)}
       />
 
       <AlertDialog

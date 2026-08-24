@@ -36,6 +36,7 @@ export function MarkAttendedModal({
   onClose,
   collab,
   eventId,
+  dateRegister,
   onUpdated,
   onUniformSaved,
 }) {
@@ -82,7 +83,7 @@ export function MarkAttendedModal({
       notes: notes.trim() || null,
       uniform: !!uniformSize,
       uniformSize: uniformSize || null,
-      dateRegister: collab.attendance?.dateRegister,
+      dateRegister: collab.attendance?.dateRegister ?? dateRegister,
     };
 
     const res = await upsertAttendanceService(body);

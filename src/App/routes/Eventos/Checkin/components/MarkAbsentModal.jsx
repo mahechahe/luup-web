@@ -11,7 +11,14 @@ import {
 import { upsertAttendanceService } from '@/App/routes/Eventos/services/eventServices';
 
 /** Marca inasistencia con un motivo opcional. Acción rápida desde la tarjeta. */
-export function MarkAbsentModal({ open, onClose, collab, eventId, onUpdated }) {
+export function MarkAbsentModal({
+  open,
+  onClose,
+  collab,
+  eventId,
+  dateRegister,
+  onUpdated,
+}) {
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -37,7 +44,7 @@ export function MarkAbsentModal({ open, onClose, collab, eventId, onUpdated }) {
       entryTime: collab.attendance?.entryTime ?? null,
       exitTime: collab.attendance?.exitTime ?? null,
       notes: notes.trim() || null,
-      dateRegister: collab.attendance?.dateRegister,
+      dateRegister: collab.attendance?.dateRegister ?? dateRegister,
     };
 
     const res = await upsertAttendanceService(body);

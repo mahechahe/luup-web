@@ -1,6 +1,7 @@
 import {
   ArrowLeft, Users, Plus, Trash2, UserPlus, Building2, Mail, Eye, EyeOff,
   Sparkles, Recycle, LayoutGrid, Check, FileText, Upload, ExternalLink, Download, Info, Pencil,
+  History,
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -41,6 +42,7 @@ import {
   uploadReportService,
   updateEventClienteService,
 } from '../../Cliente/services/clienteServices';
+import HistoricalEventsDrawer from './HistoricalEventsDrawer';
 
 const SERVICE_OPTIONS = [
   {
@@ -539,6 +541,7 @@ function EventoClientesPage() {
   const [toRemove, setToRemove] = useState(null);
   const [removing, setRemoving] = useState(false);
   const [reportClient, setReportClient] = useState(null);
+  const [historicalClient, setHistoricalClient] = useState(null);
   const [editClient, setEditClient] = useState(null);
 
   const fetchClients = useCallback(async () => {
@@ -710,6 +713,16 @@ function EventoClientesPage() {
                     </button>
                     <button
                       type="button"
+                      aria-label={`Eventos históricos de ${c.user.firstName} ${c.user.lastName}`}
+                      title="Eventos anteriores a Luup"
+                      onClick={() => setHistoricalClient(c)}
+                      className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 text-xs font-semibold text-foreground shadow-sm transition-colors hover:border-brand/30 hover:bg-brand/10 hover:text-brand"
+                    >
+                      <History className="h-3.5 w-3.5" />
+                      Históricos
+                    </button>
+                    <button
+                      type="button"
                       aria-label={`Editar a ${c.user.firstName} ${c.user.lastName}`}
                       onClick={() => setEditClient(c)}
                       className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 text-xs font-semibold text-foreground shadow-sm transition-colors hover:border-brand/30 hover:bg-brand/10 hover:text-brand"
@@ -754,6 +767,12 @@ function EventoClientesPage() {
         eventId={eventId}
         client={reportClient}
         onSuccess={fetchClients}
+      />
+
+      <HistoricalEventsDrawer
+        open={!!historicalClient}
+        onClose={() => setHistoricalClient(null)}
+        client={historicalClient}
       />
 
       <AlertDialog open={!!toRemove} onOpenChange={(v) => !v && setToRemove(null)}>

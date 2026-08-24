@@ -138,10 +138,6 @@ export const routesClient = [
     component: lazy(() => import('./Eventos/Checkin/CheckinPage')),
   },
   {
-    path: 'cliente/eventos/:eventId/inventario',
-    component: lazy(() => import('./Cliente/ClienteEventoInventarioPage')),
-  },
-  {
     path: 'cliente/eventos/:eventId/map-layout',
     component: lazy(() => import('./Eventos/MapLayout/MapLayoutPage')),
   },

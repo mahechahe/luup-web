@@ -1,6 +1,5 @@
 import { upsertAttendanceService } from '@/App/routes/Eventos/services/eventServices';
 import {
-  formatColombiaLongDate,
   formatColombiaTime,
   formatDateRegisterLong,
 } from '@/App/utils/functions/colombiaDate';
@@ -28,12 +27,16 @@ const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 function CollabCard({
   collab,
   eventId,
+  dateRegister,
   isAdmin,
   onAttendanceUpdated,
   onUniformSaved,
   onEdit,
   onTimeline,
 }) {
+  // Quien todavía no tiene fila de asistencia no trae fecha en `attendance`:
+  // manda la del día abierto en el tablero, o el registro se crearía suelto.
+  const targetDate = collab.attendance?.dateRegister ?? dateRegister;
   const [attendedModalOpen, setAttendedModalOpen] = useState(false);
   const [absentModalOpen, setAbsentModalOpen] = useState(false);
   const [showUniform, setShowUniform] = useState(false);
@@ -85,7 +88,7 @@ function CollabCard({
       notes: collab.attendance?.notes ?? null,
       uniform: true,
       uniformSize: selectedSize,
-      dateRegister: collab.attendance?.dateRegister,
+      dateRegister: targetDate,
     };
     const res = await upsertAttendanceService(body);
     if (res.status) {
@@ -378,6 +381,7 @@ function CollabCard({
         onClose={() => setAttendedModalOpen(false)}
         collab={collab}
         eventId={eventId}
+        dateRegister={targetDate}
         onUpdated={onAttendanceUpdated}
         onUniformSaved={onUniformSaved}
       />
@@ -386,6 +390,7 @@ function CollabCard({
         onClose={() => setAbsentModalOpen(false)}
         collab={collab}
         eventId={eventId}
+        dateRegister={targetDate}
         onUpdated={onAttendanceUpdated}
       />
     </div>
@@ -396,6 +401,7 @@ export function Station1Tab({
   collaborators,
   loading,
   eventId,
+  dateRegister,
   isAdmin = true,
   onAttendanceUpdated,
   onUniformSaved,
@@ -430,10 +436,11 @@ export function Station1Tab({
             <UserCheck className="w-6 h-6 text-muted-foreground" />
           </div>
           <p className="text-base font-semibold text-foreground">
-            No hay registros de Check-in para esta fecha
+            No hay colaboradores vinculados al evento
           </p>
-          <p className="text-sm text-muted-foreground mt-1 capitalize">
-            {formatColombiaLongDate()}
+          <p className="text-sm text-muted-foreground mt-1">
+            La Estación 1 lista a todo el personal asignado. Revisa las
+            asignaciones de zona, o el filtro de turno si tienes uno activo.
           </p>
         </div>
       ) : (
@@ -443,6 +450,7 @@ export function Station1Tab({
               key={collab.userId}
               collab={collab}
               eventId={eventId}
+              dateRegister={dateRegister}
               isAdmin={isAdmin}
               onAttendanceUpdated={onAttendanceUpdated}
               onUniformSaved={onUniformSaved}

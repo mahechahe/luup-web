@@ -1,7 +1,9 @@
-import { Calendar, MapPin, ArrowRight, Package } from 'lucide-react';
+import { Calendar, MapPin, ArrowRight, Package, FileText, History } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { getClienteEventosService } from './services/clienteServices';
 
 const SERVICE_LABEL = {
@@ -61,15 +63,63 @@ function EmptyState() {
   );
 }
 
+/* Evento anterior a Luup: no tiene detalle navegable, solo su distribucion
+   de kilogramos y el informe en PDF. */
+function HistoricalRow({ item }) {
+  return (
+    <div className="px-4 py-3 flex items-start gap-3">
+      <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
+        <History className="w-3.5 h-3.5 text-muted-foreground" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <p className="font-semibold text-foreground text-sm truncate leading-tight">
+            {item.name}
+          </p>
+          <Badge variant="secondary" className="text-[10px]">
+            Histórico
+          </Badge>
+        </div>
+        <p className="text-xs text-muted-foreground mt-0.5 tabular-nums">
+          {item.totalKg.toFixed(1)} kg gestionados
+        </p>
+        <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1.5">
+          {item.distributions.map((d) => (
+            <span key={d.id} className="text-[11px] text-muted-foreground">
+              {d.category}{' '}
+              <span className="font-semibold text-foreground tabular-nums">
+                {d.weightKg.toFixed(1)} kg
+              </span>
+            </span>
+          ))}
+        </div>
+      </div>
+      {item.reportUrl && (
+        <Button asChild size="sm" variant="outline" className="shrink-0">
+          <a href={item.reportUrl} target="_blank" rel="noopener noreferrer">
+            <FileText className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Informe</span>
+          </a>
+        </Button>
+      )}
+    </div>
+  );
+}
+
 function ClienteEventosPage() {
   const navigate = useNavigate();
   const [events, setEvents] = useState([]);
+  const [historical, setHistorical] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     getClienteEventosService().then((res) => {
-      if (res.status) setEvents(res.events);
-      else toast.error(res.errors ?? 'Error al cargar los eventos.');
+      if (res.status) {
+        setEvents(res.events);
+        setHistorical(res.historical);
+      } else {
+        toast.error(res.errors ?? 'Error al cargar los eventos.');
+      }
       setLoading(false);
     });
   }, []);
@@ -96,18 +146,23 @@ function ClienteEventosPage() {
             <div className="divide-y divide-border">
               {[1, 2, 3].map((i) => <SkeletonRow key={i} />)}
             </div>
-          ) : events.length === 0 ? (
+          ) : events.length === 0 && historical.length === 0 ? (
             <EmptyState />
           ) : (
             <div className="divide-y divide-border">
               {events.map((item) => (
-                <button
+                <div
                   key={item.assignmentId}
-                  type="button"
-                  onClick={() => navigate(`/cliente/eventos/${item.event.eventId}`)}
-                  className="w-full text-left group"
+                  className="relative group hover:bg-muted/40 transition-colors"
                 >
-                  <div className="px-4 py-3 flex items-center gap-3 hover:bg-muted/40 transition-colors">
+                  {/* Overlay clicable: cubre la fila sin anidar el enlace del informe */}
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/cliente/eventos/${item.event.eventId}`)}
+                    className="absolute inset-0 w-full cursor-pointer"
+                    aria-label={`Ver ${item.event.name}`}
+                  />
+                  <div className="relative px-4 py-3 flex items-center gap-3 pointer-events-none">
                     <div className="w-8 h-8 rounded-lg bg-brand/10 flex items-center justify-center shrink-0">
                       <Package className="w-3.5 h-3.5 text-brand" />
                     </div>
@@ -127,9 +182,31 @@ function ClienteEventosPage() {
                         </span>
                       </div>
                     </div>
+                    {item.reportUrl && (
+                      <Button
+                        asChild
+                        size="sm"
+                        variant="outline"
+                        className="shrink-0 pointer-events-auto"
+                      >
+                        <a
+                          href={item.reportUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <FileText className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline">Informe</span>
+                        </a>
+                      </Button>
+                    )}
                     <ArrowRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-brand transition-colors shrink-0" />
                   </div>
-                </button>
+                </div>
+              ))}
+
+              {historical.map((item) => (
+                <HistoricalRow key={`h-${item.historicalEventId}`} item={item} />
               ))}
             </div>
           )}

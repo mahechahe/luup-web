@@ -88,8 +88,13 @@ export default function CheckinPage() {
   const [shiftId, setShiftId] = useState('');
 
   // Un evento puede durar varias jornadas; el día seleccionado manda sobre las
-  // cuatro estaciones a la vez.
-  const days = useEventDays(eventId);
+  // cuatro estaciones a la vez. El turno viaja con él para que los conteos del
+  // resumen y las listas de las estaciones hablen siempre de la misma gente.
+  const days = useEventDays(eventId, shiftId);
+
+  const activeShift = shiftId
+    ? shiftOptions.find((s) => String(s.shiftId) === String(shiftId))
+    : null;
   const stationProps = {
     eventId,
     dateRegister: days.selectedDateRegister,
@@ -287,7 +292,11 @@ export default function CheckinPage() {
             onSelect={days.setSelected}
           />
 
-          <DaySummary day={days.selectedDay} />
+          <DaySummary
+            day={days.selectedDay}
+            loading={days.loading}
+            shiftLabel={activeShift?.name ?? null}
+          />
 
           {/* <StationTimings eventId={eventId} date={days.selected} /> */}
 
