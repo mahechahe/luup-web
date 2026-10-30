@@ -1,0 +1,93 @@
+name: Deploy Web
+
+# Cada push a main construye el front, lo empaqueta en una imagen en GHCR y lo publica en la EC2 via SSM.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-web
+  cancel-in-progress: false
+
+env:
+  IMAGE: ghcr.io/mahechahe/luup-web
+  AWS_REGION: us-east-1
+  AWS_ROLE: arn:aws:iam::030985406853:role/workload/luup-prod-app-github-deploy
+  SSM_DOCUMENT: luup-prod-app-deploy
+  INSTANCE_ID: i-0017f622035d8680f
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build
+        env:
+          VITE_MAPBOX_TOKEN: ${{ secrets.VITE_MAPBOX_TOKEN }}
+        run: |
+          [ -n "$VITE_MAPBOX_TOKEN" ] || { echo "Falta el secreto VITE_MAPBOX_TOKEN"; exit 1; }
+          npm run build
+          test -f dist/index.html
+
+      - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Empaquetar dist en imagen y push
+        run: |
+          printf 'FROM scratch\nCOPY . /dist\nCMD ["none"]\n' \
+            | docker build --platform linux/arm64 -t "$IMAGE:$GITHUB_SHA" -f - dist
+          docker push "$IMAGE:$GITHUB_SHA"
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ env.AWS_ROLE }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy en la EC2 (SSM)
+        run: |
+          set -euo pipefail
+          CMD_ID=$(aws ssm send-command \
+            --instance-ids "$INSTANCE_ID" \
+            --document-name "$SSM_DOCUMENT" \
+            --parameters "component=web,version=$GITHUB_SHA" \
+            --comment "luup-web ${GITHUB_SHA::7}" \
+            --query Command.CommandId --output text)
+          echo "Comando SSM: $CMD_ID"
+
+          STATUS=Pending
+          for _ in $(seq 1 60); do
+            sleep 10
+            STATUS=$(aws ssm get-command-invocation --command-id "$CMD_ID" --instance-id "$INSTANCE_ID" \
+              --query Status --output text 2>/dev/null || echo Pending)
+            case "$STATUS" in Pending|InProgress|Delayed) continue ;; *) break ;; esac
+          done
+
+          echo "----- salida en la EC2 -----"
+          aws ssm get-command-invocation --command-id "$CMD_ID" --instance-id "$INSTANCE_ID" \
+            --query StandardOutputContent --output text
+          aws ssm get-command-invocation --command-id "$CMD_ID" --instance-id "$INSTANCE_ID" \
+            --query StandardErrorContent --output text >&2
+          echo "Estado: $STATUS"
+          [ "$STATUS" = "Success" ]
