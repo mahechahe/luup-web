@@ -191,12 +191,17 @@ export const getAssignmentCollaboratorsService = async (query = '') => {
   }
 };
 
-export const saveEventAssignmentsService = async (eventId, assignments) => {
+export const saveEventAssignmentsService = async (
+  eventId,
+  assignments,
+  removedAssignmentIds = []
+) => {
   try {
     const { data } = await axios.post(
       `${EVENTS_URL}/zones/${eventId}/assignments/bulk`,
       {
         assignments,
+        removedAssignmentIds,
       }
     );
     return { status: true, data: data?.data ?? null, errors: null };
@@ -207,6 +212,124 @@ export const saveEventAssignmentsService = async (eventId, assignments) => {
       errors:
         error?.response?.data?.message ||
         'No se pudieron guardar las asignaciones.',
+    };
+  }
+};
+
+/* ── Asignación masiva por Excel ─────────────────────────────────────────── */
+
+const fileNameFromHeaders = (headers, fallback) => {
+  const match = /filename="?([^";]+)"?/i.exec(
+    headers?.['content-disposition'] ?? ''
+  );
+  return match?.[1] ?? fallback;
+};
+
+/** Los errores de una descarga llegan como Blob: hay que leer el JSON. */
+const blobErrorMessage = async (error, fallback) => {
+  try {
+    const text = await error?.response?.data?.text?.();
+    const parsed = text ? JSON.parse(text) : null;
+    return parsed?.message || fallback;
+  } catch {
+    return fallback;
+  }
+};
+
+const importFormData = (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  return formData;
+};
+
+export const downloadAssignmentTemplateService = async (eventId) => {
+  try {
+    const response = await axios.get(
+      `${EVENTS_URL}/zones/${eventId}/assignments/import/template`,
+      { responseType: 'blob' }
+    );
+    return {
+      status: true,
+      blob: response.data,
+      fileName: fileNameFromHeaders(
+        response.headers,
+        `asignaciones-evento-${eventId}.xlsx`
+      ),
+      errors: null,
+    };
+  } catch (error) {
+    return {
+      status: false,
+      blob: null,
+      errors: await blobErrorMessage(
+        error,
+        'No se pudo descargar la plantilla.'
+      ),
+    };
+  }
+};
+
+export const previewAssignmentImportService = async (eventId, file) => {
+  try {
+    const { data } = await axios.post(
+      `${EVENTS_URL}/zones/${eventId}/assignments/import/preview`,
+      importFormData(file)
+    );
+    return { status: true, preview: data?.data ?? null, errors: null };
+  } catch (error) {
+    return {
+      status: false,
+      preview: null,
+      errors:
+        error?.response?.data?.message || 'No se pudo analizar el archivo.',
+    };
+  }
+};
+
+export const confirmAssignmentImportService = async (eventId, file) => {
+  try {
+    const { data } = await axios.post(
+      `${EVENTS_URL}/zones/${eventId}/assignments/import/confirm`,
+      importFormData(file)
+    );
+    return { status: true, result: data?.data ?? null, errors: null };
+  } catch (error) {
+    return {
+      status: false,
+      result: null,
+      // Si el archivo dejó de ser válido entre la vista previa y la
+      // confirmación, la API devuelve una vista previa actualizada.
+      preview: error?.response?.data?.data ?? null,
+      errors:
+        error?.response?.data?.message || 'No se pudo guardar la importación.',
+    };
+  }
+};
+
+export const downloadAssignmentImportReportService = async (eventId, file) => {
+  try {
+    const response = await axios.post(
+      `${EVENTS_URL}/zones/${eventId}/assignments/import/report`,
+      importFormData(file),
+      { responseType: 'blob' }
+    );
+    return {
+      status: true,
+      blob: response.data,
+      fileName: fileNameFromHeaders(
+        response.headers,
+        'asignaciones-revisado.xlsx'
+      ),
+      errors: null,
+    };
+  } catch (error) {
+    return {
+      status: false,
+      blob: null,
+      errors: await blobErrorMessage(
+        error,
+        'No se pudo generar el Excel con observaciones.'
+      ),
     };
   }
 };

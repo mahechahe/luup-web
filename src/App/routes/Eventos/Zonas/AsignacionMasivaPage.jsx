@@ -9,6 +9,7 @@ import {
   Clock3,
   Copy,
   Edit3,
+  FileSpreadsheet,
   Filter,
   Info,
   ChevronLeft,
@@ -53,9 +54,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { hasAdminAccess } from '@/App/utils/roles';
 import { useUserStore } from '@/App/context/userStore';
 import { AssignmentFilterSheet } from './components/AssignmentFilterSheet';
+import { AssignmentExcelSheet } from './components/AssignmentExcelSheet';
 import {
   createEventShiftService,
-  deleteEventAssignmentService,
   getAssignmentCollaboratorsService,
   getEventAssignmentWorkspaceService,
   saveEventAssignmentsService,
@@ -375,6 +376,7 @@ export default function AsignacionMasivaPage() {
     EMPTY_ASSIGNMENT_FILTERS
   );
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+  const [excelSheetOpen, setExcelSheetOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(PAGE_SIZE_OPTIONS[0]);
   const [notice, setNotice] = useState(null);
@@ -741,12 +743,15 @@ export default function AsignacionMasivaPage() {
         ? deleteTarget.assignmentIds
         : [deleteTarget.assignmentId];
 
-      for (const assignmentId of assignmentIds) {
-        const result = await deleteEventAssignmentService(eventId, assignmentId);
-        if (!result.status) {
-          toast.error(getApiError(result.errors));
-          return;
-        }
+      // Todas las zonas de la fila se eliminan en una sola transacción.
+      const result = await saveEventAssignmentsService(
+        eventId,
+        [],
+        assignmentIds
+      );
+      if (!result.status) {
+        toast.error(getApiError(result.errors));
+        return;
       }
       setDeleteTarget(null);
       await loadWorkspace(workspaceQuery);
@@ -937,29 +942,19 @@ export default function AsignacionMasivaPage() {
     });
 
     setSaving(true);
-    const result = await saveEventAssignmentsService(eventId, payload);
+    // Un solo guardado atómico: las zonas que se le quitan a un coordinador
+    // se eliminan en la misma transacción. La API valida contra el evento
+    // completo (no solo esta página), así que permite intercambios.
+    const result = await saveEventAssignmentsService(
+      eventId,
+      payload,
+      deletedAssignmentIds
+    );
     if (result.status) {
-      for (const assignmentId of deletedAssignmentIds) {
-        const deleteResult = await deleteEventAssignmentService(
-          eventId,
-          assignmentId
-        );
-        if (!deleteResult.status) {
-          toast.error(
-            `Las asignaciones se guardaron, pero no se pudo eliminar una zona: ${getApiError(deleteResult.errors)}`
-          );
-          await loadWorkspace(workspaceQuery);
-          setSaving(false);
-          return;
-        }
-      }
       toast.success('Asignaciones guardadas correctamente.');
       await loadWorkspace(workspaceQuery);
     } else {
-      const conflict = result.data?.zoneId
-        ? ` Zona actual: ${result.data.zoneId}.`
-        : '';
-      toast.error(`${getApiError(result.errors)}${conflict}`);
+      toast.error(getApiError(result.errors));
     }
     setSaving(false);
   };
@@ -1306,6 +1301,12 @@ export default function AsignacionMasivaPage() {
               >
                 <RefreshCw className={refreshing ? 'animate-spin' : ''} />{' '}
                 Actualizar
+              </Button>
+              <Button
+                onClick={() => setExcelSheetOpen(true)}
+                className="w-full justify-center gap-2 bg-[#dd7419] text-white hover:bg-[#c96513]"
+              >
+                <FileSpreadsheet /> Asignar por Excel
               </Button>
             </div>
           </div>
@@ -2150,6 +2151,14 @@ export default function AsignacionMasivaPage() {
         activeFilters={assignmentFilters}
         zones={workspace?.zones ?? []}
         shifts={workspace?.shifts ?? []}
+      />
+
+      <AssignmentExcelSheet
+        open={excelSheetOpen}
+        onClose={() => setExcelSheetOpen(false)}
+        eventId={eventId}
+        hasUnsavedChanges={rows.some((row) => row.isNew)}
+        onImported={() => loadWorkspace(workspaceQuery)}
       />
 
       <Dialog
