@@ -674,26 +674,6 @@ export default function MapLayoutPage() {
       prev.map((z) => (z.id === id ? { ...z, ...updates } : z))
     );
 
-  const addPeople = (zoneId, collaborators, role) => {
-    const zone = zones.find((z) => z.id === zoneId);
-    if (!zone) return;
-    const newPeople = collaborators.map((c) => ({
-      id: c.userId,
-      name: `${c.firstName} ${c.lastName}`.trim(),
-      cedula: c.cedula,
-      role,
-      status: 'confirmed',
-    }));
-    updateZone(zoneId, { people: [...zone.people, ...newPeople] });
-  };
-
-  const removePerson = (zoneId, personId) => {
-    const zone = zones.find((z) => z.id === zoneId);
-    updateZone(zoneId, {
-      people: zone.people.filter((p) => p.id !== personId),
-    });
-  };
-
   const confirmDeleteZone = async (id) => {
     if (typeof id === 'number' && id > 0) {
       setIsDeletingZone(true);
@@ -712,16 +692,8 @@ export default function MapLayoutPage() {
 
     const zonesData = zones
       .filter((z) => z.type === 'polygon' && z.points?.length >= 3)
+      // El personal NO se envía: se gestiona en Asignación masiva.
       .map((zone) => {
-        const supervisor = zone.people.find((p) => p.role === 'supervisor');
-        const coordinador = zone.people.find((p) => p.role === 'coordinador');
-        const responsablesAcopio = zone.people.filter(
-          (p) => p.role === 'responsable_acopio'
-        );
-        const colaboradores = zone.people.filter(
-          (p) => p.role === 'colaborador'
-        );
-
         return {
           ...(typeof zone.id === 'number' && zone.id > 0
             ? { zoneId: zone.id }
@@ -737,10 +709,6 @@ export default function MapLayoutPage() {
           weightLimit:
             zone.category === 'acopio' ? zone.weightLimit ?? null : null,
           geometry: { points: zone.points },
-          supervisorId: supervisor ? supervisor.id : null,
-          coordinadorId: coordinador ? coordinador.id : null,
-          responsableAcopioIds: responsablesAcopio.map((r) => r.id),
-          colaboradorIds: colaboradores.map((c) => c.id),
         };
       });
 
@@ -810,8 +778,6 @@ export default function MapLayoutPage() {
           isAdmin={IS_ADMIN}
           onSelectZone={setSelectedId}
           onUpdateZone={updateZone}
-          onAddPeople={addPeople}
-          onRemovePerson={removePerson}
           onDeleteRequest={setDeleteId}
         />
       </div>

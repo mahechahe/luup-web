@@ -10,28 +10,18 @@ export function MapZonesSidebar({
   isAdmin,
   onSelectZone,
   onUpdateZone,
-  onAddPeople,
-  onRemovePerson,
   onDeleteRequest,
 }) {
   const [detailZoneId, setDetailZoneId] = useState(null);
   const detailZone = zones.find((z) => z.id === detailZoneId);
-
-  const allAssignedPeopleIds = new Set(
-    zones.flatMap((z) => z.people.map((p) => p.id))
-  );
 
   return (
     <>
       {detailZone && (
         <ZoneDetailModal
           zone={detailZone}
-          zones={zones}
           isAdmin={isAdmin}
-          allAssignedPeopleIds={allAssignedPeopleIds}
           onUpdate={onUpdateZone}
-          onAddPeople={onAddPeople}
-          onRemovePerson={onRemovePerson}
           onDeleteRequest={onDeleteRequest}
           onClose={() => setDetailZoneId(null)}
         />

@@ -33,21 +33,10 @@ export function ZonesSidebar({
   onCancelPending,
   onSelectZone,
   onUpdateZone,
-  onAddPeople,
-  onRemovePerson,
   onDeleteRequest,
 }) {
   const [detailZoneId, setDetailZoneId] = useState(null);
   const detailZone = zones.find((z) => z.id === detailZoneId);
-
-  // Calcular todos los IDs de personas asignadas en TODAS las zonas del evento
-  // Para evitar que una persona esté en múltiples zonas
-  const allAssignedPeopleIds = new Set();
-  zones.forEach((zone) => {
-    zone.people.forEach((person) => {
-      allAssignedPeopleIds.add(person.id);
-    });
-  });
 
   const tools = [
     { id: 'select', icon: MousePointer2, label: 'Seleccionar', adminOnly: false },
@@ -62,12 +51,8 @@ export function ZonesSidebar({
       {detailZone && (
         <ZoneDetailModal
           zone={detailZone}
-          zones={zones}
           isAdmin={isAdmin}
-          allAssignedPeopleIds={allAssignedPeopleIds}
           onUpdate={onUpdateZone}
-          onAddPeople={onAddPeople}
-          onRemovePerson={onRemovePerson}
           onDeleteRequest={onDeleteRequest}
           onClose={() => setDetailZoneId(null)}
         />

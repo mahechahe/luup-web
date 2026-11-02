@@ -178,26 +178,6 @@ function CanvasPage() {
 
   const addZone = (zone) => setZones((prev) => [...prev, zone]);
 
-  const addPeople = (zoneId, collaborators, role) => {
-    const zone = zones.find((z) => z.id === zoneId);
-    if (!zone) return;
-    const newPeople = collaborators.map((c) => ({
-      id: c.userId,
-      name: `${c.firstName} ${c.lastName}`.trim(),
-      cedula: c.cedula,
-      role,
-      status: 'confirmed',
-    }));
-    updateZone(zoneId, { people: [...zone.people, ...newPeople] });
-  };
-
-  const removePerson = (zoneId, personId) => {
-    const zone = zones.find((z) => z.id === zoneId);
-    updateZone(zoneId, {
-      people: zone.people.filter((p) => p.id !== personId),
-    });
-  };
-
   const confirmDeleteZone = async (id) => {
     // Si la zona tiene ID numérico (existe en la DB), eliminarla del servidor
     if (typeof id === 'number' && id > 0) {
@@ -297,14 +277,9 @@ function CanvasPage() {
     setIsSaving(true);
 
     // Preparar JSON con toda la información
+    // El personal NO se envía: se gestiona en Asignación masiva y la API
+    // conserva lo guardado cuando estos campos no vienen.
     const zonesData = zones.map((zone) => {
-      // Extraer IDs por rol
-      const supervisor = zone.people.find((p) => p.role === 'supervisor');
-      const coordinador = zone.people.find((p) => p.role === 'coordinador');
-      // ✅ Responsables de acopio — ahora es un array como collaborators
-      const responsablesAcopio = zone.people.filter((p) => p.role === 'responsable_acopio');
-      const colaboradores = zone.people.filter((p) => p.role === 'colaborador');
-
       return {
         // Incluir zoneId solo si la zona ya existe en la DB (id numérico)
         // Las zonas nuevas tienen ID temporal (string), no se envía zoneId
@@ -335,12 +310,6 @@ function CanvasPage() {
                 points: zone.points, // Array de {x, y}
               },
 
-        // Personas asignadas (solo IDs)
-        supervisorId: supervisor ? supervisor.id : null,
-        coordinadorId: coordinador ? coordinador.id : null,
-        // ✅ guardado como array de IDs
-        responsableAcopioIds: responsablesAcopio.map((r) => r.id),
-        colaboradorIds: colaboradores.map((c) => c.id),
       };
     });
 
@@ -437,8 +406,6 @@ function CanvasPage() {
           onCancelPending={handleCancelPending}
           onSelectZone={setSelectedId}
           onUpdateZone={updateZone}
-          onAddPeople={addPeople}
-          onRemovePerson={removePerson}
           onDeleteRequest={setDeleteId}
         />
       </div>
@@ -470,8 +437,6 @@ function CanvasPage() {
             onCancelPending={handleCancelPending}
             onSelectZone={setSelectedId}
             onUpdateZone={updateZone}
-            onAddPeople={addPeople}
-            onRemovePerson={removePerson}
             onDeleteRequest={setDeleteId}
           />
 
